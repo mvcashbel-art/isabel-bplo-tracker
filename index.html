@@ -18,18 +18,34 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-3 max-w-md mx-auto">
 
-  <!-- Header -->
-  <header class="bg-blue-700 text-white p-4 rounded-xl shadow-md mb-4 flex justify-between items-center">
-    <div>
-      <h1 class="text-lg font-bold">Isabel BPLO Tracker</h1>
-      <p class="text-xs text-blue-200">Business Permit & Licensing Office</p>
+  <!-- Header & Role Selector -->
+  <header class="bg-blue-700 text-white p-4 rounded-xl shadow-md mb-4">
+    <div class="flex justify-between items-center mb-3">
+      <div>
+        <h1 class="text-lg font-bold">Isabel BPLO Tracker</h1>
+        <p class="text-xs text-blue-200">Business Permit & Licensing Office</p>
+      </div>
+      <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
     </div>
-    <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
+
+    <!-- 🔑 Role Access Switcher -->
+    <div class="flex items-center justify-between bg-blue-800/80 p-2 rounded-lg border border-blue-600/50 text-xs">
+      <span class="font-medium text-blue-100">User Access Mode:</span>
+      <select id="userRoleSelect" class="bg-white text-slate-800 px-2 py-1 rounded font-semibold text-xs outline-none cursor-pointer">
+        <option value="inspector">👮 Inspector (Full Access)</option>
+        <option value="viewer">👁️ Viewer (Read Only)</option>
+      </select>
+    </div>
   </header>
 
-  <!-- Field Inspection Log & Search (MOVED TO TOP) -->
+  <!-- Field Inspection Log & Search -->
   <section class="bg-white p-4 rounded-xl shadow-sm mb-4">
-    <h2 class="text-sm font-bold text-slate-700 mb-3">📝 Field Inspection Log</h2>
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-sm font-bold text-slate-700">📝 Field Inspection Log</h2>
+      <button id="openAddModalBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm">
+        <span>➕</span> Add Business
+      </button>
+    </div>
     
     <!-- 🔍 SEARCH BAR -->
     <div class="mb-3">
@@ -48,10 +64,17 @@
         </select>
       </div>
 
+      <!-- Business Details Box (Read-Only Preview) -->
+      <div id="businessDetailCard" class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
+        <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
+        <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
+        <div><span class="font-semibold text-slate-500">Current Status:</span> <span id="cardStatus" class="font-bold text-slate-800">-</span></div>
+      </div>
+
       <div class="grid grid-cols-2 gap-2">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Permit Status</label>
-          <select id="statusSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          <select id="statusSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="No Permit">🔴 No Permit</option>
             <option value="Expired">🟡 Expired / Overdue</option>
             <option value="Pending Follow-Up">🔵 Pending Compliance</option>
@@ -60,7 +83,7 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Action Taken</label>
-          <select id="outcomeSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          <select id="outcomeSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="Notice Served">Notice Served</option>
             <option value="Verified Active">Verified Active</option>
             <option value="Closed/Unlocated">Closed Storefront</option>
@@ -71,19 +94,19 @@
 
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Inspector Remarks / Barangay Notes</label>
-        <textarea id="inspectorNotes" rows="2" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Add compliance details or citation reference..."></textarea>
+        <textarea id="inspectorNotes" rows="2" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Add compliance details or citation reference..."></textarea>
       </div>
 
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Upload Citation/Storefront Photo</label>
-        <input type="file" id="photoInput" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        <input type="file" id="photoInput" accept="image/*" capture="environment" class="editable-field w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
       </div>
 
-      <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">Save Inspection Log</button>
+      <button type="submit" id="submitLogBtn" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">Save Inspection Log</button>
     </form>
   </section>
 
-  <!-- Interactive Map Section (MOVED TO BOTTOM) -->
+  <!-- Interactive Map Section -->
   <section class="bg-white p-3 rounded-xl shadow-sm mb-4">
     <div class="flex justify-between items-center mb-2">
       <h2 class="text-sm font-bold text-slate-700">📍 Isabel Municipal Map</h2>
@@ -104,12 +127,58 @@
     </div>
   </section>
 
+  <!-- ➕ ADD BUSINESS MODAL -->
+  <div id="addBusinessModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-800">➕ Add New Business to Monitor</h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+      
+      <form id="addBusinessForm" class="space-y-2.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Business Name *</label>
+          <input type="text" id="newBizName" required placeholder="e.g. Isabel Snack Shack" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Owner Name *</label>
+          <input type="text" id="newBizOwner" required placeholder="e.g. Juan dela Cruz" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Barangay / Address *</label>
+          <input type="text" id="newBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Initial Status</label>
+          <select id="newBizStatus" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+            <option value="No Permit">🔴 No Permit</option>
+            <option value="Expired">🟡 Expired</option>
+            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
+            <option value="Compliant">🟢 Active Permit</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Latitude (Optional)</label>
+            <input type="number" step="any" id="newBizLat" placeholder="10.9280" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Longitude (Optional)</label>
+            <input type="number" step="any" id="newBizLon" placeholder="124.4385" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm mt-2">Save & Pin Business</button>
+      </form>
+    </div>
+  </div>
+
   <!-- App Script -->
   <script>
     const ISABEL_CENTER = [10.9280, 124.4385];
 
     // Local Isabel Dataset
-    const businesses = [
+    let businesses = [
       { id: 'BIZ-101', name: "Isabel Commercial Store", owner: "Juan Dela Cruz", status: "No Permit", lat: 10.9285, lon: 124.4380, address: "Poblacion, Isabel, Leyte" },
       { id: 'BIZ-102', name: "Isabel Bay Mart", owner: "Maria Santos", status: "Expired", lat: 10.9272, lon: 124.4395, address: "Near Port, Isabel" },
       { id: 'BIZ-103', name: "Leyte Hardware & Supply", owner: "Pedro Penduko", status: "Compliant", lat: 10.9295, lon: 124.4370, address: "Barangay Marvel, Isabel" }
@@ -133,13 +202,14 @@
     const selectElem = document.getElementById('businessSelect');
     const searchInput = document.getElementById('searchInput');
 
-    // Populate Dropdown & Map Markers
+    // Render Dropdown List
     function renderBusinessList(filteredList) {
       selectElem.innerHTML = '';
       if(filteredList.length === 0) {
         const option = document.createElement('option');
         option.textContent = "No business found";
         selectElem.appendChild(option);
+        updateDetailCard(null);
         return;
       }
 
@@ -149,9 +219,12 @@
         option.textContent = `${biz.name} (${biz.status})`;
         selectElem.appendChild(option);
       });
+
+      updateDetailCard(filteredList[0]);
     }
 
-    businesses.forEach(biz => {
+    // Add Marker to Map
+    function addMarker(biz) {
       const marker = L.circleMarker([biz.lat, biz.lon], {
         radius: 9,
         fillColor: colorMap[biz.status] || '#6b7280',
@@ -170,11 +243,27 @@
         </div>
       `);
       markers[biz.id] = marker;
-    });
+    }
 
+    // Update Detail Card
+    function updateDetailCard(biz) {
+      if(!biz) {
+        document.getElementById('cardOwner').textContent = '-';
+        document.getElementById('cardAddress').textContent = '-';
+        document.getElementById('cardStatus').textContent = '-';
+        return;
+      }
+      document.getElementById('cardOwner').textContent = biz.owner;
+      document.getElementById('cardAddress').textContent = biz.address;
+      document.getElementById('cardStatus').textContent = biz.status;
+      document.getElementById('statusSelect').value = biz.status;
+    }
+
+    // Load initial map pins
+    businesses.forEach(addMarker);
     renderBusinessList(businesses);
 
-    // Search Filter Logic & Auto Zoom to Pin
+    // Search Logic
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.toLowerCase().trim();
       const filtered = businesses.filter(b => 
@@ -193,17 +282,84 @@
       }
     });
 
-    // When dropdown selection changes, center map on that pin
     selectElem.addEventListener('change', (e) => {
       const bizId = e.target.value;
       const targetBiz = businesses.find(b => b.id === bizId);
       if (targetBiz && markers[bizId]) {
+        updateDetailCard(targetBiz);
         map.panTo([targetBiz.lat, targetBiz.lon]);
         markers[bizId].openPopup();
       }
     });
 
-    // Form Submission
+    // 🔒 ROLE SWITCHER LOGIC (INSPECTOR vs VIEWER)
+    const userRoleSelect = document.getElementById('userRoleSelect');
+    const editableFields = document.querySelectorAll('.editable-field');
+    const submitLogBtn = document.getElementById('submitLogBtn');
+    const openAddModalBtn = document.getElementById('openAddModalBtn');
+
+    function applyUserRolePermission(role) {
+      const isViewer = (role === 'viewer');
+      
+      editableFields.forEach(field => {
+        field.disabled = isViewer;
+        if(isViewer) field.classList.add('opacity-60', 'cursor-not-allowed');
+        else field.classList.remove('opacity-60', 'cursor-not-allowed');
+      });
+
+      if(isViewer) {
+        submitLogBtn.disabled = true;
+        submitLogBtn.textContent = "🔒 Log Changes Disabled (Read-Only)";
+        submitLogBtn.classList.replace('bg-blue-700', 'bg-slate-400');
+        openAddModalBtn.classList.add('hidden');
+      } else {
+        submitLogBtn.disabled = false;
+        submitLogBtn.textContent = "Save Inspection Log";
+        submitLogBtn.classList.replace('bg-slate-400', 'bg-blue-700');
+        openAddModalBtn.classList.remove('hidden');
+      }
+    }
+
+    userRoleSelect.addEventListener('change', (e) => {
+      applyUserRolePermission(e.target.value);
+    });
+
+    // ➕ MODAL LOGIC FOR ADDING NEW BUSINESS
+    const modal = document.getElementById('addBusinessModal');
+    openAddModalBtn.addEventListener('click', () => modal.classList.replace('hidden', 'flex'));
+    document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.replace('flex', 'hidden'));
+
+    document.getElementById('addBusinessForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const newId = `BIZ-${Date.now().toString().slice(-4)}`;
+      const newBiz = {
+        id: newId,
+        name: document.getElementById('newBizName').value,
+        owner: document.getElementById('newBizOwner').value,
+        address: document.getElementById('newBizAddress').value,
+        status: document.getElementById('newBizStatus').value,
+        lat: parseFloat(document.getElementById('newBizLat').value) || (10.9280 + (Math.random() - 0.5) * 0.005),
+        lon: parseFloat(document.getElementById('newBizLon').value) || (124.4385 + (Math.random() - 0.5) * 0.005)
+      };
+
+      businesses.push(newBiz);
+      addMarker(newBiz);
+      renderBusinessList(businesses);
+
+      // Select new business
+      selectElem.value = newId;
+      updateDetailCard(newBiz);
+      map.panTo([newBiz.lat, newBiz.lon]);
+      markers[newId].openPopup();
+
+      // Reset form & close modal
+      e.target.reset();
+      modal.classList.replace('flex', 'hidden');
+      alert(`Successfully added ${newBiz.name} to Isabel BPLO Tracker!`);
+    });
+
+    // Inspection Form Submission
     const form = document.getElementById('inspectionForm');
     const historyContainer = document.getElementById('logHistory');
 
@@ -220,8 +376,8 @@
       const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
       selectedBiz.status = newStatus;
+      updateDetailCard(selectedBiz);
 
-      // Update Map Marker
       if (markers[bizId]) {
         markers[bizId].setStyle({ fillColor: colorMap[newStatus] });
         markers[bizId].setPopupContent(`
