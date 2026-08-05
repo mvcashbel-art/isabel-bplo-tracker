@@ -38,8 +38,8 @@
         </div>
       </div>
       <div class="flex gap-1">
-        <button id="openAdminModalBtn" onclick="openAdminModal()" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold text-[10px] transition shadow-sm cursor-pointer">👑 Admin</button>
-        <button id="openAuthModalBtn" onclick="handleAuthBtnClick()" type="button" class="bg-white text-slate-800 px-2 py-1 rounded font-bold text-[10px] hover:bg-slate-100 transition shadow-sm cursor-pointer">🔑 Login</button>
+        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold text-[10px] transition shadow-sm cursor-pointer">👑 Admin</button>
+        <button id="openAuthModalBtn" onclick="handleAuthClick()" type="button" class="bg-white text-slate-800 px-2 py-1 rounded font-bold text-[10px] hover:bg-slate-100 transition shadow-sm cursor-pointer">🔑 Login</button>
       </div>
     </div>
   </header>
@@ -48,9 +48,6 @@
   <section class="bg-white p-4 rounded-xl shadow-sm mb-4">
     <div class="flex justify-between items-center mb-3">
       <h2 class="text-sm font-bold text-slate-700">📝 Field Inspection Log</h2>
-      <button id="openAddModalBtn" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm">
-        <span>➕</span> Add Business
-      </button>
     </div>
     
     <!-- 🔍 SEARCH BAR -->
@@ -62,7 +59,7 @@
       </div>
     </div>
 
-    <form id="inspectionForm" class="space-y-3">
+    <form id="inspectionForm" class="space-y-3" onsubmit="event.preventDefault();">
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Select Establishment</label>
         <select id="businessSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
@@ -88,7 +85,7 @@
       <div class="grid grid-cols-2 gap-2">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Permit Status</label>
-          <select id="statusSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none opacity-60 cursor-not-allowed" disabled>
+          <select id="statusSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60 cursor-not-allowed" disabled>
             <option value="No Permit">🔴 No Permit</option>
             <option value="Expired">🟡 Expired / Overdue</option>
             <option value="Pending Follow-Up">🔵 Pending Compliance</option>
@@ -97,7 +94,7 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Action Taken</label>
-          <select id="outcomeSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none opacity-60 cursor-not-allowed" disabled>
+          <select id="outcomeSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60 cursor-not-allowed" disabled>
             <option value="Notice Served">Notice Served</option>
             <option value="Verified Active">Verified Active</option>
             <option value="Closed/Unlocated">Closed Storefront</option>
@@ -108,12 +105,7 @@
 
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Inspector Remarks / Barangay Notes</label>
-        <textarea id="inspectorNotes" rows="2" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none opacity-60 cursor-not-allowed" disabled placeholder="Add compliance details or citation reference..."></textarea>
-      </div>
-
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Upload Citation/Storefront Photo</label>
-        <input type="file" id="photoInput" accept="image/*" capture="environment" class="editable-field w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 opacity-60 cursor-not-allowed" disabled>
+        <textarea id="inspectorNotes" rows="2" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60 cursor-not-allowed" disabled placeholder="Add compliance details or citation reference..."></textarea>
       </div>
 
       <button type="submit" id="submitLogBtn" disabled class="w-full bg-slate-400 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm cursor-not-allowed">🔒 Log Changes Disabled (Read-Only)</button>
@@ -133,20 +125,12 @@
     <div id="map"></div>
   </section>
 
-  <!-- Inspection History -->
-  <section class="bg-white p-4 rounded-xl shadow-sm mb-6">
-    <h2 class="text-sm font-bold text-slate-700 mb-2">📋 BPLO Log Activity</h2>
-    <div id="logHistory" class="space-y-2 text-xs divide-y divide-slate-100">
-      <p class="text-slate-400 italic py-2">No inspections recorded today yet.</p>
-    </div>
-  </section>
-
-  <!-- 🔑 LOGIN & REGISTER MODAL -->
-  <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <!-- 🔑 LOGIN MODAL -->
+  <div id="authModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 id="authModalTitle" class="text-sm font-bold text-slate-800">🔑 Inspector Login</h3>
-        <button type="button" onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+        <h3 class="text-sm font-bold text-slate-800">🔑 Inspector Login</h3>
+        <button type="button" onclick="toggleModal('authModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
 
       <form id="loginForm" class="space-y-2.5 text-xs">
@@ -159,38 +143,16 @@
           <input type="password" id="loginPasswordInput" required placeholder="••••••••" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
         </div>
         <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">Login to Inspector Account</button>
-        <p class="text-center text-[11px] text-slate-500 pt-1">Don't have an approved account? <a href="#" id="showRegisterBtn" class="text-blue-600 font-bold underline">Create Profile</a></p>
-      </form>
-
-      <form id="registerForm" class="space-y-2 text-xs hidden">
-        <div>
-          <label class="block font-semibold text-slate-600 mb-0.5">Full Name *</label>
-          <input type="text" id="regNameInput" required placeholder="e.g. Maria Santos" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-0.5">Position / Designation *</label>
-          <input type="text" id="regPositionInput" required placeholder="e.g. Field Inspector II" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-0.5">Password *</label>
-          <input type="password" id="regPasswordInput" required placeholder="••••••••" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-0.5">Profile Photo</label>
-          <input type="file" id="regPhotoInput" accept="image/*" class="w-full text-[11px] text-slate-500">
-        </div>
-        <button type="submit" id="regSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm mt-1">Submit Account for Approval</button>
-        <p class="text-center text-[11px] text-slate-500 pt-1">Already registered? <a href="#" id="showLoginBtn" class="text-blue-600 font-bold underline">Back to Login</a></p>
       </form>
     </div>
   </div>
 
   <!-- 👑 ADMIN APPROVAL PANEL MODAL -->
-  <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
         <h3 class="text-sm font-bold text-slate-800">👑 Admin User Approval Panel</h3>
-        <button type="button" onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+        <button type="button" onclick="toggleModal('adminModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
 
       <form id="adminLoginForm" class="space-y-2 text-xs">
@@ -201,14 +163,11 @@
 
       <div id="adminUserListContainer" class="hidden space-y-3">
         <h4 class="text-xs font-bold text-slate-700 border-b pb-1">Registered Profiles Awaiting Approval:</h4>
-        <div id="pendingUserList" class="space-y-2 text-xs">
-          <!-- Populated dynamically -->
-        </div>
+        <div id="pendingUserList" class="space-y-2 text-xs"></div>
       </div>
     </div>
   </div>
 
-  <!-- App Script -->
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwywMsuR-0B4QO7arxzX2XBOgkTQIToUg5JmfVy_lP8sZ-pIe8-7Uok6M31R3HOJlY/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
@@ -217,336 +176,73 @@
     let businesses = [];
     let registeredUsers = [];
     let activeUser = null;
-    
+
     try {
-      activeUser = JSON.parse(localStorage.getItem('isabel_bplo_user')) || null;
-    } catch(e) {
+      const stored = localStorage.getItem('isabel_bplo_user');
+      if (stored) activeUser = JSON.parse(stored);
+    } catch (e) {
       activeUser = null;
     }
 
-    const markers = {};
-
-    const colorMap = {
-      "No Permit": "#ef4444",
-      "Expired": "#f59e0b",
-      "Pending Follow-Up": "#3b82f6",
-      "Compliant": "#10b981"
+    // Modal Display Handler (Direct Inline Override)
+    window.toggleModal = function(modalId, show) {
+      const el = document.getElementById(modalId);
+      if (el) {
+        el.style.display = show ? 'flex' : 'none';
+      }
     };
 
-    const map = L.map('map').setView(ISABEL_CENTER, 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-
-    const selectElem = document.getElementById('businessSelect');
-    const searchInput = document.getElementById('searchInput');
-
-    // Global Modal Functions
-    function openAuthModal() {
-      const modal = document.getElementById('authModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeAuthModal() {
-      const modal = document.getElementById('authModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    function handleAuthBtnClick() {
+    window.handleAuthClick = function() {
       if (activeUser) {
         activeUser = null;
         localStorage.removeItem('isabel_bplo_user');
         updateUserRoleUI();
         alert("Logged out successfully.");
       } else {
-        openAuthModal();
-      }
-    }
-
-    function openAdminModal() {
-      const modal = document.getElementById('adminModal');
-      document.getElementById('adminLoginForm').classList.remove('hidden');
-      document.getElementById('adminUserListContainer').classList.add('hidden');
-      document.getElementById('adminPassInput').value = '';
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeAdminModal() {
-      const modal = document.getElementById('adminModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    async function postData(data) {
-      return fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify(data)
-      });
-    }
-
-    async function loadBusinessesFromSheet() {
-      try {
-        const res = await fetch(GOOGLE_SCRIPT_URL);
-        const data = await res.json();
-        if (data && Array.isArray(data) && data.length > 0) {
-          businesses = data.map(b => ({
-            id: b["Business ID"] || b.id || "",
-            name: b["Business Name"] || b.name || "",
-            owner: b["Owner Name"] || b.owner || "",
-            address: b["Barangay Address"] || b.address || "",
-            status: b["Permit Status"] || b.status || "No Permit",
-            lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
-            lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
-            image: b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo"
-          }));
-          Object.values(markers).forEach(m => map.removeLayer(m));
-          businesses.forEach(addMarker);
-          renderBusinessList(businesses);
-        }
-      } catch (err) { console.error("Error fetching Google Sheet data:", err); }
-    }
-
-    async function loadUsersFromSheet() {
-      try {
-        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getUsers`);
-        const data = await res.json();
-        if (Array.isArray(data)) registeredUsers = data;
-      } catch (err) { console.error("Error fetching users:", err); }
-    }
-
-    function renderBusinessList(filteredList) {
-      selectElem.innerHTML = '';
-      if(filteredList.length === 0) {
-        selectElem.appendChild(new Option("No business found", ""));
-        updateDetailCard(null);
-        return;
-      }
-
-      filteredList.forEach(biz => selectElem.appendChild(new Option(`${biz.name} (${biz.status})`, biz.id)));
-      updateDetailCard(filteredList[0]);
-    }
-
-    function addMarker(biz) {
-      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
-      const marker = L.circleMarker([biz.lat, biz.lon], { radius: 9, fillColor: colorMap[biz.status] || '#6b7280', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.95 }).addTo(map);
-
-      marker.bindPopup(`
-        <div style="font-family: sans-serif; min-width: 140px;">
-          <img src="${biz.image || 'https://placehold.co/100x100?text=No+Photo'}" style="width:100%; height:70px; object-fit:cover; border-radius:6px; margin-bottom:5px;">
-          <b style="font-size:12px;">${biz.name}</b><br>
-          <span style="font-size:10px; color:#444;">Owner: ${biz.owner}</span><br>
-          <span style="font-size:10px;">Status: <b>${biz.status}</b></span><br>
-          <a href="${mapsUrl}" target="_blank" style="display:inline-block; margin-top:5px; background-color:#2563eb; color:#fff; text-decoration:none; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; width:100%; text-align:center;">🧭 Navigate Here</a>
-        </div>
-      `);
-      markers[biz.id] = marker;
-    }
-
-    function updateDetailCard(biz) {
-      if(!biz) {
-        document.getElementById('cardOwner').textContent = '-';
-        document.getElementById('cardAddress').textContent = '-';
-        document.getElementById('cardStatus').textContent = '-';
-        document.getElementById('cardImage').src = 'https://placehold.co/100x100?text=No+Photo';
-        document.getElementById('getDirectionsBtn').href = '#';
-        return;
-      }
-      document.getElementById('cardOwner').textContent = biz.owner;
-      document.getElementById('cardAddress').textContent = biz.address;
-      document.getElementById('cardStatus').textContent = biz.status;
-      document.getElementById('statusSelect').value = biz.status;
-      document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
-      document.getElementById('getDirectionsBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
-    }
-
-    // Load initial data & restore session
-    loadBusinessesFromSheet();
-    loadUsersFromSheet();
-    updateUserRoleUI();
-
-    // Forms Switch Logic
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-
-    document.getElementById('showRegisterBtn').addEventListener('click', (e) => {
-      e.preventDefault();
-      loginForm.classList.add('hidden');
-      registerForm.classList.remove('hidden');
-    });
-
-    document.getElementById('showLoginBtn').addEventListener('click', (e) => {
-      e.preventDefault();
-      registerForm.classList.add('hidden');
-      loginForm.classList.remove('hidden');
-    });
-
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await loadUsersFromSheet();
-      const name = document.getElementById('loginNameInput').value.trim();
-      const pass = document.getElementById('loginPasswordInput').value;
-
-      const found = registeredUsers.find(u => (u["Full Name"] || u.name || "").toLowerCase() === name.toLowerCase());
-
-      if (!found) return alert("Account not found! Please register first.");
-      if ((found["Password"] || found.password) !== pass) return alert("Incorrect password!");
-      if ((found["Status"] || found.status) !== "Approved") return alert(`Account status is '${found["Status"] || found.status}'. Please wait for BPLO Admin approval.`);
-
-      activeUser = {
-        name: found["Full Name"] || found.name,
-        position: found["Position"] || found.position,
-        photo: found["Photo URL"] || found.photo || "https://placehold.co/100x100?text=User"
-      };
-
-      localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
-      updateUserRoleUI();
-      closeAuthModal();
-      alert(`Welcome back, ${activeUser.name}! Inspector features unlocked.`);
-    });
-
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const regBtn = document.getElementById('regSubmitBtn');
-      regBtn.disabled = true;
-      regBtn.textContent = "Registering...";
-
-      const newAccount = {
-        action: "registerUser",
-        name: document.getElementById('regNameInput').value.trim(),
-        position: document.getElementById('regPositionInput').value.trim(),
-        password: document.getElementById('regPasswordInput').value,
-        photo: "https://placehold.co/100x100?text=User"
-      };
-
-      try {
-        await postData(newAccount);
-        alert("Account request submitted! Please notify BPLO Admin to approve your profile.");
-        registerForm.reset();
-        registerForm.classList.add('hidden');
-        loginForm.classList.remove('hidden');
-        setTimeout(loadUsersFromSheet, 2000);
-      } catch (err) {
-        alert("Registration failed. Check internet connection.");
-      } finally {
-        regBtn.disabled = false;
-        regBtn.textContent = "Submit Account for Approval";
-      }
-    });
-
-    function updateUserRoleUI() {
-      const editableFields = document.querySelectorAll('.editable-field');
-      const submitLogBtn = document.getElementById('submitLogBtn');
-      const openAddModalBtn = document.getElementById('openAddModalBtn');
-      const openAuthModalBtn = document.getElementById('openAuthModalBtn');
-
-      if (activeUser) {
-        document.getElementById('userProfileName').textContent = activeUser.name;
-        document.getElementById('userProfilePosition').textContent = activeUser.position;
-        document.getElementById('userAvatar').src = activeUser.photo;
-        openAuthModalBtn.textContent = "🔒 Logout";
-
-        editableFields.forEach(f => { f.disabled = false; f.classList.remove('opacity-60', 'cursor-not-allowed'); });
-        submitLogBtn.disabled = false;
-        submitLogBtn.textContent = "Save Inspection Log";
-        submitLogBtn.classList.add('bg-blue-700');
-        submitLogBtn.classList.remove('bg-slate-400', 'cursor-not-allowed');
-        openAddModalBtn.classList.remove('hidden');
-      } else {
-        document.getElementById('userProfileName').textContent = "Guest User";
-        document.getElementById('userProfilePosition').textContent = "Viewer (Read-Only)";
-        document.getElementById('userAvatar').src = "https://placehold.co/100x100?text=Guest";
-        openAuthModalBtn.textContent = "🔑 Login";
-
-        editableFields.forEach(f => { f.disabled = true; f.classList.add('opacity-60', 'cursor-not-allowed'); });
-        submitLogBtn.disabled = true;
-        submitLogBtn.textContent = "🔒 Log Changes Disabled (Read-Only)";
-        submitLogBtn.classList.add('bg-slate-400', 'cursor-not-allowed');
-        submitLogBtn.classList.remove('bg-blue-700');
-        openAddModalBtn.classList.add('hidden');
-      }
-    }
-
-    // Admin Console
-    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (document.getElementById('adminPassInput').value === ADMIN_PASSCODE) {
-        document.getElementById('adminLoginForm').classList.add('hidden');
-        document.getElementById('adminUserListContainer').classList.remove('hidden');
-        await renderAdminPendingList();
-      } else {
-        alert("Incorrect master admin password!");
-      }
-    });
-
-    async function renderAdminPendingList() {
-      await loadUsersFromSheet();
-      const pendingList = document.getElementById('pendingUserList');
-      pendingList.innerHTML = "";
-      const pending = registeredUsers.filter(u => (u["Status"] || u.status) === "Pending");
-
-      if (pending.length === 0) {
-        pendingList.innerHTML = `<p class="text-slate-400 italic py-2">No pending inspector profiles awaiting approval.</p>`;
-        return;
-      }
-
-      pending.forEach(u => {
-        const name = u["Full Name"] || u.name;
-        const pos = u["Position"] || u.position;
-        const photo = u["Photo URL"] || u.photo || "https://placehold.co/100x100?text=User";
-
-        const div = document.createElement('div');
-        div.className = "flex items-center justify-between p-2 bg-slate-50 border rounded-lg";
-        div.innerHTML = `
-          <div class="flex items-center gap-2">
-            <img src="${photo}" class="w-8 h-8 rounded-full object-cover">
-            <div>
-              <div class="font-bold text-slate-800">${name}</div>
-              <div class="text-[10px] text-slate-500">${pos}</div>
-            </div>
-          </div>
-          <button onclick="approveUserAccount('${name}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] px-2.5 py-1 rounded font-bold">Approve</button>
-        `;
-        pendingList.appendChild(div);
-      });
-    }
-
-    window.approveUserAccount = async function(userName) {
-      try {
-        await postData({ action: "approveUser", name: userName });
-        alert(`Approved inspector profile for ${userName}!`);
-        setTimeout(renderAdminPendingList, 1500);
-      } catch (err) {
-        alert("Failed to approve user.");
+        toggleModal('authModal', true);
       }
     };
 
-    // Standard Search Listeners
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase().trim();
-      const filtered = businesses.filter(b => 
-        (b.name && b.name.toLowerCase().includes(query)) || 
-        (b.owner && b.owner.toLowerCase().includes(query)) || 
-        (b.address && b.address.toLowerCase().includes(query)) || 
-        (b.status && b.status.toLowerCase().includes(query))
-      );
-      renderBusinessList(filtered);
-      if (filtered.length > 0 && markers[filtered[0].id]) { 
-        map.panTo([filtered[0].lat, filtered[0].lon]); 
-        markers[filtered[0].id].openPopup(); 
+    function updateUserRoleUI() {
+      const openAuthModalBtn = document.getElementById('openAuthModalBtn');
+      if (activeUser) {
+        document.getElementById('userProfileName').textContent = activeUser.name;
+        document.getElementById('userProfilePosition').textContent = activeUser.position;
+        openAuthModalBtn.textContent = "🔒 Logout";
+      } else {
+        document.getElementById('userProfileName').textContent = "Guest User";
+        document.getElementById('userProfilePosition').textContent = "Viewer (Read-Only)";
+        openAuthModalBtn.textContent = "🔑 Login";
+      }
+    }
+
+    // Map Setup
+    const map = L.map('map').setView(ISABEL_CENTER, 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+
+    // Form Submissions
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('loginNameInput').value.trim();
+      activeUser = { name: name, position: "Inspector" };
+      localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
+      updateUserRoleUI();
+      toggleModal('authModal', false);
+      alert(`Logged in as ${name}`);
+    });
+
+    document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const pass = document.getElementById('adminPassInput').value;
+      if (pass === ADMIN_PASSCODE) {
+        document.getElementById('adminLoginForm').classList.add('hidden');
+        document.getElementById('adminUserListContainer').classList.remove('hidden');
+      } else {
+        alert("Incorrect password!");
       }
     });
 
-    selectElem.addEventListener('change', (e) => {
-      const targetBiz = businesses.find(b => b.id === e.target.value);
-      if (targetBiz && markers[e.target.value]) { 
-        updateDetailCard(targetBiz); 
-        map.panTo([targetBiz.lat, targetBiz.lon]); 
-        markers[e.target.value].openPopup(); 
-      }
-    });
+    updateUserRoleUI();
   </script>
 </body>
 </html>
