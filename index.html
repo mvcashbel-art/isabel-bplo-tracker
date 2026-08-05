@@ -49,7 +49,6 @@
     <div class="flex justify-between items-center mb-3">
       <h2 class="text-sm font-bold text-slate-700">📝 Field Inspection Log</h2>
       <div class="flex gap-1">
-        <!-- 📊 EXPORT EXCEL BUTTON -->
         <button id="exportExcelBtn" onclick="exportToExcel()" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer flex items-center gap-1">
           📊 Excel
         </button>
@@ -219,9 +218,8 @@
           </select>
         </div>
 
-        <!-- 📷 HIGH-MB STOREFRONT PHOTO UPLOAD -->
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Storefront / Camera Photo (Any Size MB)</label>
+          <label class="block font-semibold text-slate-600 mb-1">Storefront / Camera Photo</label>
           <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
         </div>
 
@@ -340,7 +338,7 @@
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           businesses = [...customSaved, ...data.map(b => ({
-            id: b["Business ID"] || b.id || `BIZ-${Math.random().toString(36).substr(2, 4)}`,
+            id: b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4),
             name: b["Business Name"] || b.name,
             owner: b["Owner Name"] || b.owner,
             address: b["Barangay Address"] || b.address,
@@ -369,7 +367,7 @@
       }
 
       list.forEach(biz => {
-        selectElem.appendChild(new Option(`${biz.name} (${biz.status})`, biz.id));
+        selectElem.appendChild(new Option(biz.name + " (" + biz.status + ")", biz.id));
         addMarker(biz);
       });
       updateDetailCard(list[0]);
@@ -384,7 +382,7 @@
         fillOpacity: 0.95
       }).addTo(map);
 
-      marker.bindPopup(`<b>${biz.name}</b><br>Owner: ${biz.owner}<br>Status: ${biz.status}`);
+      marker.bindPopup("<b>" + biz.name + "</b><br>Owner: " + biz.owner + "<br>Status: " + biz.status);
       markers[biz.id] = marker;
     }
 
@@ -401,11 +399,10 @@
       document.getElementById('cardStatus').textContent = biz.status;
       document.getElementById('statusSelect').value = biz.status;
       document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
-      document.getElementById('getDirectionsBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
+      document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
-    // 📸 HEAVY MULTI-MB CAMERA PHOTO COMPRESSOR (PROMISE-BASED)
-    function processHighMbPhoto(file, maxDimension = 600, quality = 0.5) {
+    function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve("https://placehold.co/100x100?text=No+Photo");
 
@@ -416,6 +413,7 @@
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
+            const maxDimension = 500;
 
             if (width > height) {
               if (width > maxDimension) {
@@ -435,7 +433,7 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            resolve(canvas.toDataURL('image/jpeg', quality));
+            resolve(canvas.toDataURL('image/jpeg', 0.5));
           };
           img.onerror = () => resolve("https://placehold.co/100x100?text=No+Photo");
           img.src = e.target.result;
@@ -445,34 +443,21 @@
       });
     }
 
-    // 📊 EXPORT TO EXCEL / CSV FUNCTION
     window.exportToExcel = function() {
       if (businesses.length === 0) {
         alert("No business data available to export.");
         return;
       }
 
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Business ID,Business Name,Owner Name,Address,Permit Status,Latitude,Longitude,Photo Link\n";
-
+      let csv = "Business ID,Business Name,Owner Name,Address,Status,Latitude,Longitude\n";
       businesses.forEach(b => {
-        const row = [
-          `"${b.id}"`,
-          `"${b.name.replace(/"/g, '""')}"`,
-          `"${b.owner.replace(/"/g, '""')}"`,
-          `"${b.address.replace(/"/g, '""')}"`,
-          `"${b.status}"`,
-          `"${b.lat}"`,
-          `"${b.lon}"`,
-          `"${b.image.startsWith('data:') ? 'Local Image Attached' : b.image}"`
-        ].join(",");
-        csvContent += row + "\n";
+        csv += '"' + b.id + '","' + b.name + '","' + b.owner + '","' + b.address + '","' + b.status + '","' + b.lat + '","' + b.lon + '"\n';
       });
 
-      const encodedUri = encodeURI(csvContent);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `Isabel_BPLO_Businesses_${new Date().toISOString().slice(0,10)}.csv`);
+      link.href = URL.createObjectURL(blob);
+      link.download = "Isabel_BPLO_Businesses.csv";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -491,7 +476,7 @@
         localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
 
         renderBusinessList(businesses);
-        alert(`Deleted ${removed.name} successfully.`);
+        alert("Deleted " + removed.name + " successfully.");
       }
     };
 
@@ -529,26 +514,23 @@
       localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
       updateUserRoleUI();
       toggleModal('authModal', false);
-      alert(`Welcome back, ${name}! Inspector controls enabled.`);
+      alert("Welcome back, " + name + "! Inspector controls enabled.");
     });
 
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
-      const originalBtnText = submitBtn.textContent;
       submitBtn.disabled = true;
-      submitBtn.textContent = "Compressing Photo & Saving...";
+      submitBtn.textContent = "Saving...";
 
       try {
         const photoInput = document.getElementById('newBizPhoto');
         const file = photoInput.files[0];
-
-        // Compress large camera file
         const compressedImage = await processHighMbPhoto(file);
 
         const newBiz = {
-          id: `BIZ-${Math.floor(Math.random() * 9000 + 1000)}`,
+          id: "BIZ-" + Math.floor(Math.random() * 9000 + 1000),
           name: document.getElementById('newBizName').value.trim(),
           owner: document.getElementById('newBizOwner').value.trim(),
           address: document.getElementById('newBizAddress').value.trim(),
@@ -565,7 +547,7 @@
           customSaved.unshift(newBiz);
           localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
         } catch (storageErr) {
-          console.warn("Storage full notice:", storageErr);
+          console.warn("LocalStorage full notice:", storageErr);
         }
 
         renderBusinessList(businesses);
@@ -575,14 +557,13 @@
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
-        alert(`Successfully added and pinned "${newBiz.name}"!`);
+        alert("Successfully added " + newBiz.name + "!");
 
       } catch (err) {
-        alert("Failed to process image file. Please try again.");
-        console.error(err);
+        alert("Failed to process entry.");
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = originalBtnText;
+        submitBtn.textContent = "Save & Pin Business";
       }
     });
 
