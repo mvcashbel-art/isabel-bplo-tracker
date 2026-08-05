@@ -28,7 +28,7 @@
       <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
     </div>
 
-    <!-- Active Profile Bar -->
+    <!-- Active Account Profile Bar -->
     <div class="flex items-center justify-between bg-blue-800/80 p-2 rounded-lg border border-blue-600/50 text-xs">
       <div class="flex items-center gap-2">
         <img id="userAvatar" src="https://placehold.co/100x100?text=Guest" class="w-7 h-7 rounded-full object-cover border border-white/50">
@@ -48,9 +48,14 @@
   <section class="bg-white p-4 rounded-xl shadow-sm mb-4">
     <div class="flex justify-between items-center mb-3">
       <h2 class="text-sm font-bold text-slate-700">📝 Field Inspection Log</h2>
-      <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm cursor-pointer">
-        <span>➕</span> Add Business
-      </button>
+      <div class="flex gap-1">
+        <button id="clearDataBtn" onclick="clearAllCustomData()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer">
+          🗑️ Clear Local
+        </button>
+        <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm cursor-pointer">
+          <span>➕</span> Add Business
+        </button>
+      </div>
     </div>
     
     <!-- Search Bar -->
@@ -80,9 +85,14 @@
           </div>
         </div>
 
-        <a id="getDirectionsBtn" href="#" target="_blank" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-1.5 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-1.5 transition text-xs">
-          <span>🧭</span> Get Directions (Google Maps)
-        </a>
+        <div class="grid grid-cols-2 gap-2">
+          <a id="getDirectionsBtn" href="#" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-1.5 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px]">
+            <span>🧭</span> Directions
+          </a>
+          <button type="button" id="deleteCurrentBizBtn" onclick="deleteSelectedBusiness()" class="editable-field bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-1.5 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-[11px] opacity-60 cursor-not-allowed" disabled>
+            <span>🗑️</span> Delete Entry
+          </button>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-2">
@@ -224,7 +234,6 @@
     const ISABEL_CENTER = [10.9280, 124.4385];
     const ADMIN_PASSCODE = "admin123";
 
-    // Default Fallback Data if Google Sheet is empty or fails to respond
     const SAMPLE_BUSINESSES = [
       { id: "BIZ-001", name: "Isabel General Merchandise", owner: "Juan dela Cruz", address: "Brgy. Poblacion, Isabel", status: "Compliant", lat: 10.9280, lon: 124.4385, image: "https://placehold.co/100x100?text=Store+1" },
       { id: "BIZ-002", name: "Leyte Hardware & Supply", owner: "Pedro Penduko", address: "Brgy. Marvel, Isabel", status: "Expired", lat: 10.9295, lon: 124.4390, image: "https://placehold.co/100x100?text=Store+2" },
@@ -311,11 +320,12 @@
     }
 
     async function loadBusinesses() {
+      const customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
       try {
         const res = await fetch(GOOGLE_SCRIPT_URL);
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          businesses = data.map(b => ({
+          businesses = [...customSaved, ...data.map(b => ({
             id: b["Business ID"] || b.id || `BIZ-${Math.random().toString(36).substr(2, 4)}`,
             name: b["Business Name"] || b.name,
             owner: b["Owner Name"] || b.owner,
@@ -324,12 +334,12 @@
             lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
             lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
             image: b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo"
-          }));
+          }))];
         } else {
-          businesses = SAMPLE_BUSINESSES;
+          businesses = [...customSaved, ...SAMPLE_BUSINESSES];
         }
       } catch (err) {
-        businesses = SAMPLE_BUSINESSES;
+        businesses = [...customSaved, ...SAMPLE_BUSINESSES];
       }
       renderBusinessList(businesses);
     }
@@ -380,6 +390,31 @@
       document.getElementById('getDirectionsBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
     }
 
+    window.deleteSelectedBusiness = function() {
+      const selectedId = selectElem.value;
+      if (!selectedId) return;
+
+      const targetIndex = businesses.findIndex(b => b.id === selectedId);
+      if (targetIndex !== -1) {
+        const removed = businesses.splice(targetIndex, 1)[0];
+        
+        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+        customSaved = customSaved.filter(b => b.id !== selectedId);
+        localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+
+        renderBusinessList(businesses);
+        alert(`Deleted ${removed.name} successfully.`);
+      }
+    };
+
+    window.clearAllCustomData = function() {
+      if (confirm("Are you sure you want to clear all locally added businesses?")) {
+        localStorage.removeItem('isabel_custom_businesses');
+        loadBusinesses();
+        alert("All local business entries cleared.");
+      }
+    };
+
     window.detectGPS = function() {
       if ("geolocation" in navigator) {
         document.getElementById('gpsBtnText').textContent = "Locating GPS...";
@@ -398,7 +433,7 @@
       }
     };
 
-    // Form Event Listeners
+    // Form Submissions
     document.getElementById('loginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const name = document.getElementById('loginNameInput').value.trim();
@@ -423,21 +458,14 @@
       };
 
       businesses.unshift(newBiz);
+      const customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+      customSaved.unshift(newBiz);
+      localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+
       renderBusinessList(businesses);
       toggleModal('addBusinessModal', false);
       document.getElementById('addBusinessForm').reset();
       alert(`Added ${newBiz.name} successfully!`);
-    });
-
-    document.getElementById('inspectionForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const selectedId = selectElem.value;
-      const target = businesses.find(b => b.id === selectedId);
-      if (target) {
-        target.status = document.getElementById('statusSelect').value;
-        renderBusinessList(businesses);
-        alert(`Updated inspection record for ${target.name}`);
-      }
     });
 
     selectElem.addEventListener('change', (e) => {
