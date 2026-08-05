@@ -28,7 +28,7 @@
       <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
     </div>
 
-    <!-- Active Account Profile Bar -->
+    <!-- Active Profile Bar -->
     <div class="flex items-center justify-between bg-blue-800/80 p-2 rounded-lg border border-blue-600/50 text-xs">
       <div class="flex items-center gap-2">
         <img id="userAvatar" src="https://placehold.co/100x100?text=Guest" class="w-7 h-7 rounded-full object-cover border border-white/50">
@@ -213,6 +213,12 @@
             <option value="Pending Follow-Up">🔵 Pending Compliance</option>
             <option value="Compliant">🟢 Active Permit</option>
           </select>
+        </div>
+
+        <!-- 📷 STOREFRONT PHOTO UPLOAD -->
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Storefront / Citation Photo</label>
+          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
         </div>
 
         <button type="button" onclick="detectGPS()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-2 transition">
@@ -444,28 +450,44 @@
       alert(`Welcome back, ${name}! Inspector controls enabled.`);
     });
 
-    document.getElementById('addBusinessForm').addEventListener('submit', (e) => {
+    document.getElementById('addBusinessForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      const newBiz = {
-        id: `BIZ-${Math.floor(Math.random() * 9000 + 1000)}`,
-        name: document.getElementById('newBizName').value,
-        owner: document.getElementById('newBizOwner').value,
-        address: document.getElementById('newBizAddress').value,
-        status: document.getElementById('newBizStatus').value,
-        lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
-        lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
-        image: "https://placehold.co/100x100?text=Store+Photo"
+
+      const photoInput = document.getElementById('newBizPhoto');
+      const file = photoInput.files[0];
+
+      const processAndSave = (imageUrl) => {
+        const newBiz = {
+          id: `BIZ-${Math.floor(Math.random() * 9000 + 1000)}`,
+          name: document.getElementById('newBizName').value,
+          owner: document.getElementById('newBizOwner').value,
+          address: document.getElementById('newBizAddress').value,
+          status: document.getElementById('newBizStatus').value,
+          lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
+          lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
+          image: imageUrl
+        };
+
+        businesses.unshift(newBiz);
+        const customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+        customSaved.unshift(newBiz);
+        localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+
+        renderBusinessList(businesses);
+        toggleModal('addBusinessModal', false);
+        document.getElementById('addBusinessForm').reset();
+        alert(`Added ${newBiz.name} successfully!`);
       };
 
-      businesses.unshift(newBiz);
-      const customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-      customSaved.unshift(newBiz);
-      localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-
-      renderBusinessList(businesses);
-      toggleModal('addBusinessModal', false);
-      document.getElementById('addBusinessForm').reset();
-      alert(`Added ${newBiz.name} successfully!`);
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          processAndSave(evt.target.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        processAndSave("https://placehold.co/100x100?text=No+Photo");
+      }
     });
 
     selectElem.addEventListener('change', (e) => {
