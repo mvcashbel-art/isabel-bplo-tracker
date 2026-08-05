@@ -64,16 +64,21 @@
         </select>
       </div>
 
-      <!-- Business Details Box (Read-Only Preview with Storefront Image) -->
+      <!-- Business Details Box with Directions Button -->
       <div id="businessDetailCard" class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
         <div class="flex gap-3 items-center">
           <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" class="w-16 h-16 rounded-lg object-cover border border-slate-300 bg-slate-200" alt="Storefront">
-          <div class="space-y-0.5">
+          <div class="space-y-0.5 flex-1">
             <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
             <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
             <div><span class="font-semibold text-slate-500">Status:</span> <span id="cardStatus" class="font-bold text-slate-800">-</span></div>
           </div>
         </div>
+
+        <!-- 🧭 DIRECTON BUTTON -->
+        <a id="getDirectionsBtn" href="#" target="_blank" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-1.5 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-1.5 transition text-xs">
+          <span>🧭</span> Get Directions (Google Maps)
+        </a>
       </div>
 
       <div class="grid grid-cols-2 gap-2">
@@ -195,7 +200,6 @@
 
   <!-- App Script -->
   <script>
-    // YOUR GOOGLE APPS SCRIPT WEB APP ENDPOINT
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqmg3zLElIMfWoY45Jr7Hi5GTFnOIPATpzxIvol24g38V9_Icq5coDzb1_NGxFLOQx/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
 
@@ -219,7 +223,7 @@
     const selectElem = document.getElementById('businessSelect');
     const searchInput = document.getElementById('searchInput');
 
-    // 📡 Fetch Live Businesses from Google Sheet
+    // Fetch Live Businesses from Google Sheet
     async function loadBusinessesFromSheet() {
       try {
         const res = await fetch(GOOGLE_SCRIPT_URL);
@@ -237,7 +241,6 @@
             image: b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo"
           }));
 
-          // Clear existing markers & render fresh pins
           Object.values(markers).forEach(m => map.removeLayer(m));
           businesses.forEach(addMarker);
           renderBusinessList(businesses);
@@ -268,6 +271,8 @@
     }
 
     function addMarker(biz) {
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
+
       const marker = L.circleMarker([biz.lat, biz.lon], {
         radius: 9,
         fillColor: colorMap[biz.status] || '#6b7280',
@@ -278,11 +283,12 @@
       }).addTo(map);
 
       marker.bindPopup(`
-        <div style="font-family: sans-serif; min-width: 130px;">
+        <div style="font-family: sans-serif; min-width: 140px;">
           <img src="${biz.image || 'https://placehold.co/100x100?text=No+Photo'}" style="width:100%; height:70px; object-fit:cover; border-radius:6px; margin-bottom:5px;">
           <b style="font-size:12px;">${biz.name}</b><br>
           <span style="font-size:10px; color:#444;">Owner: ${biz.owner}</span><br>
-          <span style="font-size:10px;">Status: <b>${biz.status}</b></span>
+          <span style="font-size:10px;">Status: <b>${biz.status}</b></span><br>
+          <a href="${mapsUrl}" target="_blank" style="display:inline-block; margin-top:5px; background-color:#2563eb; color:#fff; text-decoration:none; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; width:100%; text-align:center;">🧭 Navigate Here</a>
         </div>
       `);
       markers[biz.id] = marker;
@@ -294,13 +300,18 @@
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
         document.getElementById('cardImage').src = 'https://placehold.co/100x100?text=No+Photo';
+        document.getElementById('getDirectionsBtn').href = '#';
         return;
       }
+
       document.getElementById('cardOwner').textContent = biz.owner;
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardStatus').textContent = biz.status;
       document.getElementById('statusSelect').value = biz.status;
       document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
+
+      // Set Google Maps navigation URL
+      document.getElementById('getDirectionsBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
     }
 
     // Initial Load
@@ -335,7 +346,7 @@
       }
     });
 
-    // 🔒 Role Permissions
+    // Role Permissions
     const userRoleSelect = document.getElementById('userRoleSelect');
     const editableFields = document.querySelectorAll('.editable-field');
     const submitLogBtn = document.getElementById('submitLogBtn');
@@ -367,7 +378,7 @@
     openAddModalBtn.addEventListener('click', () => modal.classList.replace('hidden', 'flex'));
     document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.replace('flex', 'hidden'));
 
-    // 📡 Automatic GPS Detection
+    // Automatic GPS Detection
     const getGpsBtn = document.getElementById('getGpsBtn');
     const gpsBtnText = document.getElementById('gpsBtnText');
     const latInput = document.getElementById('newBizLat');
@@ -398,7 +409,7 @@
       );
     });
 
-    // 📷 Photo Preview
+    // Photo Preview
     let uploadedImageBase64 = "";
     const photoInput = document.getElementById('newBizPhoto');
     const photoPreview = document.getElementById('photoPreview');
@@ -417,7 +428,7 @@
       }
     });
 
-    // 📤 Save New Business to Google Sheet
+    // Save New Business to Google Sheet
     document.getElementById('addBusinessForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -473,7 +484,7 @@
       }
     });
 
-    // 📤 Save Status Update to Google Sheet
+    // Save Status Update to Google Sheet
     const form = document.getElementById('inspectionForm');
     const historyContainer = document.getElementById('logHistory');
 
