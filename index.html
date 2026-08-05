@@ -164,7 +164,7 @@
         <p class="text-center text-[11px] text-slate-500 pt-1">Don't have an approved account? <a href="#" id="showRegisterBtn" class="text-blue-600 font-bold underline">Create Profile</a></p>
       </form>
 
-      <!-- Register View (Hidden by default) -->
+      <!-- Register View -->
       <form id="registerForm" class="space-y-2 text-xs hidden">
         <div>
           <label class="block font-semibold text-slate-600 mb-0.5">Full Name *</label>
@@ -203,7 +203,7 @@
         <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg">Access Admin Console</button>
       </form>
 
-      <!-- Pending Users Approval List (Hidden until admin logs in) -->
+      <!-- Pending Users List -->
       <div id="adminUserListContainer" class="hidden space-y-3">
         <h4 class="text-xs font-bold text-slate-700 border-b pb-1">Registered Profiles Awaiting Approval:</h4>
         <div id="pendingUserList" class="space-y-2 text-xs">
@@ -274,7 +274,8 @@
 
   <!-- App Script -->
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqmg3zLElIMfWoY45Jr7Hi5GTFnOIPATpzxIvol24g38V9_Icq5coDzb1_NGxFLOQx/exec";
+    // UPDATED WEB APP ENDPOINT URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwywMsuR-0B4QO7arxzX2XBOgkTQIToUg5JmfVy_lP8sZ-pIe8-7Uok6M31R3HOJlY/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const ADMIN_PASSCODE = "admin123";
 
@@ -393,7 +394,6 @@
 
     openAuthModalBtn.addEventListener('click', () => {
       if (activeUser) {
-        // Logout
         activeUser = null;
         updateUserRoleUI();
         alert("Logged out successfully.");
@@ -481,7 +481,6 @@
       }
     });
 
-    // Update UI based on active login state
     const editableFields = document.querySelectorAll('.editable-field');
     const submitLogBtn = document.getElementById('submitLogBtn');
     const openAddModalBtn = document.getElementById('openAddModalBtn');
@@ -580,7 +579,7 @@
       }
     };
 
-    // Standard Search & GPS Code
+    // Search & GPS
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.toLowerCase().trim();
       const filtered = businesses.filter(b => b.name.toLowerCase().includes(query) || b.owner.toLowerCase().includes(query) || b.address.toLowerCase().includes(query) || b.status.toLowerCase().includes(query));
