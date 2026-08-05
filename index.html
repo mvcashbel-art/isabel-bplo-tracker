@@ -18,7 +18,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-3 max-w-md mx-auto">
 
-  <!-- Header & Role Selector -->
+  <!-- Header & Protected Role Selector -->
   <header class="bg-blue-700 text-white p-4 rounded-xl shadow-md mb-4">
     <div class="flex justify-between items-center mb-3">
       <div>
@@ -28,13 +28,19 @@
       <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
     </div>
 
-    <!-- 🔑 Role Access Switcher -->
+    <!-- Active Account Profile Bar -->
     <div class="flex items-center justify-between bg-blue-800/80 p-2 rounded-lg border border-blue-600/50 text-xs">
-      <span class="font-medium text-blue-100">User Access Mode:</span>
-      <select id="userRoleSelect" class="bg-white text-slate-800 px-2 py-1 rounded font-semibold text-xs outline-none cursor-pointer">
-        <option value="inspector">👮 Inspector (Full Access)</option>
-        <option value="viewer">👁️ Viewer (Read Only)</option>
-      </select>
+      <div class="flex items-center gap-2">
+        <img id="userAvatar" src="https://placehold.co/100x100?text=Guest" class="w-7 h-7 rounded-full object-cover border border-white/50">
+        <div>
+          <div id="userProfileName" class="font-bold text-white leading-tight">Guest User</div>
+          <div id="userProfilePosition" class="text-[10px] text-blue-200 leading-tight">Viewer (Read-Only)</div>
+        </div>
+      </div>
+      <div class="flex gap-1">
+        <button id="openAdminModalBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold text-[10px] transition shadow-sm">👑 Admin</button>
+        <button id="openAuthModalBtn" class="bg-white text-slate-800 px-2 py-1 rounded font-bold text-[10px] hover:bg-slate-100 transition shadow-sm">🔑 Login</button>
+      </div>
     </div>
   </header>
 
@@ -42,7 +48,7 @@
   <section class="bg-white p-4 rounded-xl shadow-sm mb-4">
     <div class="flex justify-between items-center mb-3">
       <h2 class="text-sm font-bold text-slate-700">📝 Field Inspection Log</h2>
-      <button id="openAddModalBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm">
+      <button id="openAddModalBtn" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm">
         <span>➕</span> Add Business
       </button>
     </div>
@@ -60,7 +66,7 @@
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Select Establishment</label>
         <select id="businessSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-          <!-- Populated dynamically from Google Sheet -->
+          <!-- Populated dynamically -->
         </select>
       </div>
 
@@ -75,7 +81,6 @@
           </div>
         </div>
 
-        <!-- 🧭 DIRECTON BUTTON -->
         <a id="getDirectionsBtn" href="#" target="_blank" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-1.5 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-1.5 transition text-xs">
           <span>🧭</span> Get Directions (Google Maps)
         </a>
@@ -84,7 +89,7 @@
       <div class="grid grid-cols-2 gap-2">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Permit Status</label>
-          <select id="statusSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          <select id="statusSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none opacity-60 cursor-not-allowed" disabled>
             <option value="No Permit">🔴 No Permit</option>
             <option value="Expired">🟡 Expired / Overdue</option>
             <option value="Pending Follow-Up">🔵 Pending Compliance</option>
@@ -93,7 +98,7 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Action Taken</label>
-          <select id="outcomeSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          <select id="outcomeSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none opacity-60 cursor-not-allowed" disabled>
             <option value="Notice Served">Notice Served</option>
             <option value="Verified Active">Verified Active</option>
             <option value="Closed/Unlocated">Closed Storefront</option>
@@ -104,15 +109,15 @@
 
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Inspector Remarks / Barangay Notes</label>
-        <textarea id="inspectorNotes" rows="2" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Add compliance details or citation reference..."></textarea>
+        <textarea id="inspectorNotes" rows="2" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none opacity-60 cursor-not-allowed" disabled placeholder="Add compliance details or citation reference..."></textarea>
       </div>
 
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Upload Citation/Storefront Photo</label>
-        <input type="file" id="photoInput" accept="image/*" capture="environment" class="editable-field w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
+        <input type="file" id="photoInput" accept="image/*" capture="environment" class="editable-field w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 opacity-60 cursor-not-allowed" disabled>
       </div>
 
-      <button type="submit" id="submitLogBtn" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">Save Inspection Log</button>
+      <button type="submit" id="submitLogBtn" disabled class="w-full bg-slate-400 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm cursor-not-allowed">🔒 Log Changes Disabled (Read-Only)</button>
     </form>
   </section>
 
@@ -136,6 +141,77 @@
       <p class="text-slate-400 italic py-2">No inspections recorded today yet.</p>
     </div>
   </section>
+
+  <!-- 🔑 LOGIN & REGISTER MODAL -->
+  <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 id="authModalTitle" class="text-sm font-bold text-slate-800">🔑 Inspector Login</h3>
+        <button id="closeAuthModalBtn" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <!-- Login View -->
+      <form id="loginForm" class="space-y-2.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Full Name</label>
+          <input type="text" id="loginNameInput" required placeholder="e.g. Juan dela Cruz" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Password</label>
+          <input type="password" id="loginPasswordInput" required placeholder="••••••••" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">Login to Inspector Account</button>
+        <p class="text-center text-[11px] text-slate-500 pt-1">Don't have an approved account? <a href="#" id="showRegisterBtn" class="text-blue-600 font-bold underline">Create Profile</a></p>
+      </form>
+
+      <!-- Register View (Hidden by default) -->
+      <form id="registerForm" class="space-y-2 text-xs hidden">
+        <div>
+          <label class="block font-semibold text-slate-600 mb-0.5">Full Name *</label>
+          <input type="text" id="regNameInput" required placeholder="e.g. Maria Santos" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-0.5">Position / Designation *</label>
+          <input type="text" id="regPositionInput" required placeholder="e.g. Field Inspector II" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-0.5">Password *</label>
+          <input type="password" id="regPasswordInput" required placeholder="••••••••" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-0.5">Profile Photo</label>
+          <input type="file" id="regPhotoInput" accept="image/*" class="w-full text-[11px] text-slate-500">
+        </div>
+        <button type="submit" id="regSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm mt-1">Submit Account for Approval</button>
+        <p class="text-center text-[11px] text-slate-500 pt-1">Already registered? <a href="#" id="showLoginBtn" class="text-blue-600 font-bold underline">Back to Login</a></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- 👑 ADMIN APPROVAL PANEL MODAL -->
+  <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-800">👑 Admin User Approval Panel</h3>
+        <button id="closeAdminModalBtn" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <!-- Admin Passcode Gate -->
+      <form id="adminLoginForm" class="space-y-2 text-xs">
+        <p class="text-slate-500">Enter BPLO Master Admin password to manage accounts:</p>
+        <input type="password" id="adminPassInput" required placeholder="Default admin pass: admin123" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono">
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg">Access Admin Console</button>
+      </form>
+
+      <!-- Pending Users Approval List (Hidden until admin logs in) -->
+      <div id="adminUserListContainer" class="hidden space-y-3">
+        <h4 class="text-xs font-bold text-slate-700 border-b pb-1">Registered Profiles Awaiting Approval:</h4>
+        <div id="pendingUserList" class="space-y-2 text-xs">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ➕ ADD BUSINESS MODAL -->
   <div id="addBusinessModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50 overflow-y-auto">
@@ -171,7 +247,6 @@
           </select>
         </div>
 
-        <!-- Storefront Photo Upload -->
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Storefront Photo</label>
           <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700">
@@ -180,7 +255,6 @@
           </div>
         </div>
 
-        <!-- Automatic GPS Detection -->
         <div class="space-y-1">
           <label class="block font-semibold text-slate-600">Location Coordinates</label>
           <button type="button" id="getGpsBtn" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-2 transition">
@@ -202,8 +276,11 @@
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqmg3zLElIMfWoY45Jr7Hi5GTFnOIPATpzxIvol24g38V9_Icq5coDzb1_NGxFLOQx/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
+    const ADMIN_PASSCODE = "admin123";
 
     let businesses = [];
+    let registeredUsers = [];
+    let activeUser = null;
     const markers = {};
 
     const colorMap = {
@@ -213,22 +290,16 @@
       "Compliant": "#10b981"
     };
 
-    // Initialize Map
     const map = L.map('map').setView(ISABEL_CENTER, 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
     const selectElem = document.getElementById('businessSelect');
     const searchInput = document.getElementById('searchInput');
 
-    // Fetch Live Businesses from Google Sheet
     async function loadBusinessesFromSheet() {
       try {
         const res = await fetch(GOOGLE_SCRIPT_URL);
         const data = await res.json();
-        
         if (data && Array.isArray(data) && data.length > 0) {
           businesses = data.map(b => ({
             id: b["Business ID"] || b.id,
@@ -240,14 +311,19 @@
             lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
             image: b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo"
           }));
-
           Object.values(markers).forEach(m => map.removeLayer(m));
           businesses.forEach(addMarker);
           renderBusinessList(businesses);
         }
-      } catch (err) {
-        console.error("Error fetching Google Sheet data:", err);
-      }
+      } catch (err) { console.error("Error fetching Google Sheet data:", err); }
+    }
+
+    async function loadUsersFromSheet() {
+      try {
+        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getUsers`);
+        const data = await res.json();
+        if (Array.isArray(data)) registeredUsers = data;
+      } catch (err) { console.error("Error fetching users:", err); }
     }
 
     function renderBusinessList(filteredList) {
@@ -272,15 +348,7 @@
 
     function addMarker(biz) {
       const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
-
-      const marker = L.circleMarker([biz.lat, biz.lon], {
-        radius: 9,
-        fillColor: colorMap[biz.status] || '#6b7280',
-        color: '#ffffff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.95
-      }).addTo(map);
+      const marker = L.circleMarker([biz.lat, biz.lon], { radius: 9, fillColor: colorMap[biz.status] || '#6b7280', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.95 }).addTo(map);
 
       marker.bindPopup(`
         <div style="font-family: sans-serif; min-width: 140px;">
@@ -303,248 +371,270 @@
         document.getElementById('getDirectionsBtn').href = '#';
         return;
       }
-
       document.getElementById('cardOwner').textContent = biz.owner;
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardStatus').textContent = biz.status;
       document.getElementById('statusSelect').value = biz.status;
       document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
-
-      // Set Google Maps navigation URL
       document.getElementById('getDirectionsBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
     }
 
-    // Initial Load
     loadBusinessesFromSheet();
+    loadUsersFromSheet();
 
-    // Search Logic
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase().trim();
-      const filtered = businesses.filter(b => 
-        b.name.toLowerCase().includes(query) || 
-        b.owner.toLowerCase().includes(query) || 
-        b.address.toLowerCase().includes(query) ||
-        b.status.toLowerCase().includes(query)
-      );
+    // 🔒 AUTHENTICATION & USER PROFILE MANAGEMENT
+    const authModal = document.getElementById('authModal');
+    const openAuthModalBtn = document.getElementById('openAuthModalBtn');
+    const closeAuthModalBtn = document.getElementById('closeAuthModalBtn');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const showRegisterBtn = document.getElementById('showRegisterBtn');
+    const showLoginBtn = document.getElementById('showLoginBtn');
 
-      renderBusinessList(filtered);
-
-      if (filtered.length > 0) {
-        const topMatch = filtered[0];
-        map.panTo([topMatch.lat, topMatch.lon]);
-        markers[topMatch.id].openPopup();
-      }
-    });
-
-    selectElem.addEventListener('change', (e) => {
-      const bizId = e.target.value;
-      const targetBiz = businesses.find(b => b.id === bizId);
-      if (targetBiz && markers[bizId]) {
-        updateDetailCard(targetBiz);
-        map.panTo([targetBiz.lat, targetBiz.lon]);
-        markers[bizId].openPopup();
-      }
-    });
-
-    // Role Permissions
-    const userRoleSelect = document.getElementById('userRoleSelect');
-    const editableFields = document.querySelectorAll('.editable-field');
-    const submitLogBtn = document.getElementById('submitLogBtn');
-    const openAddModalBtn = document.getElementById('openAddModalBtn');
-
-    userRoleSelect.addEventListener('change', (e) => {
-      const isViewer = (e.target.value === 'viewer');
-      editableFields.forEach(field => {
-        field.disabled = isViewer;
-        if(isViewer) field.classList.add('opacity-60', 'cursor-not-allowed');
-        else field.classList.remove('opacity-60', 'cursor-not-allowed');
-      });
-
-      if(isViewer) {
-        submitLogBtn.disabled = true;
-        submitLogBtn.textContent = "🔒 Log Changes Disabled (Read-Only)";
-        submitLogBtn.classList.replace('bg-blue-700', 'bg-slate-400');
-        openAddModalBtn.classList.add('hidden');
+    openAuthModalBtn.addEventListener('click', () => {
+      if (activeUser) {
+        // Logout
+        activeUser = null;
+        updateUserRoleUI();
+        alert("Logged out successfully.");
       } else {
-        submitLogBtn.disabled = false;
-        submitLogBtn.textContent = "Save Inspection Log";
-        submitLogBtn.classList.replace('bg-slate-400', 'bg-blue-700');
-        openAddModalBtn.classList.remove('hidden');
+        authModal.classList.replace('hidden', 'flex');
       }
     });
 
-    // Modal & GPS/Photo Logic
-    const modal = document.getElementById('addBusinessModal');
-    openAddModalBtn.addEventListener('click', () => modal.classList.replace('hidden', 'flex'));
-    document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.replace('flex', 'hidden'));
+    closeAuthModalBtn.addEventListener('click', () => authModal.classList.replace('flex', 'hidden'));
+    showRegisterBtn.addEventListener('click', () => { loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); });
+    showLoginBtn.addEventListener('click', () => { registerForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
 
-    // Automatic GPS Detection
-    const getGpsBtn = document.getElementById('getGpsBtn');
-    const gpsBtnText = document.getElementById('gpsBtnText');
-    const latInput = document.getElementById('newBizLat');
-    const lonInput = document.getElementById('newBizLon');
+    // Login Handler
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('loginNameInput').value.trim();
+      const pass = document.getElementById('loginPasswordInput').value;
 
-    getGpsBtn.addEventListener('click', () => {
-      if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser.");
+      const found = registeredUsers.find(u => (u["Full Name"] || u.name).toLowerCase() === name.toLowerCase());
+
+      if (!found) {
+        alert("Account not found! Please register first.");
         return;
       }
 
-      gpsBtnText.textContent = "Detecting GPS Location...";
-      getGpsBtn.classList.add("opacity-75");
+      if ((found["Password"] || found.password) !== pass) {
+        alert("Incorrect password!");
+        return;
+      }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          latInput.value = position.coords.latitude.toFixed(6);
-          lonInput.value = position.coords.longitude.toFixed(6);
-          gpsBtnText.textContent = "✅ GPS Location Locked!";
-          getGpsBtn.classList.replace("bg-blue-50", "bg-emerald-50");
-          getGpsBtn.classList.replace("text-blue-700", "text-emerald-700");
-        },
-        (error) => {
-          gpsBtnText.textContent = "Detect Current GPS Location";
-          alert("Error obtaining GPS position. Please allow Location permissions on your device.");
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
+      if ((found["Status"] || found.status) !== "Approved") {
+        alert(`Account status is '${found["Status"] || found.status}'. Please wait for BPLO Admin approval.`);
+        return;
+      }
+
+      activeUser = {
+        name: found["Full Name"] || found.name,
+        position: found["Position"] || found.position,
+        photo: found["Photo URL"] || found.photo || "https://placehold.co/100x100?text=User"
+      };
+
+      updateUserRoleUI();
+      authModal.classList.replace('flex', 'hidden');
+      alert(`Welcome back, ${activeUser.name}! Inspector features unlocked.`);
     });
 
-    // Photo Preview
-    let uploadedImageBase64 = "";
-    const photoInput = document.getElementById('newBizPhoto');
-    const photoPreview = document.getElementById('photoPreview');
-    const previewContainer = document.getElementById('photoPreviewContainer');
-
-    photoInput.addEventListener('change', (e) => {
+    // Profile Registration Handler
+    let regPhotoBase64 = "";
+    document.getElementById('regPhotoInput').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = function(evt) {
-          uploadedImageBase64 = evt.target.result;
-          photoPreview.src = uploadedImageBase64;
-          previewContainer.classList.remove('hidden');
-        };
+        reader.onload = (evt) => { regPhotoBase64 = evt.target.result; };
         reader.readAsDataURL(file);
       }
     });
 
-    // Save New Business to Google Sheet
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const regBtn = document.getElementById('regSubmitBtn');
+      regBtn.disabled = true;
+      regBtn.textContent = "Registering...";
+
+      const newAccount = {
+        action: "registerUser",
+        name: document.getElementById('regNameInput').value.trim(),
+        position: document.getElementById('regPositionInput').value.trim(),
+        password: document.getElementById('regPasswordInput').value,
+        photo: regPhotoBase64 || "https://placehold.co/100x100?text=User"
+      };
+
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify(newAccount) });
+        alert("Account request submitted! Please notify BPLO Admin to approve your profile.");
+        registerForm.reset();
+        regPhotoBase64 = "";
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        await loadUsersFromSheet();
+      } catch (err) {
+        alert("Registration failed. Please try again.");
+      } finally {
+        regBtn.disabled = false;
+        regBtn.textContent = "Submit Account for Approval";
+      }
+    });
+
+    // Update UI based on active login state
+    const editableFields = document.querySelectorAll('.editable-field');
+    const submitLogBtn = document.getElementById('submitLogBtn');
+    const openAddModalBtn = document.getElementById('openAddModalBtn');
+
+    function updateUserRoleUI() {
+      if (activeUser) {
+        document.getElementById('userProfileName').textContent = activeUser.name;
+        document.getElementById('userProfilePosition').textContent = activeUser.position;
+        document.getElementById('userAvatar').src = activeUser.photo;
+        openAuthModalBtn.textContent = "🔒 Logout";
+
+        editableFields.forEach(f => { f.disabled = false; f.classList.remove('opacity-60', 'cursor-not-allowed'); });
+        submitLogBtn.disabled = false;
+        submitLogBtn.textContent = "Save Inspection Log";
+        submitLogBtn.classList.replace('bg-slate-400', 'bg-blue-700');
+        submitLogBtn.classList.remove('cursor-not-allowed');
+        openAddModalBtn.classList.remove('hidden');
+      } else {
+        document.getElementById('userProfileName').textContent = "Guest User";
+        document.getElementById('userProfilePosition').textContent = "Viewer (Read-Only)";
+        document.getElementById('userAvatar').src = "https://placehold.co/100x100?text=Guest";
+        openAuthModalBtn.textContent = "🔑 Login";
+
+        editableFields.forEach(f => { f.disabled = true; f.classList.add('opacity-60', 'cursor-not-allowed'); });
+        submitLogBtn.disabled = true;
+        submitLogBtn.textContent = "🔒 Log Changes Disabled (Read-Only)";
+        submitLogBtn.classList.replace('bg-blue-700', 'bg-slate-400');
+        submitLogBtn.classList.add('cursor-not-allowed');
+        openAddModalBtn.classList.add('hidden');
+      }
+    }
+
+    // 👑 ADMIN APPROVAL PANEL LOGIC
+    const adminModal = document.getElementById('adminModal');
+    const openAdminModalBtn = document.getElementById('openAdminModalBtn');
+    const closeAdminModalBtn = document.getElementById('closeAdminModalBtn');
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    const adminUserListContainer = document.getElementById('adminUserListContainer');
+    const pendingUserList = document.getElementById('pendingUserList');
+
+    openAdminModalBtn.addEventListener('click', () => adminModal.classList.replace('hidden', 'flex'));
+    closeAdminModalBtn.addEventListener('click', () => adminModal.classList.replace('flex', 'hidden'));
+
+    adminLoginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (document.getElementById('adminPassInput').value === ADMIN_PASSCODE) {
+        adminLoginForm.classList.add('hidden');
+        adminUserListContainer.classList.remove('hidden');
+        await renderAdminPendingList();
+      } else {
+        alert("Incorrect master admin password!");
+      }
+    });
+
+    async function renderAdminPendingList() {
+      await loadUsersFromSheet();
+      pendingUserList.innerHTML = "";
+      const pending = registeredUsers.filter(u => (u["Status"] || u.status) === "Pending");
+
+      if (pending.length === 0) {
+        pendingUserList.innerHTML = `<p class="text-slate-400 italic py-2">No pending inspector profiles awaiting approval.</p>`;
+        return;
+      }
+
+      pending.forEach(u => {
+        const name = u["Full Name"] || u.name;
+        const pos = u["Position"] || u.position;
+        const photo = u["Photo URL"] || u.photo || "https://placehold.co/100x100?text=User";
+
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between p-2 bg-slate-50 border rounded-lg";
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <img src="${photo}" class="w-8 h-8 rounded-full object-cover">
+            <div>
+              <div class="font-bold text-slate-800">${name}</div>
+              <div class="text-[10px] text-slate-500">${pos}</div>
+            </div>
+          </div>
+          <button onclick="approveUserAccount('${name}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] px-2.5 py-1 rounded font-bold">Approve</button>
+        `;
+        pendingUserList.appendChild(div);
+      });
+    }
+
+    window.approveUserAccount = async function(userName) {
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "approveUser", name: userName })
+        });
+        alert(`Approved inspector profile for ${userName}!`);
+        await renderAdminPendingList();
+      } catch (err) {
+        alert("Failed to approve user.");
+      }
+    };
+
+    // Standard Search & GPS Code
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      const filtered = businesses.filter(b => b.name.toLowerCase().includes(query) || b.owner.toLowerCase().includes(query) || b.address.toLowerCase().includes(query) || b.status.toLowerCase().includes(query));
+      renderBusinessList(filtered);
+      if (filtered.length > 0) { map.panTo([filtered[0].lat, filtered[0].lon]); markers[filtered[0].id].openPopup(); }
+    });
+
+    selectElem.addEventListener('change', (e) => {
+      const targetBiz = businesses.find(b => b.id === e.target.value);
+      if (targetBiz && markers[e.target.value]) { updateDetailCard(targetBiz); map.panTo([targetBiz.lat, targetBiz.lon]); markers[e.target.value].openPopup(); }
+    });
+
+    const modal = document.getElementById('addBusinessModal');
+    openAddModalBtn.addEventListener('click', () => modal.classList.replace('hidden', 'flex'));
+    document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.replace('flex', 'hidden'));
+
+    const getGpsBtn = document.getElementById('getGpsBtn');
+    getGpsBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) return alert("Geolocation not supported.");
+      document.getElementById('gpsBtnText').textContent = "Detecting GPS...";
+      navigator.geolocation.getCurrentPosition((pos) => {
+        document.getElementById('newBizLat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('newBizLon').value = pos.coords.longitude.toFixed(6);
+        document.getElementById('gpsBtnText').textContent = "✅ GPS Location Locked!";
+      }, () => alert("GPS failed."), { enableHighAccuracy: true });
+    });
+
     document.getElementById('addBusinessForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
       const saveBtn = document.getElementById('saveNewBizBtn');
       saveBtn.disabled = true;
-      saveBtn.textContent = "Saving to Google Sheet...";
-
-      const newLat = parseFloat(latInput.value) || ISABEL_CENTER[0];
-      const newLon = parseFloat(lonInput.value) || ISABEL_CENTER[1];
-      const newId = `BIZ-${Date.now().toString().slice(-4)}`;
+      saveBtn.textContent = "Saving...";
 
       const newBiz = {
         action: "addBusiness",
-        id: newId,
+        id: `BIZ-${Date.now().toString().slice(-4)}`,
         name: document.getElementById('newBizName').value,
         owner: document.getElementById('newBizOwner').value,
         address: document.getElementById('newBizAddress').value,
         status: document.getElementById('newBizStatus').value,
-        lat: newLat,
-        lon: newLon,
-        image: uploadedImageBase64 || "https://placehold.co/100x100?text=No+Photo"
+        lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
+        lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
+        image: "https://placehold.co/100x100?text=No+Photo"
       };
 
       try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify(newBiz)
-        });
-
+        await fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify(newBiz) });
         businesses.push(newBiz);
         addMarker(newBiz);
         renderBusinessList(businesses);
-
-        selectElem.value = newId;
-        updateDetailCard(newBiz);
-        map.panTo([newLat, newLon]);
-        markers[newId].openPopup();
-
-        e.target.reset();
-        uploadedImageBase64 = "";
-        previewContainer.classList.add('hidden');
-        gpsBtnText.textContent = "Detect Current GPS Location";
-        getGpsBtn.classList.replace("bg-emerald-50", "bg-blue-50");
-        getGpsBtn.classList.replace("text-emerald-700", "text-blue-700");
         modal.classList.replace('flex', 'hidden');
-
-        alert(`Successfully saved ${newBiz.name} to Google Sheets and pinned on map!`);
-      } catch (err) {
-        alert("Failed to save to Google Sheet. Check internet connection.");
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = "Save & Pin Business";
-      }
-    });
-
-    // Save Status Update to Google Sheet
-    const form = document.getElementById('inspectionForm');
-    const historyContainer = document.getElementById('logHistory');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const bizId = selectElem.value;
-      const selectedBiz = businesses.find(b => b.id === bizId);
-      if (!selectedBiz) return;
-
-      const newStatus = document.getElementById('statusSelect').value;
-      const outcome = document.getElementById('outcomeSelect').value;
-      const notes = document.getElementById('inspectorNotes').value;
-      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      submitLogBtn.disabled = true;
-      submitLogBtn.textContent = "Updating Google Sheet...";
-
-      try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({ action: "updateStatus", id: bizId, status: newStatus })
-        });
-
-        selectedBiz.status = newStatus;
-        updateDetailCard(selectedBiz);
-
-        if (markers[bizId]) {
-          markers[bizId].setStyle({ fillColor: colorMap[newStatus] });
-        }
-
-        if (historyContainer.querySelector('p')) {
-          historyContainer.innerHTML = '';
-        }
-
-        const logItem = document.createElement('div');
-        logItem.className = 'py-2 flex flex-col gap-1';
-        logItem.innerHTML = `
-          <div class="flex justify-between items-center font-semibold">
-            <span class="text-slate-800">${selectedBiz.name}</span>
-            <span class="text-[10px] text-slate-400">${timestamp}</span>
-          </div>
-          <div class="flex gap-2 items-center">
-            <span class="px-1.5 py-0.5 rounded text-[10px] text-white" style="background-color: ${colorMap[newStatus]}">${newStatus}</span>
-            <span class="text-slate-600">${outcome}</span>
-          </div>
-          ${notes ? `<p class="text-slate-500 italic text-[11px]">"${notes}"</p>` : ''}
-        `;
-
-        historyContainer.prepend(logItem);
-
-        document.getElementById('inspectorNotes').value = '';
-        document.getElementById('photoInput').value = '';
-        alert(`Inspection log updated in Google Sheets for ${selectedBiz.name}!`);
-      } catch (err) {
-        alert("Failed to update status in Google Sheet.");
-      } finally {
-        submitLogBtn.disabled = false;
-        submitLogBtn.textContent = "Save Inspection Log";
-      }
+        alert(`Saved ${newBiz.name}!`);
+      } catch (err) { alert("Failed to save."); }
+      finally { saveBtn.disabled = false; saveBtn.textContent = "Save & Pin Business"; }
     });
   </script>
 </body>
