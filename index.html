@@ -142,7 +142,7 @@
   </section>
 
   <!-- 🔑 LOGIN & REGISTER MODAL -->
-  <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
       <div class="flex justify-between items-center border-b pb-2">
         <h3 id="authModalTitle" class="text-sm font-bold text-slate-800">🔑 Inspector Login</h3>
@@ -186,7 +186,7 @@
   </div>
 
   <!-- 👑 ADMIN APPROVAL PANEL MODAL -->
-  <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
         <h3 class="text-sm font-bold text-slate-800">👑 Admin User Approval Panel</h3>
@@ -205,62 +205,6 @@
           <!-- Populated dynamically -->
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- ➕ ADD BUSINESS MODAL -->
-  <div id="addBusinessModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50 overflow-y-auto">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">➕ Add New Business</h3>
-        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-      </div>
-      
-      <form id="addBusinessForm" class="space-y-2.5 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Business Name *</label>
-          <input type="text" id="newBizName" required placeholder="e.g. Isabel Snack Shack" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Owner Name *</label>
-          <input type="text" id="newBizOwner" required placeholder="e.g. Juan dela Cruz" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Barangay / Address *</label>
-          <input type="text" id="newBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Initial Permit Status</label>
-          <select id="newBizStatus" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-            <option value="No Permit">🔴 No Permit</option>
-            <option value="Expired">🟡 Expired</option>
-            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
-            <option value="Compliant">🟢 Active Permit</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Storefront Photo</label>
-          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700">
-        </div>
-
-        <div class="space-y-1">
-          <label class="block font-semibold text-slate-600">Location Coordinates</label>
-          <button type="button" id="getGpsBtn" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-2 transition">
-            <span>📡</span> <span id="gpsBtnText">Detect Current GPS Location</span>
-          </button>
-          
-          <div class="grid grid-cols-2 gap-2 mt-1">
-            <input type="number" step="any" id="newBizLat" placeholder="Latitude" class="p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-[11px]" readonly>
-            <input type="number" step="any" id="newBizLon" placeholder="Longitude" class="p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-[11px]" readonly>
-          </div>
-        </div>
-
-        <button type="submit" id="saveNewBizBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Save & Pin Business</button>
-      </form>
     </div>
   </div>
 
@@ -377,12 +321,13 @@
     loadUsersFromSheet();
     updateUserRoleUI();
 
-    // Auth & UI handling
+    // Modals visibility toggles
     const authModal = document.getElementById('authModal');
+    const adminModal = document.getElementById('adminModal');
     const openAuthModalBtn = document.getElementById('openAuthModalBtn');
+    const openAdminModalBtn = document.getElementById('openAdminModalBtn');
     const closeAuthModalBtn = document.getElementById('closeAuthModalBtn');
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
+    const closeAdminModalBtn = document.getElementById('closeAdminModalBtn');
 
     openAuthModalBtn.addEventListener('click', () => {
       if (activeUser) {
@@ -391,13 +336,36 @@
         updateUserRoleUI();
         alert("Logged out successfully.");
       } else {
-        authModal.classList.replace('hidden', 'flex');
+        authModal.classList.remove('hidden');
       }
     });
 
-    closeAuthModalBtn.addEventListener('click', () => authModal.classList.replace('flex', 'hidden'));
-    document.getElementById('showRegisterBtn').addEventListener('click', () => { loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); });
-    document.getElementById('showLoginBtn').addEventListener('click', () => { registerForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
+    closeAuthModalBtn.addEventListener('click', () => authModal.classList.add('hidden'));
+
+    openAdminModalBtn.addEventListener('click', () => {
+      document.getElementById('adminLoginForm').classList.remove('hidden');
+      document.getElementById('adminUserListContainer').classList.add('hidden');
+      document.getElementById('adminPassInput').value = '';
+      adminModal.classList.remove('hidden');
+    });
+
+    closeAdminModalBtn.addEventListener('click', () => adminModal.classList.add('hidden'));
+
+    // Auth Forms Navigation
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    document.getElementById('showRegisterBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      loginForm.classList.add('hidden');
+      registerForm.classList.remove('hidden');
+    });
+
+    document.getElementById('showLoginBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      registerForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+    });
 
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -405,7 +373,7 @@
       const name = document.getElementById('loginNameInput').value.trim();
       const pass = document.getElementById('loginPasswordInput').value;
 
-      const found = registeredUsers.find(u => (u["Full Name"] || u.name).toLowerCase() === name.toLowerCase());
+      const found = registeredUsers.find(u => (u["Full Name"] || u.name || "").toLowerCase() === name.toLowerCase());
 
       if (!found) return alert("Account not found! Please register first.");
       if ((found["Password"] || found.password) !== pass) return alert("Incorrect password!");
@@ -419,7 +387,7 @@
 
       localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
       updateUserRoleUI();
-      authModal.classList.replace('flex', 'hidden');
+      authModal.classList.add('hidden');
       alert(`Welcome back, ${activeUser.name}! Inspector features unlocked.`);
     });
 
@@ -484,11 +452,7 @@
       }
     }
 
-    // Admin Panel Logic
-    const adminModal = document.getElementById('adminModal');
-    document.getElementById('openAdminModalBtn').addEventListener('click', () => adminModal.classList.replace('hidden', 'flex'));
-    document.getElementById('closeAdminModalBtn').addEventListener('click', () => adminModal.classList.replace('flex', 'hidden'));
-
+    // Admin Panel Actions
     document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       if (document.getElementById('adminPassInput').value === ADMIN_PASSCODE) {
@@ -547,7 +511,7 @@
       const query = e.target.value.toLowerCase().trim();
       const filtered = businesses.filter(b => b.name.toLowerCase().includes(query) || b.owner.toLowerCase().includes(query) || b.address.toLowerCase().includes(query) || b.status.toLowerCase().includes(query));
       renderBusinessList(filtered);
-      if (filtered.length > 0) { map.panTo([filtered[0].lat, filtered[0].lon]); markers[filtered[0].id].openPopup(); }
+      if (filtered.length > 0 && markers[filtered[0].id]) { map.panTo([filtered[0].lat, filtered[0].lon]); markers[filtered[0].id].openPopup(); }
     });
 
     selectElem.addEventListener('change', (e) => {
