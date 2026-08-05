@@ -27,20 +27,7 @@
     <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
   </header>
 
-  <!-- Interactive Map Section -->
-  <section class="bg-white p-3 rounded-xl shadow-sm mb-4">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-sm font-bold text-slate-700">📍 Isabel Municipal Map</h2>
-      <div class="flex gap-2 text-[10px]">
-        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> No Permit</span>
-        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Expired</span>
-        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
-      </div>
-    </div>
-    <div id="map"></div>
-  </section>
-
-  <!-- Field Inspection Log & Search -->
+  <!-- Field Inspection Log & Search (MOVED TO TOP) -->
   <section class="bg-white p-4 rounded-xl shadow-sm mb-4">
     <h2 class="text-sm font-bold text-slate-700 mb-3">📝 Field Inspection Log</h2>
     
@@ -94,6 +81,19 @@
 
       <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">Save Inspection Log</button>
     </form>
+  </section>
+
+  <!-- Interactive Map Section (MOVED TO BOTTOM) -->
+  <section class="bg-white p-3 rounded-xl shadow-sm mb-4">
+    <div class="flex justify-between items-center mb-2">
+      <h2 class="text-sm font-bold text-slate-700">📍 Isabel Municipal Map</h2>
+      <div class="flex gap-2 text-[10px]">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> No Permit</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Expired</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
+      </div>
+    </div>
+    <div id="map"></div>
   </section>
 
   <!-- Inspection History -->
@@ -186,7 +186,6 @@
 
       renderBusinessList(filtered);
 
-      // Pan map to first matching business
       if (filtered.length > 0) {
         const topMatch = filtered[0];
         map.panTo([topMatch.lat, topMatch.lon]);
