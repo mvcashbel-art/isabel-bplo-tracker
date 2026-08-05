@@ -60,7 +60,7 @@
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Select Establishment</label>
         <select id="businessSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-          <!-- Populated dynamically -->
+          <!-- Populated dynamically from Google Sheet -->
         </select>
       </div>
 
@@ -132,7 +132,7 @@
     </div>
   </section>
 
-  <!-- ➕ ADD BUSINESS MODAL WITH GPS & PHOTO UPLOAD -->
+  <!-- ➕ ADD BUSINESS MODAL -->
   <div id="addBusinessModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50 overflow-y-auto">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
@@ -166,7 +166,7 @@
           </select>
         </div>
 
-        <!-- 📷 Photo Upload with Camera & Preview -->
+        <!-- Storefront Photo Upload -->
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Storefront Photo</label>
           <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700">
@@ -175,7 +175,7 @@
           </div>
         </div>
 
-        <!-- 📍 Automatic GPS Location Button -->
+        <!-- Automatic GPS Detection -->
         <div class="space-y-1">
           <label class="block font-semibold text-slate-600">Location Coordinates</label>
           <button type="button" id="getGpsBtn" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-2 transition">
@@ -188,20 +188,19 @@
           </div>
         </div>
 
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Save & Pin Business</button>
+        <button type="submit" id="saveNewBizBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Save & Pin Business</button>
       </form>
     </div>
   </div>
 
   <!-- App Script -->
   <script>
+    // YOUR GOOGLE APPS SCRIPT WEB APP ENDPOINT
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqmg3zLElIMfWoY45Jr7Hi5GTFnOIPATpzxIvol24g38V9_Icq5coDzb1_NGxFLOQx/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
 
-    let businesses = [
-      { id: 'BIZ-101', name: "Isabel Commercial Store", owner: "Juan Dela Cruz", status: "No Permit", lat: 10.9285, lon: 124.4380, address: "Poblacion, Isabel, Leyte", image: "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=150" },
-      { id: 'BIZ-102', name: "Isabel Bay Mart", owner: "Maria Santos", status: "Expired", lat: 10.9272, lon: 124.4395, address: "Near Port, Isabel", image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=150" },
-      { id: 'BIZ-103', name: "Leyte Hardware & Supply", owner: "Pedro Penduko", status: "Compliant", lat: 10.9295, lon: 124.4370, address: "Barangay Marvel, Isabel", image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150" }
-    ];
+    let businesses = [];
+    const markers = {};
 
     const colorMap = {
       "No Permit": "#ef4444",
@@ -217,9 +216,36 @@
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    const markers = {};
     const selectElem = document.getElementById('businessSelect');
     const searchInput = document.getElementById('searchInput');
+
+    // 📡 Fetch Live Businesses from Google Sheet
+    async function loadBusinessesFromSheet() {
+      try {
+        const res = await fetch(GOOGLE_SCRIPT_URL);
+        const data = await res.json();
+        
+        if (data && Array.isArray(data) && data.length > 0) {
+          businesses = data.map(b => ({
+            id: b["Business ID"] || b.id,
+            name: b["Business Name"] || b.name,
+            owner: b["Owner Name"] || b.owner,
+            address: b["Barangay Address"] || b.address,
+            status: b["Permit Status"] || b.status,
+            lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
+            lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
+            image: b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo"
+          }));
+
+          // Clear existing markers & render fresh pins
+          Object.values(markers).forEach(m => map.removeLayer(m));
+          businesses.forEach(addMarker);
+          renderBusinessList(businesses);
+        }
+      } catch (err) {
+        console.error("Error fetching Google Sheet data:", err);
+      }
+    }
 
     function renderBusinessList(filteredList) {
       selectElem.innerHTML = '';
@@ -277,8 +303,8 @@
       document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
     }
 
-    businesses.forEach(addMarker);
-    renderBusinessList(businesses);
+    // Initial Load
+    loadBusinessesFromSheet();
 
     // Search Logic
     searchInput.addEventListener('input', (e) => {
@@ -366,13 +392,13 @@
         },
         (error) => {
           gpsBtnText.textContent = "Detect Current GPS Location";
-          alert("Error obtaining GPS position. Please ensure Location permissions are allowed on your browser/phone.");
+          alert("Error obtaining GPS position. Please allow Location permissions on your device.");
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     });
 
-    // 📷 Photo File Upload Live Preview (Base64)
+    // 📷 Photo Preview
     let uploadedImageBase64 = "";
     const photoInput = document.getElementById('newBizPhoto');
     const photoPreview = document.getElementById('photoPreview');
@@ -391,15 +417,20 @@
       }
     });
 
-    // Save New Business
-    document.getElementById('addBusinessForm').addEventListener('submit', (e) => {
+    // 📤 Save New Business to Google Sheet
+    document.getElementById('addBusinessForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      const saveBtn = document.getElementById('saveNewBizBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving to Google Sheet...";
+
       const newLat = parseFloat(latInput.value) || ISABEL_CENTER[0];
       const newLon = parseFloat(lonInput.value) || ISABEL_CENTER[1];
       const newId = `BIZ-${Date.now().toString().slice(-4)}`;
 
       const newBiz = {
+        action: "addBusiness",
         id: newId,
         name: document.getElementById('newBizName').value,
         owner: document.getElementById('newBizOwner').value,
@@ -410,33 +441,43 @@
         image: uploadedImageBase64 || "https://placehold.co/100x100?text=No+Photo"
       };
 
-      businesses.push(newBiz);
-      addMarker(newBiz);
-      renderBusinessList(businesses);
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(newBiz)
+        });
 
-      // Focus on newly added item
-      selectElem.value = newId;
-      updateDetailCard(newBiz);
-      map.panTo([newLat, newLon]);
-      markers[newId].openPopup();
+        businesses.push(newBiz);
+        addMarker(newBiz);
+        renderBusinessList(businesses);
 
-      // Reset modal inputs
-      e.target.reset();
-      uploadedImageBase64 = "";
-      previewContainer.classList.add('hidden');
-      gpsBtnText.textContent = "Detect Current GPS Location";
-      getGpsBtn.classList.replace("bg-emerald-50", "bg-blue-50");
-      getGpsBtn.classList.replace("text-emerald-700", "text-blue-700");
-      modal.classList.replace('flex', 'hidden');
+        selectElem.value = newId;
+        updateDetailCard(newBiz);
+        map.panTo([newLat, newLon]);
+        markers[newId].openPopup();
 
-      alert(`Successfully added ${newBiz.name} with GPS position and storefront photo!`);
+        e.target.reset();
+        uploadedImageBase64 = "";
+        previewContainer.classList.add('hidden');
+        gpsBtnText.textContent = "Detect Current GPS Location";
+        getGpsBtn.classList.replace("bg-emerald-50", "bg-blue-50");
+        getGpsBtn.classList.replace("text-emerald-700", "text-blue-700");
+        modal.classList.replace('flex', 'hidden');
+
+        alert(`Successfully saved ${newBiz.name} to Google Sheets and pinned on map!`);
+      } catch (err) {
+        alert("Failed to save to Google Sheet. Check internet connection.");
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save & Pin Business";
+      }
     });
 
-    // Inspection Form Submission
+    // 📤 Save Status Update to Google Sheet
     const form = document.getElementById('inspectionForm');
     const historyContainer = document.getElementById('logHistory');
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const bizId = selectElem.value;
@@ -448,36 +489,51 @@
       const notes = document.getElementById('inspectorNotes').value;
       const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      selectedBiz.status = newStatus;
-      updateDetailCard(selectedBiz);
+      submitLogBtn.disabled = true;
+      submitLogBtn.textContent = "Updating Google Sheet...";
 
-      if (markers[bizId]) {
-        markers[bizId].setStyle({ fillColor: colorMap[newStatus] });
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "updateStatus", id: bizId, status: newStatus })
+        });
+
+        selectedBiz.status = newStatus;
+        updateDetailCard(selectedBiz);
+
+        if (markers[bizId]) {
+          markers[bizId].setStyle({ fillColor: colorMap[newStatus] });
+        }
+
+        if (historyContainer.querySelector('p')) {
+          historyContainer.innerHTML = '';
+        }
+
+        const logItem = document.createElement('div');
+        logItem.className = 'py-2 flex flex-col gap-1';
+        logItem.innerHTML = `
+          <div class="flex justify-between items-center font-semibold">
+            <span class="text-slate-800">${selectedBiz.name}</span>
+            <span class="text-[10px] text-slate-400">${timestamp}</span>
+          </div>
+          <div class="flex gap-2 items-center">
+            <span class="px-1.5 py-0.5 rounded text-[10px] text-white" style="background-color: ${colorMap[newStatus]}">${newStatus}</span>
+            <span class="text-slate-600">${outcome}</span>
+          </div>
+          ${notes ? `<p class="text-slate-500 italic text-[11px]">"${notes}"</p>` : ''}
+        `;
+
+        historyContainer.prepend(logItem);
+
+        document.getElementById('inspectorNotes').value = '';
+        document.getElementById('photoInput').value = '';
+        alert(`Inspection log updated in Google Sheets for ${selectedBiz.name}!`);
+      } catch (err) {
+        alert("Failed to update status in Google Sheet.");
+      } finally {
+        submitLogBtn.disabled = false;
+        submitLogBtn.textContent = "Save Inspection Log";
       }
-
-      if (historyContainer.querySelector('p')) {
-        historyContainer.innerHTML = '';
-      }
-
-      const logItem = document.createElement('div');
-      logItem.className = 'py-2 flex flex-col gap-1';
-      logItem.innerHTML = `
-        <div class="flex justify-between items-center font-semibold">
-          <span class="text-slate-800">${selectedBiz.name}</span>
-          <span class="text-[10px] text-slate-400">${timestamp}</span>
-        </div>
-        <div class="flex gap-2 items-center">
-          <span class="px-1.5 py-0.5 rounded text-[10px] text-white" style="background-color: ${colorMap[newStatus]}">${newStatus}</span>
-          <span class="text-slate-600">${outcome}</span>
-        </div>
-        ${notes ? `<p class="text-slate-500 italic text-[11px]">"${notes}"</p>` : ''}
-      `;
-
-      historyContainer.prepend(logItem);
-
-      document.getElementById('inspectorNotes').value = '';
-      document.getElementById('photoInput').value = '';
-      alert(`Inspection log updated for ${selectedBiz.name}!`);
     });
   </script>
 </body>
