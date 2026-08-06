@@ -148,8 +148,8 @@
       </div>
     </div>
     <div id="map"></div>
-    <div id="mapPickNotice" class="hidden mt-2 p-2 bg-amber-50 border border-amber-300 text-amber-800 text-xs rounded-lg text-center font-bold animate-pulse">
-      👉 Tap anywhere on the map above to select location coordinates!
+    <div id="mapPickNotice" class="hidden mt-2 p-2.5 bg-amber-100 border border-amber-300 text-amber-900 text-xs rounded-lg text-center font-bold animate-pulse">
+      👉 Tap anywhere on the map above to pin location!
     </div>
   </section>
 
@@ -228,7 +228,6 @@
           <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
         </div>
 
-        <!-- Location Selection Choices -->
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Location Pin Method</label>
           <div class="grid grid-cols-2 gap-2">
@@ -241,7 +240,6 @@
           </div>
         </div>
 
-        <!-- Hidden Coordinate Fields -->
         <input type="hidden" id="newBizLat">
         <input type="hidden" id="newBizLon">
 
@@ -446,6 +444,13 @@
         fillOpacity: 0.95
       }).addTo(map);
 
+      // Interactive Map Pin Clicking
+      marker.on('click', () => {
+        selectElem.value = biz.id;
+        updateDetailCard(biz);
+        marker.openPopup();
+      });
+
       marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Status: " + biz.status);
       markers[biz.id] = marker;
     }
@@ -486,12 +491,15 @@
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
-    // MAP PIN PICKER FEATURE
+    // Fixed Map Pin Picker
     window.enableMapPinPicker = function() {
       toggleModal('addBusinessModal', false);
       isPickingLocation = true;
       document.getElementById('mapPickNotice').classList.remove('hidden');
       map.getContainer().classList.add('picking-mode');
+      
+      // Scroll to map for fast interaction
+      document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
     };
 
     map.on('click', function(e) {
@@ -511,7 +519,6 @@
       map.getContainer().classList.remove('picking-mode');
 
       toggleModal('addBusinessModal', true);
-      alert("Location Selected! (" + lat + ", " + lon + ")");
     });
 
     window.openEditModal = function() {
