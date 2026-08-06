@@ -101,7 +101,7 @@
         </button>
       </div>
       <button type="button" id="deleteCurrentBizBtn" onclick="deleteSelectedBusiness()" class="admin-only hidden w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-1.5 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs">
-        <span>🗑️</span> Delete Entry
+        <span>🗑️</span> Delete Entry (Password Required)
       </button>
     </div>
 
@@ -607,34 +607,54 @@
       document.body.removeChild(link);
     };
 
+    // SECURE DELETION WITH PASSWORD CONFIRMATION
     window.deleteSelectedBusiness = async function() {
       if (!isAdminUnlocked) return alert("Admin access required.");
       const selectedId = selectElem.value;
       if (!selectedId) return;
 
-      const targetIndex = businesses.findIndex(b => b.id === selectedId);
-      if (targetIndex !== -1) {
-        const removed = businesses.splice(targetIndex, 1)[0];
+      const target = businesses.find(b => b.id === selectedId);
+      if (!target) return;
 
-        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-        customSaved = customSaved.filter(b => b.id !== selectedId);
-        localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+      const confirmPass = prompt(`⚠️ SECURITY WARNING: You are deleting "${target.name}" (${target.id}).\n\nEnter Admin Password to confirm deletion:`);
 
-        renderBusinessList(businesses);
-        
-        await sendCloudAction({ action: "deleteBusiness", id: selectedId });
-        alert("Deleted " + removed.name + " successfully.");
+      if (confirmPass === null) return;
+
+      if (confirmPass === ADMIN_PASSCODE) {
+        const targetIndex = businesses.findIndex(b => b.id === selectedId);
+        if (targetIndex !== -1) {
+          const removed = businesses.splice(targetIndex, 1)[0];
+
+          let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+          customSaved = customSaved.filter(b => b.id !== selectedId);
+          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+
+          renderBusinessList(businesses);
+          
+          await sendCloudAction({ action: "deleteBusiness", id: selectedId });
+          alert("🗑️ Deleted " + removed.name + " successfully.");
+        }
+      } else {
+        alert("❌ Incorrect Password! Deletion aborted.");
       }
     };
 
+    // SECURE DATABASE WIPE WITH PASSWORD CONFIRMATION
     window.clearAllCustomData = async function() {
       if (!isAdminUnlocked) return alert("Admin access required.");
-      if (confirm("Are you sure you want to clear all cloud business entries?")) {
+      
+      const confirmPass = prompt("🚨 DANGER: You are about to wipe ALL business entries!\n\nEnter Admin Password to confirm full database reset:");
+
+      if (confirmPass === null) return;
+
+      if (confirmPass === ADMIN_PASSCODE) {
         businesses = [];
         localStorage.removeItem('isabel_custom_businesses');
         renderBusinessList(businesses);
         await sendCloudAction({ action: "clearAll" });
-        alert("All business entries cleared.");
+        alert("🗑️ All business entries cleared.");
+      } else {
+        alert("❌ Incorrect Password! Reset aborted.");
       }
     };
 
