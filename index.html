@@ -13,8 +13,10 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    #map { height: 320px; width: 100%; border-radius: 0.75rem; }
+    #map { height: 320px; width: 100%; border-radius: 0.75rem; position: relative; z-index: 1; }
     .picking-mode { cursor: crosshair !important; }
+    /* Fixes Leaflet map controls bleeding through modal popups */
+    .leaflet-pane, .leaflet-top, .leaflet-bottom { z-index: 10 !important; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-3 max-w-md mx-auto">
