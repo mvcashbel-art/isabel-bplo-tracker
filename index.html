@@ -158,7 +158,7 @@
       </form>
 
       <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
-        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Admin Mode is Unlocked</div>
+        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Admin Mode Unlocked</div>
         <button type="button" onclick="clearAllCustomData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
           🗑️ Wipe All Cloud Database Entries
         </button>
@@ -239,7 +239,6 @@
     };
 
     const map = L.map('map').setView(ISABEL_CENTER, 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}inspect/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
     const selectElem = document.getElementById('businessSelect');
@@ -280,14 +279,19 @@
       alert("Admin session locked.");
     };
 
-    // Direct Google Sheets API Sync
+    // Load Local and Remote Data seamlessly
     async function loadBusinesses() {
+      let customSaved = [];
+      try {
+        customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+      } catch(e) { customSaved = []; }
+
       try {
         const res = await fetch(GOOGLE_SCRIPT_URL);
         const data = await res.json();
 
-        if (Array.isArray(data)) {
-          businesses = data.map(b => ({
+        if (Array.isArray(data) && data.length > 0) {
+          const remoteList = data.map(b => ({
             id: String(b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4)),
             name: String(b["Business Name"] || b.name || ""),
             owner: String(b["Owner Name"] || b.owner || ""),
@@ -297,11 +301,15 @@
             lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
             image: String(b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo")
           }));
+
+          const allMap = new Map();
+          [...customSaved, ...remoteList].forEach(item => allMap.set(item.id, item));
+          businesses = Array.from(allMap.values());
         } else {
-          businesses = [];
+          businesses = customSaved;
         }
       } catch (err) {
-        console.error("Cloud Sync Error:", err);
+        businesses = customSaved;
       }
       renderBusinessList(businesses);
     }
@@ -449,10 +457,16 @@
       const targetIndex = businesses.findIndex(b => b.id === selectedId);
       if (targetIndex !== -1) {
         const removed = businesses.splice(targetIndex, 1)[0];
+
+        // Remove from Local Storage
+        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+        customSaved = customSaved.filter(b => b.id !== selectedId);
+        localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+
         renderBusinessList(businesses);
         
         await sendCloudAction({ action: "deleteBusiness", id: selectedId });
-        alert("Deleted " + removed.name + " from Cloud Database.");
+        alert("Deleted " + removed.name + " successfully.");
       }
     };
 
@@ -460,9 +474,10 @@
       if (!isAdminUnlocked) return alert("Admin access required.");
       if (confirm("Are you sure you want to clear all cloud business entries?")) {
         businesses = [];
+        localStorage.removeItem('isabel_custom_businesses');
         renderBusinessList(businesses);
         await sendCloudAction({ action: "clearAll" });
-        alert("All cloud business entries cleared.");
+        alert("All business entries cleared.");
       }
     };
 
@@ -484,7 +499,7 @@
       }
     };
 
-    // Admin Verification
+    // Admin Verification Form
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const pass = document.getElementById('adminPassInput').value;
@@ -500,14 +515,14 @@
       }
     });
 
-    // Form Submissions (Admin Only)
+    // Dual-Save Business Entry
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Admin access required.");
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Syncing with Cloud...";
+      submitBtn.textContent = "Saving...";
 
       try {
         const photoInput = document.getElementById('newBizPhoto');
@@ -526,7 +541,12 @@
           image: compressedImage
         };
 
+        // 1. Save in Local Storage immediately
         businesses.unshift(newBiz);
+        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+        customSaved.unshift(newBiz);
+        localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+
         renderBusinessList(businesses);
         selectElem.value = newBiz.id;
         updateDetailCard(newBiz);
@@ -535,8 +555,9 @@
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
 
+        // 2. Sync to Cloud
         await sendCloudAction(newBiz);
-        alert("Successfully added and synced " + newBiz.name + "!");
+        alert("Successfully saved " + newBiz.name + "!");
 
       } catch (err) {
         alert("An error occurred while saving.");
@@ -554,12 +575,20 @@
       const target = businesses.find(b => b.id === selectedId);
       if (target) {
         target.status = document.getElementById('statusSelect').value;
+        
+        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+        const customIdx = customSaved.findIndex(b => b.id === target.id);
+        if (customIdx !== -1) {
+          customSaved[customIdx].status = target.status;
+          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+        }
+
         renderBusinessList(businesses);
         selectElem.value = target.id;
         updateDetailCard(target);
 
         await sendCloudAction({ action: "updateStatus", id: target.id, status: target.status });
-        alert("Updated cloud status for " + target.name);
+        alert("Updated status for " + target.name);
       }
     });
 
