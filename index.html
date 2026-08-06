@@ -332,7 +332,6 @@
             image: b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo"
           }));
           
-          // Combine locally added businesses and remote ones without duplicate IDs
           const allMap = new Map();
           [...customSaved, ...remoteList].forEach(item => allMap.set(item.id, item));
           businesses = Array.from(allMap.values());
@@ -400,6 +399,7 @@
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
+    // SAFE UNIVERSAL IMAGE COMPRESSOR (PNG / JPEG / WEBP COMPATIBLE)
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve("https://placehold.co/100x100?text=No+Photo");
@@ -408,30 +408,37 @@
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            const maxDimension = 500;
+            try {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              const maxDimension = 400;
 
-            if (width > height) {
-              if (width > maxDimension) {
-                height = Math.round((height * maxDimension) / width);
-                width = maxDimension;
+              if (width > height) {
+                if (width > maxDimension) {
+                  height = Math.round((height * maxDimension) / width);
+                  width = maxDimension;
+                }
+              } else {
+                if (height > maxDimension) {
+                  width = Math.round((width * maxDimension) / height);
+                  height = maxDimension;
+                }
               }
-            } else {
-              if (height > maxDimension) {
-                width = Math.round((width * maxDimension) / height);
-                height = maxDimension;
-              }
+
+              canvas.width = width;
+              canvas.height = height;
+
+              const ctx = canvas.getContext('2d');
+              // Fill background white to handle PNG transparency cleanly
+              ctx.fillStyle = "#FFFFFF";
+              ctx.fillRect(0, 0, width, height);
+              ctx.drawImage(img, 0, 0, width, height);
+
+              resolve(canvas.toDataURL('image/jpeg', 0.5));
+            } catch (err) {
+              resolve("https://placehold.co/100x100?text=Photo+Error");
             }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            resolve(canvas.toDataURL('image/jpeg', 0.5));
           };
           img.onerror = () => resolve("https://placehold.co/100x100?text=No+Photo");
           img.src = e.target.result;
@@ -559,7 +566,7 @@
           customSaved.unshift(newBiz);
           localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
         } catch (storageErr) {
-          console.warn("LocalStorage full notice:", storageErr);
+          console.warn("Storage warning:", storageErr);
         }
 
         renderBusinessList(businesses);
@@ -572,7 +579,7 @@
         alert("Successfully added " + newBiz.name + "!");
 
       } catch (err) {
-        alert("Failed to process entry.");
+        alert("An error occurred while saving.");
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Save & Pin Business";
@@ -586,636 +593,6 @@
       if (target) {
         target.status = document.getElementById('statusSelect').value;
         
-        // Update local storage if present
-        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-        const customIdx = customSaved.findIndex(b => b.id === target.id);
-        if (customIdx !== -1) {
-          customSaved[customIdx].status = target.status;
-          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-        }
-
-        renderBusinessList(businesses);
-        selectElem.value = target.id;
-        updateDetailCard(target);
-        alert("Updated status for " + target.name);
-      }
-    });
-
-    selectElem.addEventListener('change', (e) => {
-      const target = businesses.find(b => b.id === e.target.value);
-      if (target) {
-        updateDetailCard(target);
-        if (markers[target.id]) {
-          map.panTo([target.lat, target.lon]);
-          markers[target.id].openPopup();
-        }
-      }
-    });
-
-    searchInput.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase();
-      const filtered = businesses.filter(b => 
-        b.name.toLowerCase().includes(q) || 
-        b.owner.toLowerCase().includes(q) || 
-        b.address.toLowerCase().includes(q)
-      );
-      renderBusinessList(filtered);
-    });
-
-    // Initial Execution
-    updateUserRoleUI();
-    loadBusinesses();
-  </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Isabel BPLO - Permit Field Tracker</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <style>
-    #map { height: 320px; width: 100%; border-radius: 0.75rem; }
-  </style>
-</head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-3 max-w-md mx-auto">
-
-  <!-- Header -->
-  <header class="bg-blue-700 text-white p-4 rounded-xl shadow-md mb-4">
-    <div class="flex justify-between items-center mb-3">
-      <div>
-        <h1 class="text-lg font-bold">Isabel BPLO Tracker</h1>
-        <p class="text-xs text-blue-200">Business Permit & Licensing Office</p>
-      </div>
-      <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
-    </div>
-
-    <!-- Active Profile Bar -->
-    <div class="flex items-center justify-between bg-blue-800/80 p-2 rounded-lg border border-blue-600/50 text-xs">
-      <div class="flex items-center gap-2">
-        <img id="userAvatar" src="https://placehold.co/100x100?text=Guest" class="w-7 h-7 rounded-full object-cover border border-white/50">
-        <div>
-          <div id="userProfileName" class="font-bold text-white leading-tight">Guest User</div>
-          <div id="userProfilePosition" class="text-[10px] text-blue-200 leading-tight">Viewer (Clean View)</div>
-        </div>
-      </div>
-      <div class="flex gap-1">
-        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold text-[10px] transition shadow-sm cursor-pointer">👑 Admin</button>
-        <button id="openAuthModalBtn" onclick="handleAuthClick()" type="button" class="bg-white text-slate-800 px-2 py-1 rounded font-bold text-[10px] hover:bg-slate-100 transition shadow-sm cursor-pointer">🔑 Login</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Business Inspection Section -->
-  <section class="bg-white p-4 rounded-xl shadow-sm mb-4">
-    <div class="flex justify-between items-center mb-3">
-      <h2 class="text-sm font-bold text-slate-700">🏢 Business Directory</h2>
-      <div class="flex gap-1">
-        <button id="exportExcelBtn" onclick="exportToExcel()" class="admin-only hidden bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer flex items-center gap-1">
-          📊 Excel
-        </button>
-        <button id="clearDataBtn" onclick="clearAllCustomData()" class="admin-only hidden bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer">
-          🗑️ Clear
-        </button>
-        <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="admin-only hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm cursor-pointer">
-          <span>➕</span> Add
-        </button>
-      </div>
-    </div>
-    
-    <!-- Search Bar -->
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Search Establishment</label>
-      <div class="relative">
-        <input type="text" id="searchInput" placeholder="Type name, owner, or barangay..." class="w-full text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-        <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
-      </div>
-    </div>
-
-    <!-- Dropdown Selector -->
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Select Business</label>
-      <select id="businessSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-        <!-- Populated dynamically -->
-      </select>
-    </div>
-
-    <!-- Clean Business View Card -->
-    <div id="businessDetailCard" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-3">
-      <div class="flex gap-3 items-center">
-        <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" class="w-20 h-20 rounded-lg object-cover border border-slate-300 bg-slate-200 shadow-sm" alt="Storefront">
-        <div class="space-y-1 flex-1">
-          <div class="text-sm font-bold text-slate-800" id="cardName">-</div>
-          <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
-          <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
-          <div><span class="font-semibold text-slate-500">Permit Status:</span> <span id="cardStatus" class="font-bold text-slate-800 px-2 py-0.5 rounded text-[10px] inline-block mt-0.5">-</span></div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 gap-2 pt-1 border-t border-slate-200">
-        <a id="getDirectionsBtn" href="#" target="_blank" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1.5 transition text-xs">
-          <span>🧭</span> Get Directions (Google Maps)
-        </a>
-        <button type="button" id="deleteCurrentBizBtn" onclick="deleteSelectedBusiness()" class="admin-only hidden bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-2 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs">
-          <span>🗑️</span> Delete Establishment Entry
-        </button>
-      </div>
-    </div>
-
-    <!-- EDITABLE FORM FIELDS -->
-    <form id="inspectionForm" class="admin-only hidden space-y-3 mt-4 pt-4 border-t border-slate-200">
-      <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">📝 Field Log & Compliance Inspection</h3>
-
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Permit Status Update</label>
-          <select id="statusSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-            <option value="No Permit">🔴 No Permit</option>
-            <option value="Expired">🟡 Expired / Overdue</option>
-            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
-            <option value="Compliant">🟢 Active Permit</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Inspection Outcome</label>
-          <select id="outcomeSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-            <option value="Notice Served">Notice Served</option>
-            <option value="Verified Active">Verified Active</option>
-            <option value="Closed/Unlocated">Closed Storefront</option>
-            <option value="Refused Inspection">Refused Entry</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Inspector Remarks / Citation Reference</label>
-        <textarea id="inspectorNotes" rows="2" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Add compliance details or citation reference..."></textarea>
-      </div>
-
-      <button type="submit" id="submitLogBtn" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">Save Inspection Log Entry</button>
-    </form>
-  </section>
-
-  <!-- Interactive Map Section -->
-  <section class="bg-white p-3 rounded-xl shadow-sm mb-4">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-sm font-bold text-slate-700">📍 Isabel Municipal Map</h2>
-      <div class="flex gap-2 text-[10px]">
-        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> No Permit</span>
-        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Expired</span>
-        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
-      </div>
-    </div>
-    <div id="map"></div>
-  </section>
-
-  <!-- 🔑 LOGIN MODAL -->
-  <div id="authModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">🔑 Inspector / Admin Login</h3>
-        <button type="button" onclick="toggleModal('authModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-      </div>
-
-      <form id="loginForm" class="space-y-2.5 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Full Name</label>
-          <input type="text" id="loginNameInput" required placeholder="e.g. Juan dela Cruz" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Password</label>
-          <input type="password" id="loginPasswordInput" required placeholder="••••••••" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">Unlock Inspector Mode</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- 👑 ADMIN MODAL -->
-  <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 max-h-[85vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">👑 Admin User Approval Panel</h3>
-        <button type="button" onclick="toggleModal('adminModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-      </div>
-
-      <form id="adminLoginForm" class="space-y-2 text-xs">
-        <p class="text-slate-500">Enter BPLO Master Admin password to manage accounts:</p>
-        <input type="password" id="adminPassInput" required placeholder="Default admin pass: admin123" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono">
-        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg">Access Admin Console</button>
-      </form>
-
-      <div id="adminUserListContainer" class="hidden space-y-3">
-        <h4 class="text-xs font-bold text-slate-700 border-b pb-1">Registered Profiles Awaiting Approval:</h4>
-        <div id="pendingUserList" class="space-y-2 text-xs"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ➕ ADD BUSINESS MODAL -->
-  <div id="addBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">➕ Add New Establishment</h3>
-        <button type="button" onclick="toggleModal('addBusinessModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-      </div>
-      
-      <form id="addBusinessForm" class="space-y-2.5 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Business Name *</label>
-          <input type="text" id="newBizName" required placeholder="e.g. Isabel Store" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Owner Name *</label>
-          <input type="text" id="newBizOwner" required placeholder="e.g. Maria Santos" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Barangay / Address *</label>
-          <input type="text" id="newBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Permit Status</label>
-          <select id="newBizStatus" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-            <option value="No Permit">🔴 No Permit</option>
-            <option value="Expired">🟡 Expired</option>
-            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
-            <option value="Compliant">🟢 Active Permit</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Storefront / Camera Photo</label>
-          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
-        </div>
-
-        <button type="button" onclick="detectGPS()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-2 transition">
-          <span>📡</span> <span id="gpsBtnText">Detect Current GPS Location</span>
-        </button>
-
-        <div class="grid grid-cols-2 gap-2">
-          <input type="number" step="any" id="newBizLat" placeholder="Latitude" class="p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-[11px]" readonly>
-          <input type="number" step="any" id="newBizLon" placeholder="Longitude" class="p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-[11px]" readonly>
-        </div>
-
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Save & Pin Business</button>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwywMsuR-0B4QO7arxzX2XBOgkTQIToUg5JmfVy_lP8sZ-pIe8-7Uok6M31R3HOJlY/exec";
-    const ISABEL_CENTER = [10.9280, 124.4385];
-    const ADMIN_PASSCODE = "admin123";
-
-    const SAMPLE_BUSINESSES = [
-      { id: "BIZ-001", name: "Isabel General Merchandise", owner: "Juan dela Cruz", address: "Brgy. Poblacion, Isabel", status: "Compliant", lat: 10.9280, lon: 124.4385, image: "https://placehold.co/100x100?text=Store+1" },
-      { id: "BIZ-002", name: "Leyte Hardware & Supply", owner: "Pedro Penduko", address: "Brgy. Marvel, Isabel", status: "Expired", lat: 10.9295, lon: 124.4390, image: "https://placehold.co/100x100?text=Store+2" },
-      { id: "BIZ-003", name: "Marvel Food Corner", owner: "Maria Clara", address: "Brgy. Marvel, Isabel", status: "No Permit", lat: 10.9265, lon: 124.4370, image: "https://placehold.co/100x100?text=Store+3" }
-    ];
-
-    let businesses = [];
-    let activeUser = null;
-    const markers = {};
-
-    const colorMap = {
-      "No Permit": "#ef4444",
-      "Expired": "#f59e0b",
-      "Pending Follow-Up": "#3b82f6",
-      "Compliant": "#10b981"
-    };
-
-    try {
-      const stored = localStorage.getItem('isabel_bplo_user');
-      if (stored) activeUser = JSON.parse(stored);
-    } catch (e) { activeUser = null; }
-
-    const map = L.map('map').setView(ISABEL_CENTER, 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-
-    const selectElem = document.getElementById('businessSelect');
-    const searchInput = document.getElementById('searchInput');
-
-    window.toggleModal = function(modalId, show) {
-      const el = document.getElementById(modalId);
-      if (el) el.style.display = show ? 'flex' : 'none';
-    };
-
-    window.handleAuthClick = function() {
-      if (activeUser) {
-        activeUser = null;
-        localStorage.removeItem('isabel_bplo_user');
-        updateUserRoleUI();
-        alert("Logged out. Switched back to Clean View mode.");
-      } else {
-        toggleModal('authModal', true);
-      }
-    };
-
-    function updateUserRoleUI() {
-      const adminElements = document.querySelectorAll('.admin-only');
-      const openAuthModalBtn = document.getElementById('openAuthModalBtn');
-
-      if (activeUser) {
-        document.getElementById('userProfileName').textContent = activeUser.name;
-        document.getElementById('userProfilePosition').textContent = activeUser.position || "Inspector";
-        openAuthModalBtn.textContent = "🔒 Logout";
-
-        adminElements.forEach(el => el.classList.remove('hidden'));
-      } else {
-        document.getElementById('userProfileName').textContent = "Guest User";
-        document.getElementById('userProfilePosition').textContent = "Viewer (Clean View)";
-        openAuthModalBtn.textContent = "🔑 Login";
-
-        adminElements.forEach(el => el.classList.add('hidden'));
-      }
-    }
-
-    async function loadBusinesses() {
-      let customSaved = [];
-      try {
-        customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-      } catch(e) { customSaved = []; }
-
-      try {
-        const res = await fetch(GOOGLE_SCRIPT_URL);
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const remoteList = data.map(b => ({
-            id: b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4),
-            name: b["Business Name"] || b.name,
-            owner: b["Owner Name"] || b.owner,
-            address: b["Barangay Address"] || b.address,
-            status: b["Permit Status"] || b.status || "No Permit",
-            lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
-            lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
-            image: b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo"
-          }));
-          
-          // Combine locally added businesses and remote ones without duplicate IDs
-          const allMap = new Map();
-          [...customSaved, ...remoteList].forEach(item => allMap.set(item.id, item));
-          businesses = Array.from(allMap.values());
-        } else {
-          businesses = customSaved.length > 0 ? customSaved : SAMPLE_BUSINESSES;
-        }
-      } catch (err) {
-        businesses = customSaved.length > 0 ? customSaved : SAMPLE_BUSINESSES;
-      }
-      renderBusinessList(businesses);
-    }
-
-    function renderBusinessList(list) {
-      selectElem.innerHTML = '';
-      Object.values(markers).forEach(m => map.removeLayer(m));
-
-      if (list.length === 0) {
-        selectElem.appendChild(new Option("No business found", ""));
-        updateDetailCard(null);
-        return;
-      }
-
-      list.forEach(biz => {
-        selectElem.appendChild(new Option(biz.name + " (" + biz.status + ")", biz.id));
-        addMarker(biz);
-      });
-      updateDetailCard(list[0]);
-    }
-
-    function addMarker(biz) {
-      const marker = L.circleMarker([biz.lat, biz.lon], {
-        radius: 9,
-        fillColor: colorMap[biz.status] || '#6b7280',
-        color: '#ffffff',
-        weight: 2,
-        fillOpacity: 0.95
-      }).addTo(map);
-
-      marker.bindPopup("<b>" + biz.name + "</b><br>Owner: " + biz.owner + "<br>Status: " + biz.status);
-      markers[biz.id] = marker;
-    }
-
-    function updateDetailCard(biz) {
-      if (!biz) {
-        document.getElementById('cardName').textContent = '-';
-        document.getElementById('cardOwner').textContent = '-';
-        document.getElementById('cardAddress').textContent = '-';
-        document.getElementById('cardStatus').textContent = '-';
-        document.getElementById('cardImage').src = 'https://placehold.co/100x100?text=No+Photo';
-        return;
-      }
-      document.getElementById('cardName').textContent = biz.name;
-      document.getElementById('cardOwner').textContent = biz.owner;
-      document.getElementById('cardAddress').textContent = biz.address;
-      
-      const statusBadge = document.getElementById('cardStatus');
-      statusBadge.textContent = biz.status;
-      statusBadge.style.backgroundColor = colorMap[biz.status] || '#6b7280';
-      statusBadge.style.color = '#ffffff';
-
-      const statusSelect = document.getElementById('statusSelect');
-      if (statusSelect) statusSelect.value = biz.status;
-
-      document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
-      document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
-    }
-
-    function processHighMbPhoto(file) {
-      return new Promise((resolve) => {
-        if (!file) return resolve("https://placehold.co/100x100?text=No+Photo");
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            const maxDimension = 500;
-
-            if (width > height) {
-              if (width > maxDimension) {
-                height = Math.round((height * maxDimension) / width);
-                width = maxDimension;
-              }
-            } else {
-              if (height > maxDimension) {
-                width = Math.round((width * maxDimension) / height);
-                height = maxDimension;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            resolve(canvas.toDataURL('image/jpeg', 0.5));
-          };
-          img.onerror = () => resolve("https://placehold.co/100x100?text=No+Photo");
-          img.src = e.target.result;
-        };
-        reader.onerror = () => resolve("https://placehold.co/100x100?text=No+Photo");
-        reader.readAsDataURL(file);
-      });
-    }
-
-    window.exportToExcel = function() {
-      if (businesses.length === 0) {
-        alert("No business data available to export.");
-        return;
-      }
-
-      let csv = "Business ID,Business Name,Owner Name,Address,Status,Latitude,Longitude\n";
-      businesses.forEach(b => {
-        csv += '"' + b.id + '","' + b.name + '","' + b.owner + '","' + b.address + '","' + b.status + '","' + b.lat + '","' + b.lon + '"\n';
-      });
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "Isabel_BPLO_Businesses.csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-
-    window.deleteSelectedBusiness = function() {
-      const selectedId = selectElem.value;
-      if (!selectedId) return;
-
-      const targetIndex = businesses.findIndex(b => b.id === selectedId);
-      if (targetIndex !== -1) {
-        const removed = businesses.splice(targetIndex, 1)[0];
-        
-        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-        customSaved = customSaved.filter(b => b.id !== selectedId);
-        localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-
-        renderBusinessList(businesses);
-        alert("Deleted " + removed.name + " successfully.");
-      }
-    };
-
-    window.clearAllCustomData = function() {
-      if (confirm("Are you sure you want to clear all locally added businesses?")) {
-        localStorage.removeItem('isabel_custom_businesses');
-        loadBusinesses();
-        alert("All local business entries cleared.");
-      }
-    };
-
-    window.detectGPS = function() {
-      if ("geolocation" in navigator) {
-        document.getElementById('gpsBtnText').textContent = "Locating GPS...";
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            document.getElementById('newBizLat').value = pos.coords.latitude.toFixed(6);
-            document.getElementById('newBizLon').value = pos.coords.longitude.toFixed(6);
-            document.getElementById('gpsBtnText').textContent = "Location Acquired!";
-          },
-          () => {
-            document.getElementById('newBizLat').value = ISABEL_CENTER[0];
-            document.getElementById('newBizLon').value = ISABEL_CENTER[1];
-            document.getElementById('gpsBtnText').textContent = "Used Default Isabel Center";
-          }
-        );
-      }
-    };
-
-    // Form Submissions
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('loginNameInput').value.trim();
-      activeUser = { name: name, position: "Field Inspector II" };
-      localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
-      updateUserRoleUI();
-      toggleModal('authModal', false);
-      alert("Welcome back, " + name + "! Inspector features unlocked.");
-    });
-
-    document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const pass = document.getElementById('adminPassInput').value;
-      if (pass === ADMIN_PASSCODE) {
-        activeUser = { name: "BPLO Master Admin", position: "Administrator" };
-        localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
-        updateUserRoleUI();
-        toggleModal('adminModal', false);
-        alert("Admin Mode Activated!");
-      } else {
-        alert("Incorrect Admin Password!");
-      }
-    });
-
-    document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-
-      const submitBtn = e.target.querySelector('button[type="submit"]');
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Saving...";
-
-      try {
-        const photoInput = document.getElementById('newBizPhoto');
-        const file = photoInput.files[0];
-        const compressedImage = await processHighMbPhoto(file);
-
-        const newBiz = {
-          id: "BIZ-" + Math.floor(Math.random() * 9000 + 1000),
-          name: document.getElementById('newBizName').value.trim(),
-          owner: document.getElementById('newBizOwner').value.trim(),
-          address: document.getElementById('newBizAddress').value.trim(),
-          status: document.getElementById('newBizStatus').value,
-          lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
-          lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
-          image: compressedImage
-        };
-
-        businesses.unshift(newBiz);
-
-        try {
-          const customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-          customSaved.unshift(newBiz);
-          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-        } catch (storageErr) {
-          console.warn("LocalStorage full notice:", storageErr);
-        }
-
-        renderBusinessList(businesses);
-        selectElem.value = newBiz.id;
-        updateDetailCard(newBiz);
-        map.panTo([newBiz.lat, newBiz.lon]);
-
-        toggleModal('addBusinessModal', false);
-        document.getElementById('addBusinessForm').reset();
-        alert("Successfully added " + newBiz.name + "!");
-
-      } catch (err) {
-        alert("Failed to process entry.");
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Save & Pin Business";
-      }
-    });
-
-    document.getElementById('inspectionForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const selectedId = selectElem.value;
-      const target = businesses.find(b => b.id === selectedId);
-      if (target) {
-        target.status = document.getElementById('statusSelect').value;
-        
-        // Update local storage if present
         let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
         const customIdx = customSaved.findIndex(b => b.id === target.id);
         if (customIdx !== -1) {
