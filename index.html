@@ -14,6 +14,7 @@
 
   <style>
     #map { height: 320px; width: 100%; border-radius: 0.75rem; }
+    .picking-mode { cursor: crosshair !important; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-3 max-w-md mx-auto">
@@ -84,6 +85,7 @@
           <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
           <div><span class="font-semibold text-slate-500">Contact:</span> <a id="cardPhone" href="#" class="text-blue-600 font-medium hover:underline">-</a></div>
           <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
+          <div><span class="font-semibold text-slate-500">Log Date:</span> <span id="cardTimestamp" class="text-slate-600 font-mono text-[11px]">-</span></div>
           <div><span class="font-semibold text-slate-500">Permit Status:</span> <span id="cardStatus" class="font-bold text-slate-800 px-2 py-0.5 rounded text-[10px] inline-block mt-0.5">-</span></div>
         </div>
       </div>
@@ -146,6 +148,9 @@
       </div>
     </div>
     <div id="map"></div>
+    <div id="mapPickNotice" class="hidden mt-2 p-2 bg-amber-50 border border-amber-300 text-amber-800 text-xs rounded-lg text-center font-bold animate-pulse">
+      👉 Tap anywhere on the map above to select location coordinates!
+    </div>
   </section>
 
   <!-- Admin Control Modal -->
@@ -223,14 +228,22 @@
           <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
         </div>
 
-        <button type="button" onclick="detectGPS()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-3 rounded-lg border border-blue-200 flex items-center justify-center gap-2 transition">
-          <span>📡</span> <span id="gpsBtnText">Detect Current GPS Location</span>
-        </button>
-
-        <div class="grid grid-cols-2 gap-2">
-          <input type="number" step="any" id="newBizLat" placeholder="Latitude" class="p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-[11px]" readonly>
-          <input type="number" step="any" id="newBizLon" placeholder="Longitude" class="p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-[11px]" readonly>
+        <!-- Location Selection Choices -->
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Location Pin Method</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="detectGPS()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px]">
+              <span>📡</span> <span id="gpsBtnText">Detect GPS</span>
+            </button>
+            <button type="button" onclick="enableMapPinPicker()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 px-2 rounded-lg border border-purple-200 flex items-center justify-center gap-1 transition text-[11px]">
+              <span>🗺️</span> <span>Pick on Map</span>
+            </button>
+          </div>
         </div>
+
+        <!-- Hidden Coordinate Fields -->
+        <input type="hidden" id="newBizLat">
+        <input type="hidden" id="newBizLon">
 
         <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Save & Pin Business</button>
       </form>
@@ -300,6 +313,8 @@
 
     let businesses = [];
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
+    let isPickingLocation = false;
+    let tempPickerMarker = null;
     const markers = {};
 
     const colorMap = {
@@ -350,6 +365,12 @@
       alert("Admin session locked.");
     };
 
+    function getFormattedTimestamp() {
+      const now = new Date();
+      return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
+             ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
     async function loadBusinesses() {
       let customSaved = [];
       try {
@@ -368,6 +389,7 @@
             phone: String(b["Phone Number"] || b["Phone"] || b.phone || "N/A"),
             address: String(b["Barangay Address"] || b.address || ""),
             status: String(b["Permit Status"] || b.status || "No Permit"),
+            timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()),
             lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
             lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
             image: String(b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo")
@@ -424,7 +446,7 @@
         fillOpacity: 0.95
       }).addTo(map);
 
-      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Phone: " + (biz.phone || 'N/A') + "<br>Status: " + biz.status);
+      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Status: " + biz.status);
       markers[biz.id] = marker;
     }
 
@@ -436,6 +458,7 @@
         document.getElementById('cardPhone').textContent = '-';
         document.getElementById('cardPhone').href = '#';
         document.getElementById('cardAddress').textContent = '-';
+        document.getElementById('cardTimestamp').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
         document.getElementById('cardImage').src = 'https://placehold.co/100x100?text=No+Photo';
         return;
@@ -449,6 +472,7 @@
       phoneElem.href = biz.phone && biz.phone !== 'N/A' ? "tel:" + biz.phone.replace(/[^0-9+]/g, '') : '#';
 
       document.getElementById('cardAddress').textContent = biz.address;
+      document.getElementById('cardTimestamp').textContent = biz.timestamp || getFormattedTimestamp();
       
       const statusBadge = document.getElementById('cardStatus');
       statusBadge.textContent = biz.status;
@@ -461,6 +485,34 @@
       document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
+
+    // MAP PIN PICKER FEATURE
+    window.enableMapPinPicker = function() {
+      toggleModal('addBusinessModal', false);
+      isPickingLocation = true;
+      document.getElementById('mapPickNotice').classList.remove('hidden');
+      map.getContainer().classList.add('picking-mode');
+    };
+
+    map.on('click', function(e) {
+      if (!isPickingLocation) return;
+
+      const lat = e.latlng.lat.toFixed(6);
+      const lon = e.latlng.lng.toFixed(6);
+
+      document.getElementById('newBizLat').value = lat;
+      document.getElementById('newBizLon').value = lon;
+
+      if (tempPickerMarker) map.removeLayer(tempPickerMarker);
+      tempPickerMarker = L.marker([lat, lon]).addTo(map).bindPopup("Selected Business Location").openPopup();
+
+      isPickingLocation = false;
+      document.getElementById('mapPickNotice').classList.add('hidden');
+      map.getContainer().classList.remove('picking-mode');
+
+      toggleModal('addBusinessModal', true);
+      alert("Location Selected! (" + lat + ", " + lon + ")");
+    });
 
     window.openEditModal = function() {
       if (!isAdminUnlocked) return alert("Admin access required.");
@@ -532,9 +584,9 @@
         return;
       }
 
-      let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Latitude,Longitude\n";
+      let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude\n";
       businesses.forEach(b => {
-        csv += '"' + b.id + '","' + b.name + '","' + b.owner + '","' + (b.phone || "N/A") + '","' + b.address + '","' + b.status + '","' + b.lat + '","' + b.lon + '"\n';
+        csv += '"' + b.id + '","' + b.name + '","' + b.owner + '","' + (b.phone || "N/A") + '","' + b.address + '","' + b.status + '","' + (b.timestamp || 'N/A') + '","' + b.lat + '","' + b.lon + '"\n';
       });
 
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -584,12 +636,12 @@
           (pos) => {
             document.getElementById('newBizLat').value = pos.coords.latitude.toFixed(6);
             document.getElementById('newBizLon').value = pos.coords.longitude.toFixed(6);
-            document.getElementById('gpsBtnText').textContent = "Location Acquired!";
+            document.getElementById('gpsBtnText').textContent = "GPS Acquired!";
           },
           () => {
             document.getElementById('newBizLat').value = ISABEL_CENTER[0];
             document.getElementById('newBizLon').value = ISABEL_CENTER[1];
-            document.getElementById('gpsBtnText').textContent = "Used Default Isabel Center";
+            document.getElementById('gpsBtnText').textContent = "Used Isabel Center";
           }
         );
       }
@@ -631,6 +683,7 @@
           phone: document.getElementById('newBizPhone').value.trim() || "N/A",
           address: document.getElementById('newBizAddress').value.trim(),
           status: document.getElementById('newBizStatus').value,
+          timestamp: getFormattedTimestamp(),
           lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
           lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
           image: compressedImage
@@ -648,6 +701,7 @@
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
+        if (tempPickerMarker) map.removeLayer(tempPickerMarker);
 
         await sendCloudAction(newBiz);
         alert("Successfully saved " + newBiz.name + "!");
@@ -707,6 +761,7 @@
         phone: target.phone,
         address: target.address,
         status: target.status,
+        timestamp: target.timestamp,
         lat: target.lat,
         lon: target.lon,
         image: target.image
