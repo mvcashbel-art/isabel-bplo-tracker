@@ -53,7 +53,7 @@
           📊 Excel
         </button>
         <button id="clearDataBtn" onclick="clearAllCustomData()" class="admin-only hidden bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer">
-          🗑️ Clear
+          🗑️ Clear All
         </button>
         <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="admin-only hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm cursor-pointer">
           <span>➕</span> Add
@@ -313,15 +313,31 @@
 
     async function loadBusinesses() {
       let customSaved = [];
+      let deletedIds = [];
+
       try {
         customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-      } catch(e) { customSaved = []; }
+        deletedIds = JSON.parse(localStorage.getItem('isabel_deleted_ids') || '[]');
+      } catch(e) { 
+        customSaved = []; 
+        deletedIds = [];
+      }
 
-      // ⚡ INSTANT LOAD: Render local storage immediately
-      businesses = customSaved.length > 0 ? customSaved : SAMPLE_BUSINESSES;
+      // Check if user actively cleared or modified data
+      const isStorageInitialized = localStorage.getItem('isabel_data_initialized');
+
+      let initialBase = [];
+      if (!isStorageInitialized && customSaved.length === 0 && deletedIds.length === 0) {
+        initialBase = SAMPLE_BUSINESSES;
+      } else {
+        initialBase = customSaved;
+      }
+
+      // Filter out permanently deleted IDs
+      businesses = initialBase.filter(b => !deletedIds.includes(b.id));
       renderBusinessList(businesses);
 
-      // 🌐 BACKGROUND SYNC: Fetch from Google Sheets quietly
+      // Background Fetch Sync
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -343,12 +359,16 @@
           }));
           
           const allMap = new Map();
-          [...customSaved, ...remoteList].forEach(item => allMap.set(item.id, item));
+          [...customSaved, ...remoteList].forEach(item => {
+            if (!deletedIds.includes(item.id)) {
+              allMap.set(item.id, item);
+            }
+          });
           businesses = Array.from(allMap.values());
           renderBusinessList(businesses);
         }
       } catch (err) {
-        // Keep local data loaded if remote fetch times out
+        // Keep local filtered data if network fails
       }
     }
 
@@ -407,7 +427,6 @@
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
-    // ⚡ FAST DOWNSCALED PHOTO PROCESSOR
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve("https://placehold.co/100x100?text=No+Photo");
@@ -483,20 +502,39 @@
       if (targetIndex !== -1) {
         const removed = businesses.splice(targetIndex, 1)[0];
         
+        // Mark ID as permanently deleted in local storage
+        let deletedIds = JSON.parse(localStorage.getItem('isabel_deleted_ids') || '[]');
+        if (!deletedIds.includes(selectedId)) {
+          deletedIds.push(selectedId);
+          localStorage.setItem('isabel_deleted_ids', JSON.stringify(deletedIds));
+        }
+
+        // Remove from custom local storage if present
         let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
         customSaved = customSaved.filter(b => b.id !== selectedId);
         localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+        localStorage.setItem('isabel_data_initialized', 'true');
 
         renderBusinessList(businesses);
-        alert("Deleted " + removed.name + " successfully.");
+        alert("Deleted " + removed.name + " permanently.");
       }
     };
 
     window.clearAllCustomData = function() {
-      if (confirm("Are you sure you want to clear all locally added businesses?")) {
-        localStorage.removeItem('isabel_custom_businesses');
-        loadBusinesses();
-        alert("All local business entries cleared.");
+      if (confirm("Are you sure you want to clear all business entries?")) {
+        // Collect all existing IDs and add them to deleted list
+        let deletedIds = JSON.parse(localStorage.getItem('isabel_deleted_ids') || '[]');
+        businesses.forEach(b => {
+          if (!deletedIds.includes(b.id)) deletedIds.push(b.id);
+        });
+
+        localStorage.setItem('isabel_deleted_ids', JSON.stringify(deletedIds));
+        localStorage.setItem('isabel_custom_businesses', JSON.stringify([]));
+        localStorage.setItem('isabel_data_initialized', 'true');
+
+        businesses = [];
+        renderBusinessList(businesses);
+        alert("All business entries cleared.");
       }
     };
 
@@ -572,6 +610,7 @@
           const customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
           customSaved.unshift(newBiz);
           localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+          localStorage.setItem('isabel_data_initialized', 'true');
         } catch (storageErr) {
           console.warn("Storage warning:", storageErr);
         }
