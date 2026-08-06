@@ -317,8 +317,18 @@
         customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
       } catch(e) { customSaved = []; }
 
+      // ⚡ INSTANT LOAD: Render local storage immediately
+      businesses = customSaved.length > 0 ? customSaved : SAMPLE_BUSINESSES;
+      renderBusinessList(businesses);
+
+      // 🌐 BACKGROUND SYNC: Fetch from Google Sheets quietly
       try {
-        const res = await fetch(GOOGLE_SCRIPT_URL);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+        const res = await fetch(GOOGLE_SCRIPT_URL, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           const remoteList = data.map(b => ({
@@ -335,13 +345,11 @@
           const allMap = new Map();
           [...customSaved, ...remoteList].forEach(item => allMap.set(item.id, item));
           businesses = Array.from(allMap.values());
-        } else {
-          businesses = customSaved.length > 0 ? customSaved : SAMPLE_BUSINESSES;
+          renderBusinessList(businesses);
         }
       } catch (err) {
-        businesses = customSaved.length > 0 ? customSaved : SAMPLE_BUSINESSES;
+        // Keep local data loaded if remote fetch times out
       }
-      renderBusinessList(businesses);
     }
 
     function renderBusinessList(list) {
@@ -399,7 +407,7 @@
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
-    // SAFE UNIVERSAL IMAGE COMPRESSOR (PNG / JPEG / WEBP COMPATIBLE)
+    // ⚡ FAST DOWNSCALED PHOTO PROCESSOR
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve("https://placehold.co/100x100?text=No+Photo");
@@ -412,7 +420,7 @@
               const canvas = document.createElement('canvas');
               let width = img.width;
               let height = img.height;
-              const maxDimension = 400;
+              const maxDimension = 300;
 
               if (width > height) {
                 if (width > maxDimension) {
@@ -430,12 +438,11 @@
               canvas.height = height;
 
               const ctx = canvas.getContext('2d');
-              // Fill background white to handle PNG transparency cleanly
               ctx.fillStyle = "#FFFFFF";
               ctx.fillRect(0, 0, width, height);
               ctx.drawImage(img, 0, 0, width, height);
 
-              resolve(canvas.toDataURL('image/jpeg', 0.5));
+              resolve(canvas.toDataURL('image/jpeg', 0.4));
             } catch (err) {
               resolve("https://placehold.co/100x100?text=Photo+Error");
             }
