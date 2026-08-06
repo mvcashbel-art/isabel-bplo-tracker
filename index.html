@@ -34,7 +34,7 @@
         <img id="userAvatar" src="https://placehold.co/100x100?text=Guest" class="w-7 h-7 rounded-full object-cover border border-white/50">
         <div>
           <div id="userProfileName" class="font-bold text-white leading-tight">Guest User</div>
-          <div id="userProfilePosition" class="text-[10px] text-blue-200 leading-tight">Viewer (Read-Only)</div>
+          <div id="userProfilePosition" class="text-[10px] text-blue-200 leading-tight">Viewer (Clean View)</div>
         </div>
       </div>
       <div class="flex gap-1">
@@ -44,64 +44,71 @@
     </div>
   </header>
 
-  <!-- Field Inspection Log -->
+  <!-- Business Inspection Section -->
   <section class="bg-white p-4 rounded-xl shadow-sm mb-4">
     <div class="flex justify-between items-center mb-3">
-      <h2 class="text-sm font-bold text-slate-700">📝 Field Inspection Log</h2>
+      <h2 class="text-sm font-bold text-slate-700">🏢 Business Directory</h2>
       <div class="flex gap-1">
-        <button id="exportExcelBtn" onclick="exportToExcel()" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer flex items-center gap-1">
+        <!-- ADMIN/INSPECTOR ONLY ACTION BUTTONS -->
+        <button id="exportExcelBtn" onclick="exportToExcel()" class="admin-only hidden bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer flex items-center gap-1">
           📊 Excel
         </button>
-        <button id="clearDataBtn" onclick="clearAllCustomData()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer">
+        <button id="clearDataBtn" onclick="clearAllCustomData()" class="admin-only hidden bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer">
           🗑️ Clear
         </button>
-        <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm cursor-pointer">
+        <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="admin-only hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm cursor-pointer">
           <span>➕</span> Add
         </button>
       </div>
     </div>
     
-    <!-- Search Bar -->
+    <!-- Search Bar (Visible To All) -->
     <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Search Business / Barangay / Owner</label>
+      <label class="block text-xs font-semibold text-slate-600 mb-1">Search Establishment</label>
       <div class="relative">
         <input type="text" id="searchInput" placeholder="Type name, owner, or barangay..." class="w-full text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
         <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
       </div>
     </div>
 
-    <form id="inspectionForm" class="space-y-3">
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Establishment</label>
-        <select id="businessSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-          <!-- Populated dynamically -->
-        </select>
-      </div>
+    <!-- Dropdown Selector (Visible To All) -->
+    <div class="mb-3">
+      <label class="block text-xs font-semibold text-slate-600 mb-1">Select Business</label>
+      <select id="businessSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+        <!-- Populated dynamically -->
+      </select>
+    </div>
 
-      <div id="businessDetailCard" class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
-        <div class="flex gap-3 items-center">
-          <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" class="w-16 h-16 rounded-lg object-cover border border-slate-300 bg-slate-200" alt="Storefront">
-          <div class="space-y-0.5 flex-1">
-            <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
-            <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
-            <div><span class="font-semibold text-slate-500">Status:</span> <span id="cardStatus" class="font-bold text-slate-800">-</span></div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <a id="getDirectionsBtn" href="#" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-1.5 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px]">
-            <span>🧭</span> Directions
-          </a>
-          <button type="button" id="deleteCurrentBizBtn" onclick="deleteSelectedBusiness()" class="editable-field bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-1.5 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-[11px] opacity-60 cursor-not-allowed" disabled>
-            <span>🗑️</span> Delete Entry
-          </button>
+    <!-- Clean Business View Card (Visible To All) -->
+    <div id="businessDetailCard" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-3">
+      <div class="flex gap-3 items-center">
+        <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" class="w-20 h-20 rounded-lg object-cover border border-slate-300 bg-slate-200 shadow-sm" alt="Storefront">
+        <div class="space-y-1 flex-1">
+          <div class="text-sm font-bold text-slate-800" id="cardName">-</div>
+          <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
+          <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
+          <div><span class="font-semibold text-slate-500">Permit Status:</span> <span id="cardStatus" class="font-bold text-slate-800 px-2 py-0.5 rounded text-[10px] inline-block mt-0.5">-</span></div>
         </div>
       </div>
+
+      <div class="grid grid-cols-1 gap-2 pt-1 border-t border-slate-200">
+        <a id="getDirectionsBtn" href="#" target="_blank" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1.5 transition text-xs">
+          <span>🧭</span> Get Directions (Google Maps)
+        </a>
+        <button type="button" id="deleteCurrentBizBtn" onclick="deleteSelectedBusiness()" class="admin-only hidden bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-2 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs">
+          <span>🗑️</span> Delete Establishment Entry
+        </button>
+      </div>
+    </div>
+
+    <!-- INSPECTOR / ADMIN EDITABLE FORM FIELDS (Hidden in View Mode) -->
+    <form id="inspectionForm" class="admin-only hidden space-y-3 mt-4 pt-4 border-t border-slate-200">
+      <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">📝 Field Log & Compliance Inspection</h3>
 
       <div class="grid grid-cols-2 gap-2">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Permit Status</label>
-          <select id="statusSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60 cursor-not-allowed" disabled>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Permit Status Update</label>
+          <select id="statusSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="No Permit">🔴 No Permit</option>
             <option value="Expired">🟡 Expired / Overdue</option>
             <option value="Pending Follow-Up">🔵 Pending Compliance</option>
@@ -109,8 +116,8 @@
           </select>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Action Taken</label>
-          <select id="outcomeSelect" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60 cursor-not-allowed" disabled>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Inspection Outcome</label>
+          <select id="outcomeSelect" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="Notice Served">Notice Served</option>
             <option value="Verified Active">Verified Active</option>
             <option value="Closed/Unlocated">Closed Storefront</option>
@@ -120,15 +127,15 @@
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Inspector Remarks / Barangay Notes</label>
-        <textarea id="inspectorNotes" rows="2" class="editable-field w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60 cursor-not-allowed" disabled placeholder="Add compliance details or citation reference..."></textarea>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Inspector Remarks / Citation Reference</label>
+        <textarea id="inspectorNotes" rows="2" class="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Add compliance details or citation reference..."></textarea>
       </div>
 
-      <button type="submit" id="submitLogBtn" disabled class="w-full bg-slate-400 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm cursor-not-allowed">🔒 Log Changes Disabled (Read-Only)</button>
+      <button type="submit" id="submitLogBtn" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">Save Inspection Log Entry</button>
     </form>
   </section>
 
-  <!-- Interactive Map Section -->
+  <!-- Interactive Map Section (Visible To All) -->
   <section class="bg-white p-3 rounded-xl shadow-sm mb-4">
     <div class="flex justify-between items-center mb-2">
       <h2 class="text-sm font-bold text-slate-700">📍 Isabel Municipal Map</h2>
@@ -145,7 +152,7 @@
   <div id="authModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">🔑 Inspector Login</h3>
+        <h3 class="text-sm font-bold text-slate-800">🔑 Inspector / Admin Login</h3>
         <button type="button" onclick="toggleModal('authModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
 
@@ -158,7 +165,7 @@
           <label class="block font-semibold text-slate-600 mb-1">Password</label>
           <input type="password" id="loginPasswordInput" required placeholder="••••••••" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
         </div>
-        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">Login to Inspector Account</button>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">Unlock Inspector Mode</button>
       </form>
     </div>
   </div>
@@ -184,11 +191,11 @@
     </div>
   </div>
 
-  <!-- ➕ ADD BUSINESS MODAL -->
+  <!-- ➕ ADD BUSINESS MODAL (INSPECTOR/ADMIN ONLY) -->
   <div id="addBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">➕ Add New Business</h3>
+        <h3 class="text-sm font-bold text-slate-800">➕ Add New Establishment</h3>
         <button type="button" onclick="toggleModal('addBusinessModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
       
@@ -280,16 +287,14 @@
         activeUser = null;
         localStorage.removeItem('isabel_bplo_user');
         updateUserRoleUI();
-        alert("Logged out successfully.");
+        alert("Logged out. Switched back to Clean View mode.");
       } else {
         toggleModal('authModal', true);
       }
     };
 
     function updateUserRoleUI() {
-      const editableFields = document.querySelectorAll('.editable-field');
-      const submitLogBtn = document.getElementById('submitLogBtn');
-      const openAddModalBtn = document.getElementById('openAddModalBtn');
+      const adminElements = document.querySelectorAll('.admin-only');
       const openAuthModalBtn = document.getElementById('openAuthModalBtn');
 
       if (activeUser) {
@@ -297,33 +302,15 @@
         document.getElementById('userProfilePosition').textContent = activeUser.position || "Inspector";
         openAuthModalBtn.textContent = "🔒 Logout";
 
-        editableFields.forEach(f => {
-          f.disabled = false;
-          f.classList.remove('opacity-60', 'cursor-not-allowed');
-        });
-
-        submitLogBtn.disabled = false;
-        submitLogBtn.textContent = "Save Inspection Log";
-        submitLogBtn.classList.remove('bg-slate-400', 'cursor-not-allowed');
-        submitLogBtn.classList.add('bg-blue-700');
-
-        openAddModalBtn.classList.remove('hidden');
+        // Show all admin/inspector fields
+        adminElements.forEach(el => el.classList.remove('hidden'));
       } else {
         document.getElementById('userProfileName').textContent = "Guest User";
-        document.getElementById('userProfilePosition').textContent = "Viewer (Read-Only)";
+        document.getElementById('userProfilePosition').textContent = "Viewer (Clean View)";
         openAuthModalBtn.textContent = "🔑 Login";
 
-        editableFields.forEach(f => {
-          f.disabled = true;
-          f.classList.add('opacity-60', 'cursor-not-allowed');
-        });
-
-        submitLogBtn.disabled = true;
-        submitLogBtn.textContent = "🔒 Log Changes Disabled (Read-Only)";
-        submitLogBtn.classList.remove('bg-blue-700');
-        submitLogBtn.classList.add('bg-slate-400', 'cursor-not-allowed');
-
-        openAddModalBtn.classList.add('hidden');
+        // Hide administrative/editable fields for clean viewing
+        adminElements.forEach(el => el.classList.add('hidden'));
       }
     }
 
@@ -388,16 +375,25 @@
 
     function updateDetailCard(biz) {
       if (!biz) {
+        document.getElementById('cardName').textContent = '-';
         document.getElementById('cardOwner').textContent = '-';
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
         document.getElementById('cardImage').src = 'https://placehold.co/100x100?text=No+Photo';
         return;
       }
+      document.getElementById('cardName').textContent = biz.name;
       document.getElementById('cardOwner').textContent = biz.owner;
       document.getElementById('cardAddress').textContent = biz.address;
-      document.getElementById('cardStatus').textContent = biz.status;
-      document.getElementById('statusSelect').value = biz.status;
+      
+      const statusBadge = document.getElementById('cardStatus');
+      statusBadge.textContent = biz.status;
+      statusBadge.style.backgroundColor = colorMap[biz.status] || '#6b7280';
+      statusBadge.style.color = '#ffffff';
+
+      const statusSelect = document.getElementById('statusSelect');
+      if (statusSelect) statusSelect.value = biz.status;
+
       document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
@@ -514,7 +510,21 @@
       localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
       updateUserRoleUI();
       toggleModal('authModal', false);
-      alert("Welcome back, " + name + "! Inspector controls enabled.");
+      alert("Welcome back, " + name + "! Inspector features unlocked.");
+    });
+
+    document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const pass = document.getElementById('adminPassInput').value;
+      if (pass === ADMIN_PASSCODE) {
+        activeUser = { name: "BPLO Master Admin", position: "Administrator" };
+        localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
+        updateUserRoleUI();
+        toggleModal('adminModal', false);
+        alert("Admin Mode Activated!");
+      } else {
+        alert("Incorrect Admin Password!");
+      }
     });
 
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
@@ -564,6 +574,19 @@
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Save & Pin Business";
+      }
+    });
+
+    document.getElementById('inspectionForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const selectedId = selectElem.value;
+      const target = businesses.find(b => b.id === selectedId);
+      if (target) {
+        target.status = document.getElementById('statusSelect').value;
+        renderBusinessList(businesses);
+        selectElem.value = target.id;
+        updateDetailCard(target);
+        alert("Updated status for " + target.name);
       }
     });
 
