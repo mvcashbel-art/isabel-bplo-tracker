@@ -44,7 +44,7 @@
     </div>
   </header>
 
-  <!-- Business Inspection Section -->
+  <!-- Business Directory Section -->
   <section class="bg-white p-4 rounded-xl shadow-sm mb-4">
     <div class="flex justify-between items-center mb-3">
       <h2 class="text-sm font-bold text-slate-700">🏢 Business Directory</h2>
@@ -78,7 +78,7 @@
       </select>
     </div>
 
-    <!-- Clean Business View Card -->
+    <!-- Business Card -->
     <div id="businessDetailCard" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-3">
       <div class="flex gap-3 items-center">
         <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" class="w-20 h-20 rounded-lg object-cover border border-slate-300 bg-slate-200 shadow-sm" alt="Storefront">
@@ -100,7 +100,7 @@
       </div>
     </div>
 
-    <!-- EDITABLE FORM FIELDS -->
+    <!-- Inspector Log Form -->
     <form id="inspectionForm" class="admin-only hidden space-y-3 mt-4 pt-4 border-t border-slate-200">
       <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">📝 Field Log & Compliance Inspection</h3>
 
@@ -147,7 +147,7 @@
     <div id="map"></div>
   </section>
 
-  <!-- 🔑 LOGIN MODAL -->
+  <!-- Login Modal -->
   <div id="authModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
       <div class="flex justify-between items-center border-b pb-2">
@@ -169,7 +169,7 @@
     </div>
   </div>
 
-  <!-- 👑 ADMIN MODAL -->
+  <!-- Admin Modal -->
   <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
@@ -182,15 +182,10 @@
         <input type="password" id="adminPassInput" required placeholder="Default admin pass: admin123" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono">
         <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg">Access Admin Console</button>
       </form>
-
-      <div id="adminUserListContainer" class="hidden space-y-3">
-        <h4 class="text-xs font-bold text-slate-700 border-b pb-1">Registered Profiles Awaiting Approval:</h4>
-        <div id="pendingUserList" class="space-y-2 text-xs"></div>
-      </div>
     </div>
   </div>
 
-  <!-- ➕ ADD BUSINESS MODAL -->
+  <!-- Add Business Modal -->
   <div id="addBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
@@ -244,15 +239,10 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwywMsuR-0B4QO7arxzX2XBOgkTQIToUg5JmfVy_lP8sZ-pIe8-7Uok6M31R3HOJlY/exec";
+    // Configured Google Apps Script Endpoint
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUK9ZTFgTgZ8qrYUJdXTTx3lBekvZwcGw-iVpW_3eXn9hiEhU83xSVtdUDLrXGqjFW/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const ADMIN_PASSCODE = "admin123";
-
-    const SAMPLE_BUSINESSES = [
-      { id: "BIZ-001", name: "Isabel General Merchandise", owner: "Juan dela Cruz", address: "Brgy. Poblacion, Isabel", status: "Compliant", lat: 10.9280, lon: 124.4385, image: "https://placehold.co/100x100?text=Store+1" },
-      { id: "BIZ-002", name: "Leyte Hardware & Supply", owner: "Pedro Penduko", address: "Brgy. Marvel, Isabel", status: "Expired", lat: 10.9295, lon: 124.4390, image: "https://placehold.co/100x100?text=Store+2" },
-      { id: "BIZ-003", name: "Marvel Food Corner", owner: "Maria Clara", address: "Brgy. Marvel, Isabel", status: "No Permit", lat: 10.9265, lon: 124.4370, image: "https://placehold.co/100x100?text=Store+3" }
-    ];
 
     let businesses = [];
     let activeUser = null;
@@ -300,75 +290,50 @@
         document.getElementById('userProfileName').textContent = activeUser.name;
         document.getElementById('userProfilePosition').textContent = activeUser.position || "Inspector";
         openAuthModalBtn.textContent = "🔒 Logout";
-
         adminElements.forEach(el => el.classList.remove('hidden'));
       } else {
         document.getElementById('userProfileName').textContent = "Guest User";
         document.getElementById('userProfilePosition').textContent = "Viewer (Clean View)";
         openAuthModalBtn.textContent = "🔑 Login";
-
         adminElements.forEach(el => el.classList.add('hidden'));
       }
     }
 
     async function loadBusinesses() {
-      let customSaved = [];
-      let deletedIds = [];
-
       try {
-        customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-        deletedIds = JSON.parse(localStorage.getItem('isabel_deleted_ids') || '[]');
-      } catch(e) { 
-        customSaved = []; 
-        deletedIds = [];
-      }
-
-      // Check if user actively cleared or modified data
-      const isStorageInitialized = localStorage.getItem('isabel_data_initialized');
-
-      let initialBase = [];
-      if (!isStorageInitialized && customSaved.length === 0 && deletedIds.length === 0) {
-        initialBase = SAMPLE_BUSINESSES;
-      } else {
-        initialBase = customSaved;
-      }
-
-      // Filter out permanently deleted IDs
-      businesses = initialBase.filter(b => !deletedIds.includes(b.id));
-      renderBusinessList(businesses);
-
-      // Background Fetch Sync
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-        const res = await fetch(GOOGLE_SCRIPT_URL, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
+        const res = await fetch(GOOGLE_SCRIPT_URL);
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const remoteList = data.map(b => ({
-            id: b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4),
-            name: b["Business Name"] || b.name,
-            owner: b["Owner Name"] || b.owner,
-            address: b["Barangay Address"] || b.address,
-            status: b["Permit Status"] || b.status || "No Permit",
+
+        if (Array.isArray(data)) {
+          businesses = data.map(b => ({
+            id: String(b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4)),
+            name: String(b["Business Name"] || b.name || ""),
+            owner: String(b["Owner Name"] || b.owner || ""),
+            address: String(b["Barangay Address"] || b.address || ""),
+            status: String(b["Permit Status"] || b.status || "No Permit"),
             lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
             lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
-            image: b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo"
+            image: String(b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo")
           }));
-          
-          const allMap = new Map();
-          [...customSaved, ...remoteList].forEach(item => {
-            if (!deletedIds.includes(item.id)) {
-              allMap.set(item.id, item);
-            }
-          });
-          businesses = Array.from(allMap.values());
-          renderBusinessList(businesses);
+        } else {
+          businesses = [];
         }
       } catch (err) {
-        // Keep local filtered data if network fails
+        console.error("Cloud Sync Error:", err);
+      }
+      renderBusinessList(businesses);
+    }
+
+    async function sendCloudAction(payload) {
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.error("Cloud Write Error:", err);
       }
     }
 
@@ -494,47 +459,26 @@
       document.body.removeChild(link);
     };
 
-    window.deleteSelectedBusiness = function() {
+    window.deleteSelectedBusiness = async function() {
       const selectedId = selectElem.value;
       if (!selectedId) return;
 
       const targetIndex = businesses.findIndex(b => b.id === selectedId);
       if (targetIndex !== -1) {
         const removed = businesses.splice(targetIndex, 1)[0];
-        
-        // Mark ID as permanently deleted in local storage
-        let deletedIds = JSON.parse(localStorage.getItem('isabel_deleted_ids') || '[]');
-        if (!deletedIds.includes(selectedId)) {
-          deletedIds.push(selectedId);
-          localStorage.setItem('isabel_deleted_ids', JSON.stringify(deletedIds));
-        }
-
-        // Remove from custom local storage if present
-        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-        customSaved = customSaved.filter(b => b.id !== selectedId);
-        localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-        localStorage.setItem('isabel_data_initialized', 'true');
-
         renderBusinessList(businesses);
-        alert("Deleted " + removed.name + " permanently.");
+        
+        await sendCloudAction({ action: "deleteBusiness", id: selectedId });
+        alert("Deleted " + removed.name + " from Cloud Database.");
       }
     };
 
-    window.clearAllCustomData = function() {
-      if (confirm("Are you sure you want to clear all business entries?")) {
-        // Collect all existing IDs and add them to deleted list
-        let deletedIds = JSON.parse(localStorage.getItem('isabel_deleted_ids') || '[]');
-        businesses.forEach(b => {
-          if (!deletedIds.includes(b.id)) deletedIds.push(b.id);
-        });
-
-        localStorage.setItem('isabel_deleted_ids', JSON.stringify(deletedIds));
-        localStorage.setItem('isabel_custom_businesses', JSON.stringify([]));
-        localStorage.setItem('isabel_data_initialized', 'true');
-
+    window.clearAllCustomData = async function() {
+      if (confirm("Are you sure you want to clear all cloud business entries?")) {
         businesses = [];
         renderBusinessList(businesses);
-        alert("All business entries cleared.");
+        await sendCloudAction({ action: "clearAll" });
+        alert("All cloud business entries cleared.");
       }
     };
 
@@ -586,7 +530,7 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Saving...";
+      submitBtn.textContent = "Syncing with Cloud...";
 
       try {
         const photoInput = document.getElementById('newBizPhoto');
@@ -594,6 +538,7 @@
         const compressedImage = await processHighMbPhoto(file);
 
         const newBiz = {
+          action: "addBusiness",
           id: "BIZ-" + Math.floor(Math.random() * 9000 + 1000),
           name: document.getElementById('newBizName').value.trim(),
           owner: document.getElementById('newBizOwner').value.trim(),
@@ -605,16 +550,6 @@
         };
 
         businesses.unshift(newBiz);
-
-        try {
-          const customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-          customSaved.unshift(newBiz);
-          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-          localStorage.setItem('isabel_data_initialized', 'true');
-        } catch (storageErr) {
-          console.warn("Storage warning:", storageErr);
-        }
-
         renderBusinessList(businesses);
         selectElem.value = newBiz.id;
         updateDetailCard(newBiz);
@@ -622,7 +557,9 @@
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
-        alert("Successfully added " + newBiz.name + "!");
+
+        await sendCloudAction(newBiz);
+        alert("Successfully added and synced " + newBiz.name + "!");
 
       } catch (err) {
         alert("An error occurred while saving.");
@@ -632,24 +569,18 @@
       }
     });
 
-    document.getElementById('inspectionForm').addEventListener('submit', (e) => {
+    document.getElementById('inspectionForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const selectedId = selectElem.value;
       const target = businesses.find(b => b.id === selectedId);
       if (target) {
         target.status = document.getElementById('statusSelect').value;
-        
-        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-        const customIdx = customSaved.findIndex(b => b.id === target.id);
-        if (customIdx !== -1) {
-          customSaved[customIdx].status = target.status;
-          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-        }
-
         renderBusinessList(businesses);
         selectElem.value = target.id;
         updateDetailCard(target);
-        alert("Updated status for " + target.name);
+
+        await sendCloudAction({ action: "updateStatus", id: target.id, status: target.status });
+        alert("Updated cloud status for " + target.name);
       }
     });
 
