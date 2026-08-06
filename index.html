@@ -22,7 +22,7 @@
   <header class="bg-blue-700 text-white p-4 rounded-xl shadow-md mb-4">
     <div class="flex justify-between items-center mb-3">
       <div>
-        <h1 class="text-lg font-bold">Isabel Business Tracker</h1>
+        <h1 class="text-lg font-bold">Isabel BPLO Tracker</h1>
         <p class="text-xs text-blue-200">Business Permit & Licensing Office</p>
       </div>
       <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
@@ -57,11 +57,11 @@
       </div>
     </div>
     
-    <!-- Search Bar -->
+    <!-- Search Bar (Updated for Business ID Search) -->
     <div class="mb-3">
       <label class="block text-xs font-semibold text-slate-600 mb-1">Search Establishment</label>
       <div class="relative">
-        <input type="text" id="searchInput" placeholder="Type name, owner, or barangay..." class="w-full text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+        <input type="text" id="searchInput" placeholder="Search ID, name, owner, or barangay..." class="w-full text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
         <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
       </div>
     </div>
@@ -80,6 +80,7 @@
         <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" class="w-20 h-20 rounded-lg object-cover border border-slate-300 bg-slate-200 shadow-sm" alt="Storefront">
         <div class="space-y-1 flex-1">
           <div class="text-sm font-bold text-slate-800" id="cardName">-</div>
+          <div><span class="font-semibold text-slate-500">Business ID:</span> <span id="cardId" class="text-blue-700 font-mono font-bold">-</span></div>
           <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
           <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
           <div><span class="font-semibold text-slate-500">Permit Status:</span> <span id="cardStatus" class="font-bold text-slate-800 px-2 py-0.5 rounded text-[10px] inline-block mt-0.5">-</span></div>
@@ -178,6 +179,12 @@
       </div>
       
       <form id="addBusinessForm" class="space-y-2.5 text-xs">
+        <!-- New Business ID Input Field -->
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
+          <input type="text" id="newBizId" required placeholder="e.g. BPLO-2026-0012" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono">
+        </div>
+
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Business Name *</label>
           <input type="text" id="newBizName" required placeholder="e.g. Isabel Store" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
@@ -279,7 +286,6 @@
       alert("Admin session locked.");
     };
 
-    // Load Local and Remote Data seamlessly
     async function loadBusinesses() {
       let customSaved = [];
       try {
@@ -338,7 +344,7 @@
       }
 
       list.forEach(biz => {
-        selectElem.appendChild(new Option(biz.name + " (" + biz.status + ")", biz.id));
+        selectElem.appendChild(new Option("[" + biz.id + "] " + biz.name + " (" + biz.status + ")", biz.id));
         addMarker(biz);
       });
       updateDetailCard(list[0]);
@@ -353,13 +359,14 @@
         fillOpacity: 0.95
       }).addTo(map);
 
-      marker.bindPopup("<b>" + biz.name + "</b><br>Owner: " + biz.owner + "<br>Status: " + biz.status);
+      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Status: " + biz.status);
       markers[biz.id] = marker;
     }
 
     function updateDetailCard(biz) {
       if (!biz) {
         document.getElementById('cardName').textContent = '-';
+        document.getElementById('cardId').textContent = '-';
         document.getElementById('cardOwner').textContent = '-';
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
@@ -367,6 +374,7 @@
         return;
       }
       document.getElementById('cardName').textContent = biz.name;
+      document.getElementById('cardId').textContent = biz.id;
       document.getElementById('cardOwner').textContent = biz.owner;
       document.getElementById('cardAddress').textContent = biz.address;
       
@@ -458,7 +466,6 @@
       if (targetIndex !== -1) {
         const removed = businesses.splice(targetIndex, 1)[0];
 
-        // Remove from Local Storage
         let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
         customSaved = customSaved.filter(b => b.id !== selectedId);
         localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
@@ -499,7 +506,6 @@
       }
     };
 
-    // Admin Verification Form
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const pass = document.getElementById('adminPassInput').value;
@@ -515,7 +521,7 @@
       }
     });
 
-    // Dual-Save Business Entry
+    // Form submission utilizing custom Business ID
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Admin access required.");
@@ -531,7 +537,7 @@
 
         const newBiz = {
           action: "addBusiness",
-          id: "BIZ-" + Math.floor(Math.random() * 9000 + 1000),
+          id: document.getElementById('newBizId').value.trim(),
           name: document.getElementById('newBizName').value.trim(),
           owner: document.getElementById('newBizOwner').value.trim(),
           address: document.getElementById('newBizAddress').value.trim(),
@@ -541,7 +547,6 @@
           image: compressedImage
         };
 
-        // 1. Save in Local Storage immediately
         businesses.unshift(newBiz);
         let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
         customSaved.unshift(newBiz);
@@ -555,7 +560,6 @@
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
 
-        // 2. Sync to Cloud
         await sendCloudAction(newBiz);
         alert("Successfully saved " + newBiz.name + "!");
 
@@ -603,9 +607,11 @@
       }
     });
 
+    // Upgraded Search Engine matching Business ID
     searchInput.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase();
+      const q = e.target.value.toLowerCase().trim();
       const filtered = businesses.filter(b => 
+        b.id.toLowerCase().includes(q) ||
         b.name.toLowerCase().includes(q) || 
         b.owner.toLowerCase().includes(q) || 
         b.address.toLowerCase().includes(q)
