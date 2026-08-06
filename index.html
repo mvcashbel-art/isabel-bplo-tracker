@@ -28,18 +28,17 @@
       <span class="bg-blue-800 text-xs px-2.5 py-1 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
     </div>
 
-    <!-- Active Profile Bar -->
+    <!-- Active Field Status Bar -->
     <div class="flex items-center justify-between bg-blue-800/80 p-2 rounded-lg border border-blue-600/50 text-xs">
       <div class="flex items-center gap-2">
-        <img id="userAvatar" src="https://placehold.co/100x100?text=Guest" class="w-7 h-7 rounded-full object-cover border border-white/50">
+        <div class="w-7 h-7 rounded-full bg-blue-600 border border-white/50 flex items-center justify-center font-bold text-white text-xs">📋</div>
         <div>
-          <div id="userProfileName" class="font-bold text-white leading-tight">Guest User</div>
-          <div id="userProfilePosition" class="text-[10px] text-blue-200 leading-tight">Viewer (Clean View)</div>
+          <div class="font-bold text-white leading-tight">Field Inspection Tracker</div>
+          <div class="text-[10px] text-blue-200 leading-tight">Multi-Device Cloud Active</div>
         </div>
       </div>
-      <div class="flex gap-1">
-        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded font-bold text-[10px] transition shadow-sm cursor-pointer">👑 Admin</button>
-        <button id="openAuthModalBtn" onclick="handleAuthClick()" type="button" class="bg-white text-slate-800 px-2 py-1 rounded font-bold text-[10px] hover:bg-slate-100 transition shadow-sm cursor-pointer">🔑 Login</button>
+      <div>
+        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-1 rounded font-bold text-[10px] transition shadow-sm cursor-pointer">👑 Admin</button>
       </div>
     </div>
   </header>
@@ -49,13 +48,10 @@
     <div class="flex justify-between items-center mb-3">
       <h2 class="text-sm font-bold text-slate-700">🏢 Business Directory</h2>
       <div class="flex gap-1">
-        <button id="exportExcelBtn" onclick="exportToExcel()" class="admin-only hidden bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer flex items-center gap-1">
+        <button id="exportExcelBtn" onclick="exportToExcel()" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer flex items-center gap-1">
           📊 Excel
         </button>
-        <button id="clearDataBtn" onclick="clearAllCustomData()" class="admin-only hidden bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs px-2 py-1 rounded-lg font-medium transition shadow-sm cursor-pointer">
-          🗑️ Clear All
-        </button>
-        <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="admin-only hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm cursor-pointer">
+        <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1 shadow-sm cursor-pointer">
           <span>➕</span> Add
         </button>
       </div>
@@ -90,18 +86,18 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-2 pt-1 border-t border-slate-200">
-        <a id="getDirectionsBtn" href="#" target="_blank" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1.5 transition text-xs">
-          <span>🧭</span> Get Directions (Google Maps)
+      <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+        <a id="getDirectionsBtn" href="#" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-1.5 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-xs">
+          <span>🧭</span> Directions
         </a>
-        <button type="button" id="deleteCurrentBizBtn" onclick="deleteSelectedBusiness()" class="admin-only hidden bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-2 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs">
-          <span>🗑️</span> Delete Establishment Entry
+        <button type="button" id="deleteCurrentBizBtn" onclick="deleteSelectedBusiness()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-1.5 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs">
+          <span>🗑️</span> Delete Entry
         </button>
       </div>
     </div>
 
     <!-- Inspector Log Form -->
-    <form id="inspectionForm" class="admin-only hidden space-y-3 mt-4 pt-4 border-t border-slate-200">
+    <form id="inspectionForm" class="space-y-3 mt-4 pt-4 border-t border-slate-200">
       <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">📝 Field Log & Compliance Inspection</h3>
 
       <div class="grid grid-cols-2 gap-2">
@@ -147,41 +143,25 @@
     <div id="map"></div>
   </section>
 
-  <!-- Login Modal -->
-  <div id="authModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">🔑 Inspector / Admin Login</h3>
-        <button type="button" onclick="toggleModal('authModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-      </div>
-
-      <form id="loginForm" class="space-y-2.5 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Full Name</label>
-          <input type="text" id="loginNameInput" required placeholder="e.g. Juan dela Cruz" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Password</label>
-          <input type="password" id="loginPasswordInput" required placeholder="••••••••" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">Unlock Inspector Mode</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Admin Modal -->
+  <!-- Admin Password Control Modal -->
   <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 max-h-[85vh] overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">👑 Admin User Approval Panel</h3>
+        <h3 class="text-sm font-bold text-slate-800">👑 Admin Controls</h3>
         <button type="button" onclick="toggleModal('adminModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
 
-      <form id="adminLoginForm" class="space-y-2 text-xs">
-        <p class="text-slate-500">Enter BPLO Master Admin password to manage accounts:</p>
-        <input type="password" id="adminPassInput" required placeholder="Default admin pass: admin123" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono">
-        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg">Access Admin Console</button>
+      <form id="adminLoginForm" class="space-y-2.5 text-xs">
+        <p class="text-slate-500">Enter BPLO Master Admin password to access management actions:</p>
+        <input type="password" id="adminPassInput" required placeholder="Master Admin Pass (admin123)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none">
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg transition">Verify Admin Access</button>
       </form>
+
+      <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
+        <button type="button" onclick="clearAllCustomData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
+          🗑️ Wipe All Cloud Database Entries
+        </button>
+      </div>
     </div>
   </div>
 
@@ -239,13 +219,11 @@
   </div>
 
   <script>
-    // Configured Google Apps Script Endpoint
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUK9ZTFgTgZ8qrYUJdXTTx3lBekvZwcGw-iVpW_3eXn9hiEhU83xSVtdUDLrXGqjFW/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const ADMIN_PASSCODE = "admin123";
 
     let businesses = [];
-    let activeUser = null;
     const markers = {};
 
     const colorMap = {
@@ -254,11 +232,6 @@
       "Pending Follow-Up": "#3b82f6",
       "Compliant": "#10b981"
     };
-
-    try {
-      const stored = localStorage.getItem('isabel_bplo_user');
-      if (stored) activeUser = JSON.parse(stored);
-    } catch (e) { activeUser = null; }
 
     const map = L.map('map').setView(ISABEL_CENTER, 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
@@ -271,34 +244,7 @@
       if (el) el.style.display = show ? 'flex' : 'none';
     };
 
-    window.handleAuthClick = function() {
-      if (activeUser) {
-        activeUser = null;
-        localStorage.removeItem('isabel_bplo_user');
-        updateUserRoleUI();
-        alert("Logged out. Switched back to Clean View mode.");
-      } else {
-        toggleModal('authModal', true);
-      }
-    };
-
-    function updateUserRoleUI() {
-      const adminElements = document.querySelectorAll('.admin-only');
-      const openAuthModalBtn = document.getElementById('openAuthModalBtn');
-
-      if (activeUser) {
-        document.getElementById('userProfileName').textContent = activeUser.name;
-        document.getElementById('userProfilePosition').textContent = activeUser.position || "Inspector";
-        openAuthModalBtn.textContent = "🔒 Logout";
-        adminElements.forEach(el => el.classList.remove('hidden'));
-      } else {
-        document.getElementById('userProfileName').textContent = "Guest User";
-        document.getElementById('userProfilePosition').textContent = "Viewer (Clean View)";
-        openAuthModalBtn.textContent = "🔑 Login";
-        adminElements.forEach(el => el.classList.add('hidden'));
-      }
-    }
-
+    // Direct Google Sheets API Sync
     async function loadBusinesses() {
       try {
         const res = await fetch(GOOGLE_SCRIPT_URL);
@@ -500,31 +446,19 @@
       }
     };
 
-    // Form Submissions
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('loginNameInput').value.trim();
-      activeUser = { name: name, position: "Field Inspector II" };
-      localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
-      updateUserRoleUI();
-      toggleModal('authModal', false);
-      alert("Welcome back, " + name + "! Inspector features unlocked.");
-    });
-
+    // Admin Verification
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const pass = document.getElementById('adminPassInput').value;
       if (pass === ADMIN_PASSCODE) {
-        activeUser = { name: "BPLO Master Admin", position: "Administrator" };
-        localStorage.setItem('isabel_bplo_user', JSON.stringify(activeUser));
-        updateUserRoleUI();
-        toggleModal('adminModal', false);
-        alert("Admin Mode Activated!");
+        document.getElementById('adminPanelControls').classList.remove('hidden');
+        alert("Admin Console Unlocked!");
       } else {
         alert("Incorrect Admin Password!");
       }
     });
 
+    // Form Submissions
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
 
@@ -606,7 +540,6 @@
     });
 
     // Initial Execution
-    updateUserRoleUI();
     loadBusinesses();
   </script>
 </body>
