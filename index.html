@@ -100,14 +100,14 @@
           <span>✏️</span> Edit Details
         </button>
       </div>
-      <button type="button" id="deleteCurrentBizBtn" onclick="deleteSelectedBusiness()" class="admin-only hidden w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-1.5 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs">
+      <button type="button" id="deleteCurrentBizBtn" onclick="triggerDeleteSecurity()" class="admin-only hidden w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-1.5 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs">
         <span>🗑️</span> Delete Entry (Password Required)
       </button>
     </div>
 
-    <!-- Inspector Log Form (Admin Only) -->
+    <!-- Inspector Log Form -->
     <form id="inspectionForm" class="admin-only hidden space-y-3 mt-4 pt-4 border-t border-slate-200">
-      <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">📝 Field Log & Compliance Inspection (Admin Only)</h3>
+      <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">📝 Field Log & Compliance Inspection</h3>
 
       <div class="grid grid-cols-2 gap-2">
         <div>
@@ -171,13 +171,33 @@
 
       <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
         <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Admin Mode Unlocked</div>
-        <button type="button" onclick="clearAllCustomData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
+        <button type="button" onclick="triggerWipeSecurity()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
           🗑️ Wipe All Cloud Database Entries
         </button>
         <button type="button" onclick="lockAdmin()" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 rounded-lg transition">
           🔒 Lock Admin Session
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- DELETE SECURITY CONFIRMATION MODAL -->
+  <div id="deleteConfirmModal" style="display: none;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 border-2 border-rose-500">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-bold text-rose-700 flex items-center gap-1">⚠️ Security Password Prompt</h3>
+        <button type="button" onclick="toggleModal('deleteConfirmModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <form id="deleteSecurityForm" class="space-y-2.5 text-xs">
+        <p id="deleteModalTargetLabel" class="text-slate-700 font-medium">Re-enter Admin Password to authorize deletion:</p>
+        <input type="password" id="deleteSecurityPassInput" required placeholder="Enter Admin Password" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none focus:ring-2 focus:ring-rose-500">
+        
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" onclick="toggleModal('deleteConfirmModal', false)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 rounded-lg transition">Cancel</button>
+          <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2 rounded-lg transition shadow-sm">Confirm Delete</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -307,7 +327,8 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUK9ZTFgTgZ8qrYUJdXTTx3lBekvZwcGw-iVpW_3eXn9hiEhU83xSVtdUDLrXGqjFW/exec";
+    // Updated with your newly deployed Web App URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZrodWgIBmvaQJHEmL_YtwCjQru5JRMJpflgTMj5TPperKOyWxecEnpJHORdsVvFR1/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const ADMIN_PASSCODE = "IsabelLeyte";
 
@@ -315,6 +336,7 @@
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let isPickingLocation = false;
     let tempPickerMarker = null;
+    let pendingDeleteMode = null;
     const markers = {};
 
     const colorMap = {
@@ -446,7 +468,6 @@
         fillOpacity: 0.95
       }).addTo(map);
 
-      // Interactive Map Pin Clicking
       marker.on('click', () => {
         selectElem.value = biz.id;
         updateDetailCard(biz);
@@ -493,14 +514,11 @@
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
-    // Fixed Map Pin Picker
     window.enableMapPinPicker = function() {
       toggleModal('addBusinessModal', false);
       isPickingLocation = true;
       document.getElementById('mapPickNotice').classList.remove('hidden');
       map.getContainer().classList.add('picking-mode');
-      
-      // Scroll to map for fast interaction
       document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
     };
 
@@ -514,7 +532,7 @@
       document.getElementById('newBizLon').value = lon;
 
       if (tempPickerMarker) map.removeLayer(tempPickerMarker);
-      tempPickerMarker = L.marker([lat, lon]).addTo(map).bindPopup("Selected Business Location").openPopup();
+      tempPickerMarker = L.marker([lat, lon]).addTo(map).bindPopup("Selected Location").openPopup();
 
       isPickingLocation = false;
       document.getElementById('mapPickNotice').classList.add('hidden');
@@ -539,6 +557,63 @@
 
       toggleModal('editBusinessModal', true);
     };
+
+    window.triggerDeleteSecurity = function() {
+      if (!isAdminUnlocked) return alert("Admin access required.");
+      const selectedId = selectElem.value;
+      const target = businesses.find(b => b.id === selectedId);
+      if (!target) return alert("No business selected.");
+
+      pendingDeleteMode = 'single';
+      document.getElementById('deleteModalTargetLabel').textContent = `Re-enter Admin Password to delete "${target.name}" (${target.id}):`;
+      document.getElementById('deleteSecurityPassInput').value = '';
+      toggleModal('deleteConfirmModal', true);
+    };
+
+    window.triggerWipeSecurity = function() {
+      if (!isAdminUnlocked) return alert("Admin access required.");
+      pendingDeleteMode = 'all';
+      document.getElementById('deleteModalTargetLabel').textContent = `🚨 DANGER: Re-enter Admin Password to WIPE ALL database entries:`;
+      document.getElementById('deleteSecurityPassInput').value = '';
+      toggleModal('adminModal', false);
+      toggleModal('deleteConfirmModal', true);
+    };
+
+    document.getElementById('deleteSecurityForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const enteredPass = document.getElementById('deleteSecurityPassInput').value;
+
+      if (enteredPass !== ADMIN_PASSCODE) {
+        alert("❌ Incorrect Admin Password! Action aborted.");
+        return;
+      }
+
+      toggleModal('deleteConfirmModal', false);
+
+      if (pendingDeleteMode === 'single') {
+        const selectedId = selectElem.value;
+        const targetIndex = businesses.findIndex(b => b.id === selectedId);
+        if (targetIndex !== -1) {
+          const removed = businesses.splice(targetIndex, 1)[0];
+
+          let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
+          customSaved = customSaved.filter(b => b.id !== selectedId);
+          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
+
+          renderBusinessList(businesses);
+          await sendCloudAction({ action: "deleteBusiness", id: selectedId });
+          alert("🗑️ Successfully deleted " + removed.name + "!");
+        }
+      } else if (pendingDeleteMode === 'all') {
+        businesses = [];
+        localStorage.removeItem('isabel_custom_businesses');
+        renderBusinessList(businesses);
+        await sendCloudAction({ action: "clearAll" });
+        alert("🗑️ All business entries cleared!");
+      }
+
+      pendingDeleteMode = null;
+    });
 
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
@@ -605,57 +680,6 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    };
-
-    // SECURE DELETION WITH PASSWORD CONFIRMATION
-    window.deleteSelectedBusiness = async function() {
-      if (!isAdminUnlocked) return alert("Admin access required.");
-      const selectedId = selectElem.value;
-      if (!selectedId) return;
-
-      const target = businesses.find(b => b.id === selectedId);
-      if (!target) return;
-
-      const confirmPass = prompt(`⚠️ SECURITY WARNING: You are deleting "${target.name}" (${target.id}).\n\nEnter Admin Password to confirm deletion:`);
-
-      if (confirmPass === null) return;
-
-      if (confirmPass === ADMIN_PASSCODE) {
-        const targetIndex = businesses.findIndex(b => b.id === selectedId);
-        if (targetIndex !== -1) {
-          const removed = businesses.splice(targetIndex, 1)[0];
-
-          let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-          customSaved = customSaved.filter(b => b.id !== selectedId);
-          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-
-          renderBusinessList(businesses);
-          
-          await sendCloudAction({ action: "deleteBusiness", id: selectedId });
-          alert("🗑️ Deleted " + removed.name + " successfully.");
-        }
-      } else {
-        alert("❌ Incorrect Password! Deletion aborted.");
-      }
-    };
-
-    // SECURE DATABASE WIPE WITH PASSWORD CONFIRMATION
-    window.clearAllCustomData = async function() {
-      if (!isAdminUnlocked) return alert("Admin access required.");
-      
-      const confirmPass = prompt("🚨 DANGER: You are about to wipe ALL business entries!\n\nEnter Admin Password to confirm full database reset:");
-
-      if (confirmPass === null) return;
-
-      if (confirmPass === ADMIN_PASSCODE) {
-        businesses = [];
-        localStorage.removeItem('isabel_custom_businesses');
-        renderBusinessList(businesses);
-        await sendCloudAction({ action: "clearAll" });
-        alert("🗑️ All business entries cleared.");
-      } else {
-        alert("❌ Incorrect Password! Reset aborted.");
-      }
     };
 
     window.detectGPS = function() {
