@@ -29,13 +29,14 @@
       <span class="bg-blue-800 text-[10px] px-2.5 py-1 rounded-full border border-blue-600 font-mono">Isabel, Leyte</span>
     </div>
 
-    <!-- Active Office Switcher -->
+    <!-- Active Office Switcher (Includes Assessor) -->
     <div class="bg-blue-950/80 p-2 rounded-lg border border-blue-700/50 flex items-center justify-between text-xs">
       <span class="text-blue-200 font-medium text-[11px]">Active Department:</span>
       <select id="roleSelector" onchange="switchDepartmentRole(this.value)" class="bg-blue-800 text-white font-bold text-xs py-1 px-2.5 rounded border border-blue-500 outline-none cursor-pointer">
         <option value="mayor">👑 Mayor's Office</option>
         <option value="treasury">💰 Treasury & Accounting</option>
         <option value="bplo">📋 BPLO Dept Overview</option>
+        <option value="assessor">🏠 City Assessor</option>
       </select>
     </div>
   </header>
@@ -44,7 +45,8 @@
   <nav class="flex bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden text-xs mb-4">
     <button id="tabBtn-mayor" onclick="switchDepartmentRole('mayor')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition tab-active">Mayor</button>
     <button id="tabBtn-treasury" onclick="switchDepartmentRole('treasury')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">Treasury</button>
-    <button id="tabBtn-bplo" onclick="switchDepartmentRole('bplo')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">BPLO Sync</button>
+    <button id="tabBtn-bplo" onclick="switchDepartmentRole('bplo')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">BPLO</button>
+    <button id="tabBtn-assessor" onclick="switchDepartmentRole('assessor')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">Assessor</button>
   </nav>
 
   <!-- MODULE 1: MAYOR'S EXECUTIVE DASHBOARD -->
@@ -117,12 +119,35 @@
     <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
       <div class="flex justify-between items-center">
         <h2 class="text-xs font-bold text-slate-700">📋 BPLO Synchronized Feed</h2>
-        <!-- UPDATED LINK TO bplo.html -->
         <a href="bplo.html" class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded border border-emerald-300 transition">📱 Open Field Tracker App</a>
       </div>
       <p class="text-[11px] text-slate-500">Displays real-time entries added or modified by BPLO field inspectors via <code class="font-mono text-blue-700">bplo.html</code>.</p>
       <div id="bploSyncList" class="space-y-2 text-xs">
         <!-- Populated dynamically -->
+      </div>
+    </div>
+  </section>
+
+  <!-- NEW MODULE 4: CITY ASSESSOR -->
+  <section id="module-assessor" class="hidden space-y-4">
+    <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
+      <h2 class="text-xs font-bold text-slate-700">🏠 Property Tax & Real Estate Assessment</h2>
+      
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Property / Business</label>
+        <select id="assessorSelect" onchange="updateAssessorCard(this.value)" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <div id="assessorCard" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
+        <!-- Populated dynamically -->
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-200">
+        <button onclick="issueAssessorClearance()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">
+          🏛️ Issue Assessor Zonal Clearance
+        </button>
       </div>
     </div>
   </section>
@@ -152,7 +177,7 @@
     function switchDepartmentRole(role) {
       document.getElementById('roleSelector').value = role;
       
-      ['mayor', 'treasury', 'bplo'].forEach(m => {
+      ['mayor', 'treasury', 'bplo', 'assessor'].forEach(m => {
         document.getElementById(`module-${m}`).classList.add('hidden');
         document.getElementById(`tabBtn-${m}`).classList.remove('tab-active');
       });
@@ -222,12 +247,17 @@
         `).join('');
       }
 
-      // 3. Treasury Select & View
+      // 3. Treasury Select
       const treasurySelect = document.getElementById('treasurySelect');
       treasurySelect.innerHTML = businesses.map(b => `<option value="${b.id}">${b.name} (${b.status})</option>`).join('');
       if (businesses.length > 0) updateTreasuryCard(treasurySelect.value || businesses[0].id);
 
-      // 4. BPLO Sync View
+      // 4. Assessor Select
+      const assessorSelect = document.getElementById('assessorSelect');
+      assessorSelect.innerHTML = businesses.map(b => `<option value="${b.id}">${b.name} (${b.address})</option>`).join('');
+      if (businesses.length > 0) updateAssessorCard(assessorSelect.value || businesses[0].id);
+
+      // 5. BPLO Sync View
       const bploList = document.getElementById('bploSyncList');
       bploList.innerHTML = businesses.map(b => `
         <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
@@ -253,6 +283,19 @@
       document.getElementById('treasuryStatusUpdate').value = b.status;
     }
 
+    function updateAssessorCard(id) {
+      const b = businesses.find(item => item.id === id);
+      if (!b) return;
+
+      document.getElementById('assessorCard').innerHTML = `
+        <div><span class="font-semibold text-slate-500">Business Name:</span> <span class="font-bold text-slate-800">${b.name}</span></div>
+        <div><span class="font-semibold text-slate-500">Owner Name:</span> ${b.owner}</div>
+        <div><span class="font-semibold text-slate-500">Barangay / Location:</span> ${b.address}</div>
+        <div><span class="font-semibold text-slate-500">GIS Coordinates:</span> <span class="font-mono text-slate-600">${b.lat.toFixed(4)}, ${b.lon.toFixed(4)}</span></div>
+        <div><span class="font-semibold text-slate-500">Zonal Status:</span> <span class="text-emerald-700 font-bold">Verified Commercial Zone</span></div>
+      `;
+    }
+
     async function saveTreasuryUpdate() {
       const selectedId = document.getElementById('treasurySelect').value;
       const target = businesses.find(b => b.id === selectedId);
@@ -273,6 +316,14 @@
         alert(`Successfully updated status for ${target.name} to "${newStatus}"!`);
       } catch (err) {
         alert("Status updated locally, but cloud sync encountered an error.");
+      }
+    }
+
+    function issueAssessorClearance() {
+      const selectedId = document.getElementById('assessorSelect').value;
+      const target = businesses.find(b => b.id === selectedId);
+      if (target) {
+        alert(`Assessor Zonal Clearance officially granted for ${target.name}!`);
       }
     }
 
