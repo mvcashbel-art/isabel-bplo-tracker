@@ -1,1 +1,283 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isabel LGU - Central Enterprise Dashboard</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    #map { height: 300px; width: 100%; border-radius: 0.75rem; }
+    .tab-active { border-bottom: 3px solid #2563eb; color: #1e40af; font-weight: 700; background-color: #f8fafc; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-3 max-w-md mx-auto">
+
+  <!-- Header -->
+  <header class="bg-blue-900 text-white p-4 rounded-xl shadow-md mb-4">
+    <div class="flex justify-between items-center mb-3">
+      <div>
+        <h1 class="text-base font-bold leading-tight">LGU Isabel Central Portal</h1>
+        <p class="text-[11px] text-blue-200">Inter-Department Enterprise System</p>
+      </div>
+      <span class="bg-blue-800 text-[10px] px-2.5 py-1 rounded-full border border-blue-600 font-mono">Isabel, Leyte</span>
+    </div>
+
+    <!-- Active Office Switcher -->
+    <div class="bg-blue-950/80 p-2 rounded-lg border border-blue-700/50 flex items-center justify-between text-xs">
+      <span class="text-blue-200 font-medium text-[11px]">Active Department:</span>
+      <select id="roleSelector" onchange="switchDepartmentRole(this.value)" class="bg-blue-800 text-white font-bold text-xs py-1 px-2.5 rounded border border-blue-500 outline-none cursor-pointer">
+        <option value="mayor">👑 Mayor's Office</option>
+        <option value="treasury">💰 Treasury & Accounting</option>
+        <option value="bplo">📋 BPLO Dept Overview</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="flex bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden text-xs mb-4">
+    <button id="tabBtn-mayor" onclick="switchDepartmentRole('mayor')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition tab-active">Mayor</button>
+    <button id="tabBtn-treasury" onclick="switchDepartmentRole('treasury')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">Treasury</button>
+    <button id="tabBtn-bplo" onclick="switchDepartmentRole('bplo')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">BPLO Sync</button>
+  </nav>
+
+  <!-- MODULE 1: MAYOR'S EXECUTIVE DASHBOARD -->
+  <section id="module-mayor" class="space-y-4">
+    <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
+      <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">📊 Executive Summary</h2>
+      
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-lg">
+          <div class="text-[10px] text-emerald-700 font-semibold">Active Permits</div>
+          <div id="statActive" class="text-sm font-bold text-emerald-900">0</div>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 p-2 rounded-lg">
+          <div class="text-[10px] text-amber-700 font-semibold">Pending Tax</div>
+          <div id="statPending" class="text-sm font-bold text-amber-900">0</div>
+        </div>
+        <div class="bg-rose-50 border border-rose-200 p-2 rounded-lg">
+          <div class="text-[10px] text-rose-700 font-semibold">No Permit</div>
+          <div id="statNoPermit" class="text-sm font-bold text-rose-900">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xs font-bold text-slate-700">✍️ Mayor's Permit Clearance Pipeline</h2>
+        <button onclick="loadCloudData()" class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-200 font-semibold">🔄 Refresh</button>
+      </div>
+      <div id="mayorApprovalList" class="space-y-2 text-xs">
+        <div class="text-center text-slate-400 py-3">Loading cloud database...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODULE 2: TREASURY & ACCOUNTING -->
+  <section id="module-treasury" class="hidden space-y-4">
+    <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
+      <h2 class="text-xs font-bold text-slate-700">💰 Tax Assessment & Collection</h2>
+      
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Establishment</label>
+        <select id="treasurySelect" onchange="updateTreasuryCard(this.value)" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <div id="treasuryCard" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
+        <!-- Populated dynamically -->
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-200">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">Update Permit Status</label>
+          <select id="treasuryStatusUpdate" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-lg outline-none">
+            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
+            <option value="Compliant">🟢 Active Permit (Paid)</option>
+            <option value="Expired">🟡 Expired</option>
+            <option value="No Permit">🔴 No Permit</option>
+          </select>
+        </div>
+        <button onclick="saveTreasuryUpdate()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">
+          💵 Update Payment & Cloud Sync
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODULE 3: BPLO FIELD SYNC OVERVIEW -->
+  <section id="module-bplo" class="hidden space-y-4">
+    <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xs font-bold text-slate-700">📋 BPLO Synchronized Feed</h2>
+        <a href="index.html" class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded border border-emerald-300">📱 Open Field Tracker App</a>
+      </div>
+      <p class="text-[11px] text-slate-500">Displays real-time entries added or modified by BPLO field inspectors via <code class="font-mono text-blue-700">index.html</code>.</p>
+      <div id="bploSyncList" class="space-y-2 text-xs">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Shared Map Section -->
+  <section class="bg-white p-3 rounded-xl shadow-sm my-4">
+    <h2 class="text-xs font-bold text-slate-700 mb-2">📍 Isabel Spatial GIS Map</h2>
+    <div id="map"></div>
+  </section>
+
+  <script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZrodWgIBmvaQJHEmL_YtwCjQru5JRMJpflgTMj5TPperKOyWxecEnpJHORdsVvFR1/exec";
+    const ISABEL_CENTER = [10.9280, 124.4385];
+    let businesses = [];
+    const markers = {};
+
+    const colorMap = {
+      "No Permit": "#ef4444",
+      "Expired": "#f59e0b",
+      "Pending Follow-Up": "#3b82f6",
+      "Compliant": "#10b981"
+    };
+
+    const map = L.map('map').setView(ISABEL_CENTER, 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+
+    function switchDepartmentRole(role) {
+      document.getElementById('roleSelector').value = role;
+      
+      ['mayor', 'treasury', 'bplo'].forEach(m => {
+        document.getElementById(`module-${m}`).classList.add('hidden');
+        document.getElementById(`tabBtn-${m}`).classList.remove('tab-active');
+      });
+
+      document.getElementById(`module-${role}`).classList.remove('hidden');
+      document.getElementById(`tabBtn-${role}`).classList.add('tab-active');
+
+      renderDashboardViews();
+    }
+
+    async function loadCloudData() {
+      try {
+        const res = await fetch(GOOGLE_SCRIPT_URL);
+        const data = await res.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          businesses = data.map(b => ({
+            id: String(b["Business ID"] || b.id || ""),
+            name: String(b["Business Name"] || b.name || ""),
+            owner: String(b["Owner Name"] || b.owner || ""),
+            phone: String(b["Phone Number"] || b["Phone"] || b.phone || "N/A"),
+            address: String(b["Barangay Address"] || b.address || ""),
+            status: String(b["Permit Status"] || b.status || "No Permit"),
+            timestamp: String(b["Timestamp"] || b.timestamp || ""),
+            lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
+            lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1]
+          }));
+        }
+      } catch (err) {
+        console.error("Cloud fetch error:", err);
+      }
+      renderDashboardViews();
+    }
+
+    function renderDashboardViews() {
+      // 1. Update Map Markers
+      Object.values(markers).forEach(m => map.removeLayer(m));
+      businesses.forEach(b => {
+        const m = L.circleMarker([b.lat, b.lon], {
+          radius: 8,
+          fillColor: colorMap[b.status] || '#6b7280',
+          color: '#ffffff',
+          weight: 2,
+          fillOpacity: 0.9
+        }).addTo(map);
+        m.bindPopup(`<b>${b.name}</b><br>ID: ${b.id}<br>Status: ${b.status}`);
+        markers[b.id] = m;
+      });
+
+      // 2. Mayor View Stats & List
+      document.getElementById('statActive').textContent = businesses.filter(b => b.status === 'Compliant').length;
+      document.getElementById('statPending').textContent = businesses.filter(b => b.status === 'Pending Follow-Up').length;
+      document.getElementById('statNoPermit').textContent = businesses.filter(b => b.status === 'No Permit').length;
+
+      const mayorList = document.getElementById('mayorApprovalList');
+      if (businesses.length === 0) {
+        mayorList.innerHTML = `<div class="text-center text-slate-400 py-3">No records found.</div>`;
+      } else {
+        mayorList.innerHTML = businesses.map(b => `
+          <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+            <div>
+              <div class="font-bold text-slate-800">${b.name}</div>
+              <div class="text-[10px] text-slate-500">ID: ${b.id} | Owner: ${b.owner}</div>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded text-white" style="background-color: ${colorMap[b.status] || '#6b7280'}">${b.status}</span>
+          </div>
+        `).join('');
+      }
+
+      // 3. Treasury Select & View
+      const treasurySelect = document.getElementById('treasurySelect');
+      treasurySelect.innerHTML = businesses.map(b => `<option value="${b.id}">${b.name} (${b.status})</option>`).join('');
+      if (businesses.length > 0) updateTreasuryCard(treasurySelect.value || businesses[0].id);
+
+      // 4. BPLO Sync View
+      const bploList = document.getElementById('bploSyncList');
+      bploList.innerHTML = businesses.map(b => `
+        <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+          <div class="font-bold text-slate-800">${b.name}</div>
+          <div class="text-[10px] text-slate-500">Address: ${b.address}</div>
+          <div class="text-[10px] text-slate-400 font-mono mt-0.5">Logged: ${b.timestamp || 'N/A'}</div>
+        </div>
+      `).join('');
+    }
+
+    function updateTreasuryCard(id) {
+      const b = businesses.find(item => item.id === id);
+      if (!b) return;
+
+      document.getElementById('treasuryCard').innerHTML = `
+        <div><span class="font-semibold text-slate-500">Business ID:</span> <span class="font-mono font-bold text-blue-700">${b.id}</span></div>
+        <div><span class="font-semibold text-slate-500">Owner Name:</span> ${b.owner}</div>
+        <div><span class="font-semibold text-slate-500">Contact Phone:</span> ${b.phone}</div>
+        <div><span class="font-semibold text-slate-500">Barangay Address:</span> ${b.address}</div>
+        <div><span class="font-semibold text-slate-500">Current Status:</span> <span class="font-bold text-slate-800">${b.status}</span></div>
+      `;
+
+      document.getElementById('treasuryStatusUpdate').value = b.status;
+    }
+
+    async function saveTreasuryUpdate() {
+      const selectedId = document.getElementById('treasurySelect').value;
+      const target = businesses.find(b => b.id === selectedId);
+      if (!target) return;
+
+      const newStatus = document.getElementById('treasuryStatusUpdate').value;
+      target.status = newStatus;
+
+      renderDashboardViews();
+
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ action: "updateStatus", id: target.id, status: newStatus })
+        });
+        alert(`Successfully updated status for ${target.name} to "${newStatus}"!`);
+      } catch (err) {
+        alert("Status updated locally, but cloud sync encountered an error.");
+      }
+    }
+
+    // Initialize
+    loadCloudData();
+  </script>
+</body>
+</html>
