@@ -247,35 +247,10 @@
           <input type="text" id="newBizName" required placeholder="e.g. Isabel Store" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
         </div>
 
-        async function sendCloudAction(payload) {
-  try {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = GOOGLE_SCRIPT_URL;
-    form.target = 'hidden_iframe';
-
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'postData';
-    input.value = JSON.stringify(payload);
-    form.appendChild(input);
-
-    let iframe = document.getElementById('hidden_iframe');
-    if (!iframe) {
-      iframe = document.createElement('iframe');
-      iframe.id = 'hidden_iframe';
-      iframe.name = 'hidden_iframe';
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-    }
-
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-  } catch (err) {
-    console.error("Cloud Write Error:", err);
-  }
-}
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Owner Name *</label>
+          <input type="text" id="newBizOwner" required placeholder="e.g. Maria Santos" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
 
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Phone / Telephone Number</label>
@@ -496,14 +471,32 @@
       renderBusinessList(businesses);
     }
 
+    // Direct Form Post to bypass CORS and write straight to Google Drive
     async function sendCloudAction(payload) {
       try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify(payload)
-        });
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = GOOGLE_SCRIPT_URL;
+        form.target = 'hidden_iframe';
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'postData';
+        input.value = JSON.stringify(payload);
+        form.appendChild(input);
+
+        let iframe = document.getElementById('hidden_iframe');
+        if (!iframe) {
+          iframe = document.createElement('iframe');
+          iframe.id = 'hidden_iframe';
+          iframe.name = 'hidden_iframe';
+          iframe.style.display = 'none';
+          document.body.appendChild(iframe);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
       } catch (err) {
         console.error("Cloud Write Error:", err);
       }
