@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Isabel LGU - Central Enterprise Dashboard</title>
+  <title>Isabel LGU - Enterprise Portal & Department Studio</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,7 +13,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    #map { height: 300px; width: 100%; border-radius: 0.75rem; }
+    #map { height: 280px; width: 100%; border-radius: 0.75rem; }
     .tab-active { border-bottom: 3px solid #2563eb; color: #1e40af; font-weight: 700; background-color: #f8fafc; }
   </style>
 </head>
@@ -24,29 +24,29 @@
     <div class="flex justify-between items-center mb-3">
       <div>
         <h1 class="text-base font-bold leading-tight">LGU Isabel Central Portal</h1>
-        <p class="text-[11px] text-blue-200">Inter-Department Enterprise System</p>
+        <p class="text-[11px] text-blue-200">Dynamic Multi-Department System</p>
       </div>
-      <span class="bg-blue-800 text-[10px] px-2.5 py-1 rounded-full border border-blue-600 font-mono">Isabel, Leyte</span>
+      <button onclick="toggleModal('deptStudioModal', true)" class="bg-amber-500 hover:bg-amber-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold transition shadow">
+        ➕ New Dept
+      </button>
     </div>
 
-    <!-- Active Office Switcher (Includes Assessor) -->
+    <!-- Active Office Switcher -->
     <div class="bg-blue-950/80 p-2 rounded-lg border border-blue-700/50 flex items-center justify-between text-xs">
       <span class="text-blue-200 font-medium text-[11px]">Active Department:</span>
       <select id="roleSelector" onchange="switchDepartmentRole(this.value)" class="bg-blue-800 text-white font-bold text-xs py-1 px-2.5 rounded border border-blue-500 outline-none cursor-pointer">
         <option value="mayor">👑 Mayor's Office</option>
         <option value="treasury">💰 Treasury & Accounting</option>
         <option value="bplo">📋 BPLO Dept Overview</option>
-        <option value="assessor">🏠 City Assessor</option>
       </select>
     </div>
   </header>
 
-  <!-- Navigation Tabs -->
-  <nav class="flex bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden text-xs mb-4">
-    <button id="tabBtn-mayor" onclick="switchDepartmentRole('mayor')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition tab-active">Mayor</button>
-    <button id="tabBtn-treasury" onclick="switchDepartmentRole('treasury')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">Treasury</button>
-    <button id="tabBtn-bplo" onclick="switchDepartmentRole('bplo')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">BPLO</button>
-    <button id="tabBtn-assessor" onclick="switchDepartmentRole('assessor')" class="flex-1 py-2.5 text-center text-slate-500 font-medium transition">Assessor</button>
+  <!-- Dynamic Navigation Tabs -->
+  <nav id="dynamicNavTabs" class="flex bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto text-xs mb-4">
+    <button id="tabBtn-mayor" onclick="switchDepartmentRole('mayor')" class="flex-1 py-2.5 px-3 min-w-[70px] text-center text-slate-500 font-medium transition tab-active">Mayor</button>
+    <button id="tabBtn-treasury" onclick="switchDepartmentRole('treasury')" class="flex-1 py-2.5 px-3 min-w-[70px] text-center text-slate-500 font-medium transition">Treasury</button>
+    <button id="tabBtn-bplo" onclick="switchDepartmentRole('bplo')" class="flex-1 py-2.5 px-3 min-w-[70px] text-center text-slate-500 font-medium transition">BPLO</button>
   </nav>
 
   <!-- MODULE 1: MAYOR'S EXECUTIVE DASHBOARD -->
@@ -128,29 +128,8 @@
     </div>
   </section>
 
-  <!-- NEW MODULE 4: CITY ASSESSOR -->
-  <section id="module-assessor" class="hidden space-y-4">
-    <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
-      <h2 class="text-xs font-bold text-slate-700">🏠 Property Tax & Real Estate Assessment</h2>
-      
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Property / Business</label>
-        <select id="assessorSelect" onchange="updateAssessorCard(this.value)" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-          <!-- Populated dynamically -->
-        </select>
-      </div>
-
-      <div id="assessorCard" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
-        <!-- Populated dynamically -->
-      </div>
-
-      <div class="space-y-2 pt-2 border-t border-slate-200">
-        <button onclick="issueAssessorClearance()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">
-          🏛️ Issue Assessor Zonal Clearance
-        </button>
-      </div>
-    </div>
-  </section>
+  <!-- DYNAMIC DEPARTMENT MODULE CONTAINERS GO HERE -->
+  <div id="dynamicModuleContainer"></div>
 
   <!-- Shared Map Section -->
   <section class="bg-white p-3 rounded-xl shadow-sm my-4">
@@ -158,10 +137,42 @@
     <div id="map"></div>
   </section>
 
+  <!-- MODAL: DEPARTMENT DESIGN STUDIO -->
+  <div id="deptStudioModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-800">🛠️ Create Custom Department</h3>
+        <button type="button" onclick="toggleModal('deptStudioModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <form id="createDeptForm" onsubmit="handleCreateDepartment(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Department Name *</label>
+          <input type="text" id="newDeptName" required placeholder="e.g. Health & Sanitary Office" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Department Icon / Emoji</label>
+          <input type="text" id="newDeptIcon" placeholder="e.g. 🩺, 🚒, 🏗️, 🚨" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-center">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Department Action / Output Label</label>
+          <input type="text" id="newDeptAction" required placeholder="e.g. Issue Sanitary Clearance" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">
+          🚀 Generate & Register Department
+        </button>
+      </form>
+    </div>
+  </div>
+
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZrodWgIBmvaQJHEmL_YtwCjQru5JRMJpflgTMj5TPperKOyWxecEnpJHORdsVvFR1/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
     let businesses = [];
+    let customDepartments = JSON.parse(localStorage.getItem('isabel_custom_departments') || '[]');
     const markers = {};
 
     const colorMap = {
@@ -174,18 +185,83 @@
     const map = L.map('map').setView(ISABEL_CENTER, 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
+    function toggleModal(id, show) {
+      document.getElementById(id).style.display = show ? 'flex' : 'none';
+    }
+
     function switchDepartmentRole(role) {
       document.getElementById('roleSelector').value = role;
       
-      ['mayor', 'treasury', 'bplo', 'assessor'].forEach(m => {
-        document.getElementById(`module-${m}`).classList.add('hidden');
-        document.getElementById(`tabBtn-${m}`).classList.remove('tab-active');
+      const allModules = ['mayor', 'treasury', 'bplo', ...customDepartments.map(d => d.id)];
+      allModules.forEach(m => {
+        const modEl = document.getElementById(`module-${m}`);
+        const tabEl = document.getElementById(`tabBtn-${m}`);
+        if (modEl) modEl.classList.add('hidden');
+        if (tabEl) tabEl.classList.remove('tab-active');
       });
 
-      document.getElementById(`module-${role}`).classList.remove('hidden');
-      document.getElementById(`tabBtn-${role}`).classList.add('tab-active');
+      const activeMod = document.getElementById(`module-${role}`);
+      const activeTab = document.getElementById(`tabBtn-${role}`);
+      if (activeMod) activeMod.classList.remove('hidden');
+      if (activeTab) activeTab.classList.add('tab-active');
 
       renderDashboardViews();
+    }
+
+    function handleCreateDepartment(e) {
+      e.preventDefault();
+      const name = document.getElementById('newDeptName').value.trim();
+      const icon = document.getElementById('newDeptIcon').value.trim() || '🏢';
+      const actionLabel = document.getElementById('newDeptAction').value.trim();
+      const id = 'dept_' + Date.now();
+
+      const newDept = { id, name, icon, actionLabel };
+      customDepartments.push(newDept);
+      localStorage.setItem('isabel_custom_departments', JSON.stringify(customDepartments));
+
+      registerDepartmentUI(newDept);
+      toggleModal('deptStudioModal', false);
+      document.getElementById('createDeptForm').reset();
+      switchDepartmentRole(id);
+      alert(`Successfully created "${name}" department!`);
+    }
+
+    function registerDepartmentUI(dept) {
+      // 1. Dropdown Option
+      const selector = document.getElementById('roleSelector');
+      const opt = document.createElement('option');
+      opt.value = dept.id;
+      opt.textContent = `${dept.icon} ${dept.name}`;
+      selector.appendChild(opt);
+
+      // 2. Navigation Tab
+      const navTabs = document.getElementById('dynamicNavTabs');
+      const tabBtn = document.createElement('button');
+      tabBtn.id = `tabBtn-${dept.id}`;
+      tabBtn.onclick = () => switchDepartmentRole(dept.id);
+      tabBtn.className = "flex-1 py-2.5 px-3 min-w-[70px] text-center text-slate-500 font-medium transition whitespace-nowrap";
+      tabBtn.textContent = dept.name;
+      navTabs.appendChild(tabBtn);
+
+      // 3. Module Section Layout
+      const container = document.getElementById('dynamicModuleContainer');
+      const sec = document.createElement('section');
+      sec.id = `module-${dept.id}`;
+      sec.className = "hidden space-y-4";
+      sec.innerHTML = `
+        <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
+          <h2 class="text-xs font-bold text-slate-700">${dept.icon} ${dept.name} Workspace</h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Select Establishment</label>
+            <select id="select-${dept.id}" onchange="renderDeptCard('${dept.id}', this.value)" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none"></select>
+          </div>
+          <div id="card-${dept.id}" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2"></div>
+          <button onclick="executeDeptAction('${dept.name}', '${dept.actionLabel}', '${dept.id}')" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 rounded-lg text-xs transition shadow-sm">
+            ${dept.actionLabel}
+          </button>
+        </div>
+      `;
+      container.appendChild(sec);
     }
 
     async function loadCloudData() {
@@ -213,86 +289,71 @@
     }
 
     function renderDashboardViews() {
-      // 1. Update Map Markers
+      // 1. Map Markers
       Object.values(markers).forEach(m => map.removeLayer(m));
       businesses.forEach(b => {
-        const m = L.circleMarker([b.lat, b.lon], {
-          radius: 8,
-          fillColor: colorMap[b.status] || '#6b7280',
-          color: '#ffffff',
-          weight: 2,
-          fillOpacity: 0.9
-        }).addTo(map);
+        const m = L.circleMarker([b.lat, b.lon], { radius: 8, fillColor: colorMap[b.status] || '#6b7280', color: '#ffffff', weight: 2, fillOpacity: 0.9 }).addTo(map);
         m.bindPopup(`<b>${b.name}</b><br>ID: ${b.id}<br>Status: ${b.status}`);
         markers[b.id] = m;
       });
 
-      // 2. Mayor View Stats & List
+      // 2. Mayor View
       document.getElementById('statActive').textContent = businesses.filter(b => b.status === 'Compliant').length;
       document.getElementById('statPending').textContent = businesses.filter(b => b.status === 'Pending Follow-Up').length;
       document.getElementById('statNoPermit').textContent = businesses.filter(b => b.status === 'No Permit').length;
 
       const mayorList = document.getElementById('mayorApprovalList');
-      if (businesses.length === 0) {
-        mayorList.innerHTML = `<div class="text-center text-slate-400 py-3">No records found.</div>`;
-      } else {
-        mayorList.innerHTML = businesses.map(b => `
+      mayorList.innerHTML = businesses.length === 0 
+        ? `<div class="text-center text-slate-400 py-3">No records found.</div>`
+        : businesses.map(b => `
           <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-            <div>
-              <div class="font-bold text-slate-800">${b.name}</div>
-              <div class="text-[10px] text-slate-500">ID: ${b.id} | Owner: ${b.owner}</div>
-            </div>
+            <div><div class="font-bold text-slate-800">${b.name}</div><div class="text-[10px] text-slate-500">ID: ${b.id} | Owner: ${b.owner}</div></div>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded text-white" style="background-color: ${colorMap[b.status] || '#6b7280'}">${b.status}</span>
-          </div>
-        `).join('');
-      }
+          </div>`).join('');
 
-      // 3. Treasury Select
+      // 3. Treasury View
       const treasurySelect = document.getElementById('treasurySelect');
       treasurySelect.innerHTML = businesses.map(b => `<option value="${b.id}">${b.name} (${b.status})</option>`).join('');
       if (businesses.length > 0) updateTreasuryCard(treasurySelect.value || businesses[0].id);
 
-      // 4. Assessor Select
-      const assessorSelect = document.getElementById('assessorSelect');
-      assessorSelect.innerHTML = businesses.map(b => `<option value="${b.id}">${b.name} (${b.address})</option>`).join('');
-      if (businesses.length > 0) updateAssessorCard(assessorSelect.value || businesses[0].id);
-
-      // 5. BPLO Sync View
-      const bploList = document.getElementById('bploSyncList');
-      bploList.innerHTML = businesses.map(b => `
+      // 4. BPLO View
+      document.getElementById('bploSyncList').innerHTML = businesses.map(b => `
         <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
           <div class="font-bold text-slate-800">${b.name}</div>
           <div class="text-[10px] text-slate-500">Address: ${b.address}</div>
           <div class="text-[10px] text-slate-400 font-mono mt-0.5">Logged: ${b.timestamp || 'N/A'}</div>
-        </div>
-      `).join('');
+        </div>`).join('');
+
+      // 5. Populate Custom Departments
+      customDepartments.forEach(dept => {
+        const sel = document.getElementById(`select-${dept.id}`);
+        if (sel) {
+          sel.innerHTML = businesses.map(b => `<option value="${b.id}">${b.name} (${b.address})</option>`).join('');
+          if (businesses.length > 0) renderDeptCard(dept.id, sel.value || businesses[0].id);
+        }
+      });
     }
 
     function updateTreasuryCard(id) {
       const b = businesses.find(item => item.id === id);
       if (!b) return;
-
       document.getElementById('treasuryCard').innerHTML = `
         <div><span class="font-semibold text-slate-500">Business ID:</span> <span class="font-mono font-bold text-blue-700">${b.id}</span></div>
         <div><span class="font-semibold text-slate-500">Owner Name:</span> ${b.owner}</div>
-        <div><span class="font-semibold text-slate-500">Contact Phone:</span> ${b.phone}</div>
         <div><span class="font-semibold text-slate-500">Barangay Address:</span> ${b.address}</div>
         <div><span class="font-semibold text-slate-500">Current Status:</span> <span class="font-bold text-slate-800">${b.status}</span></div>
       `;
-
       document.getElementById('treasuryStatusUpdate').value = b.status;
     }
 
-    function updateAssessorCard(id) {
-      const b = businesses.find(item => item.id === id);
+    function renderDeptCard(deptId, bizId) {
+      const b = businesses.find(item => item.id === bizId);
       if (!b) return;
-
-      document.getElementById('assessorCard').innerHTML = `
-        <div><span class="font-semibold text-slate-500">Business Name:</span> <span class="font-bold text-slate-800">${b.name}</span></div>
-        <div><span class="font-semibold text-slate-500">Owner Name:</span> ${b.owner}</div>
-        <div><span class="font-semibold text-slate-500">Barangay / Location:</span> ${b.address}</div>
-        <div><span class="font-semibold text-slate-500">GIS Coordinates:</span> <span class="font-mono text-slate-600">${b.lat.toFixed(4)}, ${b.lon.toFixed(4)}</span></div>
-        <div><span class="font-semibold text-slate-500">Zonal Status:</span> <span class="text-emerald-700 font-bold">Verified Commercial Zone</span></div>
+      document.getElementById(`card-${deptId}`).innerHTML = `
+        <div><span class="font-semibold text-slate-500">Establishment:</span> <span class="font-bold text-slate-800">${b.name}</span></div>
+        <div><span class="font-semibold text-slate-500">Owner:</span> ${b.owner}</div>
+        <div><span class="font-semibold text-slate-500">Location:</span> ${b.address}</div>
+        <div><span class="font-semibold text-slate-500">Inspection Status:</span> <span class="text-blue-700 font-semibold">${b.status}</span></div>
       `;
     }
 
@@ -303,7 +364,6 @@
 
       const newStatus = document.getElementById('treasuryStatusUpdate').value;
       target.status = newStatus;
-
       renderDashboardViews();
 
       try {
@@ -315,19 +375,20 @@
         });
         alert(`Successfully updated status for ${target.name} to "${newStatus}"!`);
       } catch (err) {
-        alert("Status updated locally, but cloud sync encountered an error.");
+        alert("Updated locally.");
       }
     }
 
-    function issueAssessorClearance() {
-      const selectedId = document.getElementById('assessorSelect').value;
-      const target = businesses.find(b => b.id === selectedId);
+    function executeDeptAction(deptName, actionLabel, deptId) {
+      const sel = document.getElementById(`select-${deptId}`);
+      const target = businesses.find(b => b.id === sel.value);
       if (target) {
-        alert(`Assessor Zonal Clearance officially granted for ${target.name}!`);
+        alert(`[${deptName}] Action Executed: "${actionLabel}" for ${target.name}!`);
       }
     }
 
-    // Initialize
+    // Initialize custom departments saved in storage
+    customDepartments.forEach(registerDepartmentUI);
     loadCloudData();
   </script>
 </body>
