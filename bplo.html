@@ -377,7 +377,7 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
     const selectElem = document.getElementById('businessSelect');
-    const searchInput = document.getElementById('searchInput');
+   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyQrhGi5ZxPPjEpipATnTPpPk5bjUSdvQ-GgNdXtWXgxmkIz1ZXKVU1BRZ2mxhBDeSx/exec";
 
     window.toggleModal = function(modalId, show) {
       const el = document.getElementById(modalId);
