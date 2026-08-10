@@ -88,7 +88,11 @@
         <!-- Business Card -->
         <div id="businessDetailCard" class="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs md:text-sm space-y-3">
           <div class="flex gap-4 items-center">
-            <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" class="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-slate-300 bg-slate-200 shadow-sm" alt="Storefront">
+            <!-- Clickable image triggers full screen lightbox -->
+            <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" 
+                 onclick="openLightbox()" 
+                 class="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-slate-300 bg-slate-200 shadow-sm cursor-zoom-in hover:opacity-90 transition" 
+                 alt="Storefront">
             <div class="space-y-1 flex-1">
               <div class="text-sm md:text-base font-bold text-slate-800" id="cardName">-</div>
               <div><span class="font-semibold text-slate-500">Business ID:</span> <span id="cardId" class="text-blue-700 font-mono font-bold">-</span></div>
@@ -166,6 +170,15 @@
       </section>
     </div>
 
+  </div>
+
+  <!-- PHOTO LIGHTBOX MODAL (Full-Screen Image View) -->
+  <div id="imageLightboxModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-md items-center justify-center p-4 z-50 cursor-pointer" onclick="closeLightbox()">
+    <div class="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center space-y-3" onclick="event.stopPropagation()">
+      <button type="button" onclick="closeLightbox()" class="absolute -top-10 right-0 text-white font-bold text-xs md:text-sm bg-slate-800/80 px-3 py-1 rounded-full border border-slate-600 hover:bg-slate-700">✕ Close</button>
+      <img id="lightboxImage" src="" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl border-2 border-white/20 object-contain" alt="Enlarged Storefront">
+      <div id="lightboxCaption" class="text-white text-xs md:text-sm font-bold bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700"></div>
+    </div>
   </div>
 
   <!-- Admin Control Modal -->
@@ -367,6 +380,20 @@
     window.toggleModal = function(modalId, show) {
       const el = document.getElementById(modalId);
       if (el) el.style.display = show ? 'flex' : 'none';
+    };
+
+    window.openLightbox = function() {
+      const imgElem = document.getElementById('cardImage');
+      const nameElem = document.getElementById('cardName');
+      if (!imgElem || !imgElem.src || imgElem.src.includes('placehold.co')) return;
+
+      document.getElementById('lightboxImage').src = imgElem.src;
+      document.getElementById('lightboxCaption').textContent = nameElem ? nameElem.textContent : 'Storefront Image';
+      toggleModal('imageLightboxModal', true);
+    };
+
+    window.closeLightbox = function() {
+      toggleModal('imageLightboxModal', false);
     };
 
     function updateAdminUI() {
