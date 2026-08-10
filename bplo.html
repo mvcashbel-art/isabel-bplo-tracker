@@ -50,10 +50,10 @@
     </div>
   </header>
 
-  <!-- MAIN DESKTOP GRID CONTAINER (2 Columns on Laptop/PC) -->
+  <!-- MAIN DESKTOP GRID CONTAINER -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
 
-    <!-- LEFT COLUMN: Business Directory & Field Form (7 cols on PC) -->
+    <!-- LEFT COLUMN -->
     <div class="lg:col-span-7 space-y-4">
       <section class="bg-white p-4 lg:p-5 rounded-xl shadow-sm">
         <div class="flex justify-between items-center mb-3">
@@ -88,10 +88,11 @@
         <!-- Business Card -->
         <div id="businessDetailCard" class="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs md:text-sm space-y-3">
           <div class="flex gap-4 items-center">
-            <!-- Clickable image triggers full screen lightbox -->
-            <img id="cardImage" src="https://placehold.co/100x100?text=No+Photo" 
+            <img id="cardImage" 
+                 src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E" 
+                 onerror="this.src=FALLBACK_IMAGE"
                  onclick="openLightbox()" 
-                 class="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-slate-300 bg-slate-200 shadow-sm cursor-zoom-in hover:opacity-90 transition" 
+                 class="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-slate-300 bg-slate-200 shadow-sm cursor-pointer hover:opacity-90 transition" 
                  alt="Storefront">
             <div class="space-y-1 flex-1">
               <div class="text-sm md:text-base font-bold text-slate-800" id="cardName">-</div>
@@ -152,7 +153,7 @@
       </section>
     </div>
 
-    <!-- RIGHT COLUMN: Shared Interactive GIS Map (5 cols on PC) -->
+    <!-- RIGHT COLUMN -->
     <div class="lg:col-span-5">
       <section class="bg-white p-3 md:p-4 rounded-xl shadow-sm sticky top-4">
         <div class="flex justify-between items-center mb-2">
@@ -172,11 +173,11 @@
 
   </div>
 
-  <!-- PHOTO LIGHTBOX MODAL (Full-Screen Image View) -->
+  <!-- PHOTO LIGHTBOX MODAL -->
   <div id="imageLightboxModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-md items-center justify-center p-4 z-50 cursor-pointer" onclick="closeLightbox()">
-    <div class="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center space-y-3" onclick="event.stopPropagation()">
+    <div class="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center space-y-3" onclick="event.stopPropagation()">
       <button type="button" onclick="closeLightbox()" class="absolute -top-10 right-0 text-white font-bold text-xs md:text-sm bg-slate-800/80 px-3 py-1 rounded-full border border-slate-600 hover:bg-slate-700">✕ Close</button>
-      <img id="lightboxImage" src="" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl border-2 border-white/20 object-contain" alt="Enlarged Storefront">
+      <img id="lightboxImage" src="" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl border-2 border-white/20 object-contain" alt="Enlarged Storefront">
       <div id="lightboxCaption" class="text-white text-xs md:text-sm font-bold bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700"></div>
     </div>
   </div>
@@ -356,6 +357,7 @@
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZrodWgIBmvaQJHEmL_YtwCjQru5JRMJpflgTMj5TPperKOyWxecEnpJHORdsVvFR1/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const ADMIN_PASSCODE = "IsabelLeyte";
+    const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
     let businesses = [];
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
@@ -385,7 +387,8 @@
     window.openLightbox = function() {
       const imgElem = document.getElementById('cardImage');
       const nameElem = document.getElementById('cardName');
-      if (!imgElem || !imgElem.src || imgElem.src.includes('placehold.co')) return;
+      
+      if (!imgElem || !imgElem.src || imgElem.src.startsWith('data:image/svg+xml')) return;
 
       document.getElementById('lightboxImage').src = imgElem.src;
       document.getElementById('lightboxCaption').textContent = nameElem ? nameElem.textContent : 'Storefront Image';
@@ -453,7 +456,7 @@
             timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()),
             lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
             lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
-            image: String(b["Photo URL"] || b.image || "https://placehold.co/100x100?text=No+Photo")
+            image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE)
           }));
 
           const allMap = new Map();
@@ -527,7 +530,7 @@
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardTimestamp').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
-        document.getElementById('cardImage').src = 'https://placehold.co/100x100?text=No+Photo';
+        document.getElementById('cardImage').src = FALLBACK_IMAGE;
         return;
       }
       document.getElementById('cardName').textContent = biz.name;
@@ -549,7 +552,10 @@
       const statusSelect = document.getElementById('statusSelect');
       if (statusSelect) statusSelect.value = biz.status;
 
-      document.getElementById('cardImage').src = biz.image || 'https://placehold.co/100x100?text=No+Photo';
+      const imgElem = document.getElementById('cardImage');
+      const validPhoto = biz.image && biz.image.trim() !== '' && !biz.image.includes('placehold.co') ? biz.image : FALLBACK_IMAGE;
+      imgElem.src = validPhoto;
+
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
@@ -654,6 +660,7 @@
       pendingDeleteMode = null;
     });
 
+    // High-resolution photo encoder supporting up to 8K dimensions
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve(null);
@@ -666,7 +673,7 @@
               const canvas = document.createElement('canvas');
               let width = img.width;
               let height = img.height;
-              const maxDimension = 300;
+              const maxDimension = 7680; // 8K Resolution Cap
 
               if (width > height) {
                 if (width > maxDimension) {
@@ -688,7 +695,7 @@
               ctx.fillRect(0, 0, width, height);
               ctx.drawImage(img, 0, 0, width, height);
 
-              resolve(canvas.toDataURL('image/jpeg', 0.4));
+              resolve(canvas.toDataURL('image/jpeg', 0.85));
             } catch (err) {
               resolve(null);
             }
@@ -760,12 +767,12 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Saving...";
+      submitBtn.textContent = "Uploading High-Res Photo...";
 
       try {
         const photoInput = document.getElementById('newBizPhoto');
         const file = photoInput.files[0];
-        const compressedImage = await processHighMbPhoto(file) || "https://placehold.co/100x100?text=No+Photo";
+        const compressedImage = await processHighMbPhoto(file) || FALLBACK_IMAGE;
 
         const newBiz = {
           action: "addBusiness",
