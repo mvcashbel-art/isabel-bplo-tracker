@@ -31,6 +31,7 @@
         <p class="text-xs md:text-sm text-blue-200">Business Permit & Licensing Office</p>
       </div>
       <div class="flex items-center gap-2">
+        <span id="offlineQueueBadge" class="hidden bg-amber-500 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">⚠️ 0 Offline Saved</span>
         <span class="bg-blue-800 text-white text-xs px-3 py-1.5 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
       </div>
     </div>
@@ -355,6 +356,7 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyPJi1_eYeF6jp3-Lpy58yjJbvwfBGdGGb3xPBucZEv9C5xHpHsBak9HGG_5jG4nFh7/exec";
+    const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const ADMIN_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
@@ -435,45 +437,120 @@
              ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     }
 
-    async function loadBusinesses() {
-      try {
-        const res = await fetch(GOOGLE_SCRIPT_URL);
-        const data = await res.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          businesses = data.map(b => ({
-            id: String(b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4)),
-            name: String(b["Business Name"] || b.name || ""),
-            owner: String(b["Owner Name"] || b.owner || ""),
-            phone: String(b["Phone Number"] || b["Phone"] || b.phone || "N/A"),
-            address: String(b["Barangay Address"] || b.address || ""),
-            status: String(b["Permit Status"] || b.status || "No Permit"),
-            timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()),
-            lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
-            lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
-            image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE)
-          }));
+    function updateOfflineBadge() {
+      let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+      let badge = document.getElementById('offlineQueueBadge');
+      if (badge) {
+        if (queue.length > 0) {
+          badge.textContent = `⚠️ ${queue.length} Offline Saved`;
+          badge.classList.remove('hidden');
         } else {
-          businesses = [];
+          badge.classList.add('hidden');
         }
-      } catch (err) {
-        console.error("Fetch error:", err);
-        businesses = [];
       }
-      renderBusinessList(businesses);
     }
 
-    // Direct HTTP POST payload transfer
-    async function sendCloudAction(payload) {
-      try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-      } catch (err) {
-        console.error("Cloud Write Error:", err);
+    function queueOfflineAction(payload) {
+      let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+      queue.push(payload);
+      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+      updateOfflineBadge();
+    }
+
+    async function syncOfflineQueue() {
+      let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+      if (queue.length === 0 || !navigator.onLine) return;
+
+      console.log(`Syncing ${queue.length} offline records to Google Sheets...`);
+      
+      for (let i = 0; i < queue.length; i++) {
+        try {
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(queue[i])
+          });
+        } catch (e) {
+          console.error("Failed syncing offline queue item:", e);
+          localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(i)));
+          updateOfflineBadge();
+          return;
+        }
       }
+
+      localStorage.removeItem(OFFLINE_QUEUE_KEY);
+      updateOfflineBadge();
+      alert("📡 Signal restored! All offline field logs have auto-synced to Google Sheets & Drive.");
+      await loadBusinesses();
+    }
+
+    async function sendCloudAction(payload) {
+      if (navigator.onLine) {
+        try {
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+          });
+          return true;
+        } catch (err) {
+          console.warn("Network error during sync. Saving to offline queue...", err);
+          queueOfflineAction(payload);
+          return false;
+        }
+      } else {
+        queueOfflineAction(payload);
+        return false;
+      }
+    }
+
+    async function loadBusinesses() {
+      let remoteData = [];
+      if (navigator.onLine) {
+        try {
+          const res = await fetch(GOOGLE_SCRIPT_URL);
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            remoteData = data.map(b => ({
+              id: String(b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4)),
+              name: String(b["Business Name"] || b.name || ""),
+              owner: String(b["Owner Name"] || b.owner || ""),
+              phone: String(b["Phone Number"] || b["Phone"] || b.phone || "N/A"),
+              address: String(b["Barangay Address"] || b.address || ""),
+              status: String(b["Permit Status"] || b.status || "No Permit"),
+              timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()),
+              lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
+              lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
+              image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE)
+            }));
+          }
+        } catch (err) {
+          console.error("Fetch error:", err);
+        }
+      }
+
+      let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+      let pendingItems = offlineQueue
+        .filter(item => item.action === "addBusiness")
+        .map(b => ({
+          id: b.id,
+          name: b.name + " (Pending Sync)",
+          owner: b.owner,
+          phone: b.phone,
+          address: b.address,
+          status: b.status,
+          timestamp: b.timestamp,
+          lat: b.lat,
+          lon: b.lon,
+          image: b.image || FALLBACK_IMAGE
+        }));
+
+      const allMap = new Map();
+      [...pendingItems, ...remoteData].forEach(item => allMap.set(item.id, item));
+      businesses = Array.from(allMap.values());
+
+      renderBusinessList(businesses);
+      updateOfflineBadge();
     }
 
     function renderBusinessList(list) {
@@ -586,7 +663,7 @@
 
       document.getElementById('editOriginalId').value = target.id;
       document.getElementById('editBizId').value = target.id;
-      document.getElementById('editBizName').value = target.name;
+      document.getElementById('editBizName').value = target.name.replace(' (Pending Sync)', '');
       document.getElementById('editBizOwner').value = target.owner;
       document.getElementById('editBizPhone').value = target.phone || '';
       document.getElementById('editBizAddress').value = target.address;
@@ -638,6 +715,7 @@
         }
       } else if (pendingDeleteMode === 'all') {
         businesses = [];
+        localStorage.removeItem(OFFLINE_QUEUE_KEY);
         renderBusinessList(businesses);
         await sendCloudAction({ action: "clearAll" });
         alert("🗑️ All business entries cleared!");
@@ -646,7 +724,6 @@
       pendingDeleteMode = null;
     });
 
-    // Compressed Base64 photo encoder for Drive compatibility
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve(null);
@@ -753,7 +830,7 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Uploading to Cloud Database...";
+      submitBtn.textContent = "Processing Photo & Location...";
 
       try {
         const photoInput = document.getElementById('newBizPhoto');
@@ -778,8 +855,12 @@
         document.getElementById('addBusinessForm').reset();
         if (tempPickerMarker) map.removeLayer(tempPickerMarker);
 
-        await sendCloudAction(newBiz);
-        alert("Successfully submitted " + newBiz.name + "! Refreshing cloud database...");
+        const synced = await sendCloudAction(newBiz);
+        if (synced) {
+          alert("Successfully submitted " + newBiz.name + "!");
+        } else {
+          alert("⚠️ Offline: Saved locally to phone. Will auto-sync to Google Drive & Sheets when signal returns.");
+        }
         await loadBusinesses();
 
       } catch (err) {
@@ -874,9 +955,14 @@
       renderBusinessList(filtered);
     });
 
+    // Auto-Sync Listeners
+    window.addEventListener('online', syncOfflineQueue);
+    window.addEventListener('offline', updateOfflineBadge);
+
     // Initial Execution
     updateAdminUI();
     loadBusinesses();
+    syncOfflineQueue();
   </script>
 </body>
 </html>
