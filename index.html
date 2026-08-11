@@ -19,6 +19,12 @@
     }
     .picking-mode { cursor: crosshair !important; }
     .leaflet-pane, .leaflet-top, .leaflet-bottom { z-index: 10 !important; }
+    @media print {
+      body * { visibility: hidden; }
+      #printableNoticeModal, #printableNoticeModal * { visibility: visible; }
+      #printableNoticeModal { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-3 md:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -27,12 +33,12 @@
   <header class="bg-blue-700 text-white p-4 lg:p-6 rounded-xl shadow-md mb-4 lg:mb-6">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-3">
       <div>
-        <h1 class="text-lg md:text-2xl font-bold">Isabel BPLO Tracker</h1>
-        <p class="text-xs md:text-sm text-blue-200">Business Permit & Licensing Office</p>
+        <h1 class="text-lg md:text-2xl font-bold">Isabel BPLO Field Tracker</h1>
+        <p class="text-xs md:text-sm text-blue-200">Business Permit & Licensing Office — Isabel, Leyte</p>
       </div>
       <div class="flex items-center gap-2">
         <span id="offlineQueueBadge" class="hidden bg-amber-500 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">⚠️ 0 Offline Saved</span>
-        <span class="bg-blue-800 text-white text-xs px-3 py-1.5 rounded-full border border-blue-500 font-mono">Isabel, Leyte</span>
+        <span id="activeInspectorBadge" class="bg-blue-800 text-white text-xs px-3 py-1.5 rounded-full border border-blue-500 font-mono">Inspector: Guest</span>
       </div>
     </div>
 
@@ -41,15 +47,44 @@
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 rounded-full bg-blue-600 border border-white/50 flex items-center justify-center font-bold text-white text-xs md:text-sm">📋</div>
         <div>
-          <div class="font-bold text-white leading-tight">Field Inspection Tracker</div>
+          <div class="font-bold text-white leading-tight">Field Inspection & Audit Control</div>
           <div id="viewModeLabel" class="text-[10px] md:text-xs text-blue-200 leading-tight">Public View-Only Mode</div>
         </div>
       </div>
       <div>
-        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded font-bold text-xs transition shadow-sm cursor-pointer">👑 Admin</button>
+        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded font-bold text-xs transition shadow-sm cursor-pointer">👑 Admin Login</button>
       </div>
     </div>
   </header>
+
+  <!-- DASHBOARD STATISTICS & CHARTS -->
+  <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 lg:mb-6">
+    <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200">
+      <div class="text-xs text-slate-500 font-semibold uppercase">Total Establishments</div>
+      <div id="statTotal" class="text-xl md:text-2xl font-bold text-slate-800 mt-1">0</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Inspected in database</div>
+    </div>
+
+    <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200">
+      <div class="text-xs text-emerald-600 font-semibold uppercase">Compliant Rate</div>
+      <div id="statCompliantRate" class="text-xl md:text-2xl font-bold text-emerald-600 mt-1">0%</div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+        <div id="statCompliantBar" class="bg-emerald-500 h-full w-0 transition-all"></div>
+      </div>
+    </div>
+
+    <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200">
+      <div class="text-xs text-rose-600 font-semibold uppercase">No Permit / Expired</div>
+      <div id="statNonCompliant" class="text-xl md:text-2xl font-bold text-rose-600 mt-1">0</div>
+      <div class="text-[10px] text-rose-500 mt-0.5">Require Action Notices</div>
+    </div>
+
+    <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200">
+      <div class="text-xs text-blue-600 font-semibold uppercase">Barangay Coverage</div>
+      <div id="statBarangays" class="text-xl md:text-2xl font-bold text-blue-700 mt-1">0</div>
+      <div id="statBarangayDetail" class="text-[10px] text-slate-500 truncate mt-0.5">Top: -</div>
+    </div>
+  </section>
 
   <!-- MAIN DESKTOP GRID CONTAINER -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
@@ -102,6 +137,7 @@
               <div><span class="font-semibold text-slate-500">Contact:</span> <a id="cardPhone" href="#" class="text-blue-600 font-medium hover:underline">-</a></div>
               <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
               <div><span class="font-semibold text-slate-500">Log Date:</span> <span id="cardTimestamp" class="text-slate-600 font-mono text-xs">-</span></div>
+              <div><span class="font-semibold text-slate-500">Inspector:</span> <span id="cardInspector" class="text-slate-700 font-medium">-</span></div>
               <div><span class="font-semibold text-slate-500">Permit Status:</span> <span id="cardStatus" class="font-bold text-slate-800 px-2.5 py-0.5 rounded text-[11px] md:text-xs inline-block mt-0.5">-</span></div>
             </div>
           </div>
@@ -114,43 +150,15 @@
               <span>✏️</span> Edit Details
             </button>
           </div>
+
+          <button type="button" id="generateNoticeBtn" onclick="openNoticeModal()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-2 rounded-lg transition text-xs md:text-sm shadow-sm flex items-center justify-center gap-1">
+            <span>📄</span> Generate Compliance Notice / Violation Slip
+          </button>
+
           <button type="button" id="deleteCurrentBizBtn" onclick="triggerDeleteSecurity()" class="admin-only hidden w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-2 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs md:text-sm">
             <span>🗑️</span> Delete Entry (Password Required)
           </button>
         </div>
-
-        <!-- Inspector Log Form -->
-        <form id="inspectionForm" class="admin-only hidden space-y-3 mt-4 pt-4 border-t border-slate-200">
-          <h3 class="text-xs md:text-sm font-bold text-blue-800 uppercase tracking-wider">📝 Field Log & Compliance Inspection</h3>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-xs md:text-sm font-semibold text-slate-600 mb-1">Permit Status Update</label>
-              <select id="statusSelect" class="w-full text-xs md:text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-                <option value="No Permit">🔴 No Permit</option>
-                <option value="Expired">🟡 Expired / Overdue</option>
-                <option value="Pending Follow-Up">🔵 Pending Compliance</option>
-                <option value="Compliant">🟢 Active Permit</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs md:text-sm font-semibold text-slate-600 mb-1">Inspection Outcome</label>
-              <select id="outcomeSelect" class="w-full text-xs md:text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-                <option value="Notice Served">Notice Served</option>
-                <option value="Verified Active">Verified Active</option>
-                <option value="Closed/Unlocated">Closed Storefront</option>
-                <option value="Refused Inspection">Refused Entry</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs md:text-sm font-semibold text-slate-600 mb-1">Inspector Remarks / Citation Reference</label>
-            <textarea id="inspectorNotes" rows="2" class="w-full text-xs md:text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none" placeholder="Add compliance details or citation reference..."></textarea>
-          </div>
-
-          <button type="submit" id="submitLogBtn" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-2.5 rounded-lg text-xs md:text-sm transition shadow-sm">Save Inspection Log Entry</button>
-        </form>
       </section>
     </div>
 
@@ -174,12 +182,56 @@
 
   </div>
 
-  <!-- PHOTO LIGHTBOX MODAL -->
-  <div id="imageLightboxModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-md items-center justify-center p-4 z-50 cursor-pointer" onclick="closeLightbox()">
-    <div class="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center space-y-3" onclick="event.stopPropagation()">
-      <button type="button" onclick="closeLightbox()" class="absolute -top-10 right-0 text-white font-bold text-xs md:text-sm bg-slate-800/80 px-3 py-1 rounded-full border border-slate-600 hover:bg-slate-700">✕ Close</button>
-      <img id="lightboxImage" src="" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl border-2 border-white/20 object-contain" alt="Enlarged Storefront">
-      <div id="lightboxCaption" class="text-white text-xs md:text-sm font-bold bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700"></div>
+  <!-- PRINTABLE NOTICE MODAL -->
+  <div id="printableNoticeModal" style="display: none;" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4 max-h-[90vh] overflow-y-auto border-4 border-rose-600">
+      <div class="text-center border-b pb-3 no-print flex justify-between items-center">
+        <h3 class="text-sm font-bold text-rose-700">📄 Official Notice Preview</h3>
+        <button type="button" onclick="toggleModal('printableNoticeModal', false)" class="text-slate-400 hover:text-slate-600 font-bold">✕ Close</button>
+      </div>
+
+      <!-- Official Letterhead -->
+      <div class="text-center space-y-1">
+        <div class="text-xs uppercase font-bold text-slate-500 tracking-wider">Republic of the Philippines</div>
+        <div class="text-xs uppercase font-bold text-slate-700">Municipality of Isabel, Leyte</div>
+        <div class="text-sm uppercase font-extrabold text-blue-900">Business Permit & Licensing Office (BPLO)</div>
+        <div class="text-xs font-semibold text-rose-600 uppercase tracking-widest mt-2 border-t border-b border-rose-200 py-1">Notice of Violation / Compliance Order</div>
+      </div>
+
+      <div class="text-xs space-y-2 pt-2">
+        <div class="flex justify-between">
+          <span><strong>Date:</strong> <span id="noticeDate">-</span></span>
+          <span><strong>Notice No:</strong> <span id="noticeNo" class="font-mono text-rose-700 font-bold">-</span></span>
+        </div>
+        <div><strong>Establishment Name:</strong> <span id="noticeBizName" class="font-bold text-slate-900">-</span></div>
+        <div><strong>Business ID:</strong> <span id="noticeBizId" class="font-mono font-bold">-</span></div>
+        <div><strong>Owner / Operator:</strong> <span id="noticeOwner">-</span></div>
+        <div><strong>Barangay Address:</strong> <span id="noticeAddress">-</span></div>
+        <div class="p-2.5 bg-rose-50 border border-rose-200 text-rose-900 rounded font-semibold">
+          <strong>Violation Status:</strong> <span id="noticeStatus" class="uppercase font-bold">-</span>
+        </div>
+        <p class="text-justify leading-relaxed">
+          Please be informed that during a field inspection conducted by the Isabel BPLO inspection team, your establishment was found operating without a valid Business Permit or with an expired permit in violation of Municipal Revenue Code provisions.
+        </p>
+        <p class="text-justify font-bold text-slate-900">
+          You are hereby given five (5) working days from receipt of this notice to present yourself at the Isabel BPLO Municipal Hall to complete permit compliance.
+        </p>
+        <div class="pt-4 flex justify-between items-end">
+          <div>
+            <div class="font-bold text-slate-900" id="noticeInspectorName">Inspector Name</div>
+            <div class="text-[10px] text-slate-500">BPLO Field Officer</div>
+          </div>
+          <div class="text-right">
+            <div class="w-32 border-b border-slate-400 mb-1"></div>
+            <div class="text-[10px] text-slate-500">Owner Signature / Received Date</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t flex gap-2 no-print">
+        <button type="button" onclick="window.print()" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 rounded-lg text-xs transition">🖨️ Print / Save PDF</button>
+        <button type="button" onclick="toggleModal('printableNoticeModal', false)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs transition">Close</button>
+      </div>
     </div>
   </div>
 
@@ -187,29 +239,35 @@
   <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">👑 Admin Controls</h3>
+        <h3 class="text-sm font-bold text-slate-800">👑 Inspector & Admin Login</h3>
         <button type="button" onclick="toggleModal('adminModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
 
       <form id="adminLoginForm" class="space-y-2.5 text-xs">
-        <p class="text-slate-500">Enter Admin password to unlock adding, editing, and deleting records:</p>
-        <input type="password" id="adminPassInput" required placeholder="Password" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none">
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Inspector / Officer Name *</label>
+          <input type="text" id="inspectorNameInput" required placeholder="e.g. Officer Juan Cruz" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Passcode *</label>
+          <input type="password" id="adminPassInput" required placeholder="Password" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none">
+        </div>
         <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg transition">Unlock Admin Access</button>
       </form>
 
       <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
-        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Admin Mode Unlocked</div>
+        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Admin Session Active</div>
         <button type="button" onclick="triggerWipeSecurity()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
           🗑️ Wipe All Cloud Database Entries
         </button>
         <button type="button" onclick="lockAdmin()" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 rounded-lg transition">
-          🔒 Lock Admin Session
+          🔒 Lock Session
         </button>
       </div>
     </div>
   </div>
 
-  <!-- DELETE SECURITY CONFIRMATION MODAL -->
+  <!-- DELETE CONFIRMATION MODAL -->
   <div id="deleteConfirmModal" style="display: none;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 border-2 border-rose-500">
       <div class="flex justify-between items-center border-b pb-2">
@@ -276,7 +334,7 @@
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Photo Quality / Resolution</label>
           <select id="newBizResolution" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-blue-700">
-            <option value="800">Standard HD (800px) - Fast Sync</option>
+            <option value="800">Standard HD (800px)</option>
             <option value="3840" selected>📸 4K Ultra HD (3840px)</option>
             <option value="7680">📸 8K Super HD (7680px)</option>
           </select>
@@ -380,6 +438,7 @@
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
     let businesses = [];
+    let activeInspector = localStorage.getItem('isabel_inspector_name') || "Guest Inspector";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let isPickingLocation = false;
     let tempPickerMarker = null;
@@ -404,36 +463,77 @@
       if (el) el.style.display = show ? 'flex' : 'none';
     };
 
-    window.openLightbox = function() {
-      const imgElem = document.getElementById('cardImage');
-      const nameElem = document.getElementById('cardName');
+    window.openNoticeModal = function() {
+      const selectedVal = selectElem.value;
+      const target = businesses.find(b => (b.uniqueKey || b.id) === selectedVal);
+      if (!target) return alert("Please select a business first.");
+
+      document.getElementById('noticeDate').textContent = getFormattedTimestamp().split(',')[0];
+      document.getElementById('noticeNo').textContent = "BPLO-NOV-" + Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('noticeBizName').textContent = target.name;
+      document.getElementById('noticeBizId').textContent = target.id;
+      document.getElementById('noticeOwner').textContent = target.owner;
+      document.getElementById('noticeAddress').textContent = target.address;
+      document.getElementById('noticeStatus').textContent = target.status;
+      document.getElementById('noticeInspectorName').textContent = target.inspector || activeInspector;
+
+      toggleModal('printableNoticeModal', true);
+    };
+
+    function updateDashboardStats(list) {
+      const total = list.length;
+      document.getElementById('statTotal').textContent = total;
+
+      if (total === 0) {
+        document.getElementById('statCompliantRate').textContent = "0%";
+        document.getElementById('statCompliantBar').style.width = "0%";
+        document.getElementById('statNonCompliant').textContent = "0";
+        document.getElementById('statBarangays').textContent = "0";
+        document.getElementById('statBarangayDetail').textContent = "Top: -";
+        return;
+      }
+
+      const compliantCount = list.filter(b => b.status === "Compliant").length;
+      const nonCompliantCount = list.filter(b => b.status === "No Permit" || b.status === "Expired").length;
+      const rate = Math.round((compliantCount / total) * 100);
+
+      document.getElementById('statCompliantRate').textContent = rate + "%";
+      document.getElementById('statCompliantBar').style.width = rate + "%";
+      document.getElementById('statNonCompliant').textContent = nonCompliantCount;
+
+      const brgyMap = {};
+      list.forEach(b => {
+        const brgy = (b.address || "Unknown").split(',')[0].trim();
+        brgyMap[brgy] = (brgyMap[brgy] || 0) + 1;
+      });
+
+      const brgyKeys = Object.keys(brgyMap);
+      document.getElementById('statBarangays').textContent = brgyKeys.length;
       
-      if (!imgElem || !imgElem.src || imgElem.src.startsWith('data:image/svg+xml')) return;
-
-      document.getElementById('lightboxImage').src = imgElem.src;
-      document.getElementById('lightboxCaption').textContent = nameElem ? nameElem.textContent : 'Storefront Image';
-      toggleModal('imageLightboxModal', true);
-    };
-
-    window.closeLightbox = function() {
-      toggleModal('imageLightboxModal', false);
-    };
+      if (brgyKeys.length > 0) {
+        const topBrgy = brgyKeys.reduce((a, b) => brgyMap[a] > brgyMap[b] ? a : b);
+        document.getElementById('statBarangayDetail').textContent = `Top: ${topBrgy} (${brgyMap[topBrgy]})`;
+      }
+    }
 
     function updateAdminUI() {
       const adminElements = document.querySelectorAll('.admin-only');
       const adminBtn = document.getElementById('openAdminModalBtn');
       const viewModeLabel = document.getElementById('viewModeLabel');
+      const inspectorBadge = document.getElementById('activeInspectorBadge');
+
+      inspectorBadge.textContent = "Inspector: " + activeInspector;
 
       if (isAdminUnlocked) {
         adminElements.forEach(el => el.classList.remove('hidden'));
-        adminBtn.textContent = "🔓 Admin Unlocked";
+        adminBtn.textContent = "🔓 Session Active";
         adminBtn.classList.replace('bg-amber-500', 'bg-emerald-600');
-        viewModeLabel.textContent = "Admin Control Active";
+        viewModeLabel.textContent = "Audit Control Active (" + activeInspector + ")";
         document.getElementById('adminLoginForm').classList.add('hidden');
         document.getElementById('adminPanelControls').classList.remove('hidden');
       } else {
         adminElements.forEach(el => el.classList.add('hidden'));
-        adminBtn.textContent = "👑 Admin";
+        adminBtn.textContent = "👑 Admin Login";
         adminBtn.classList.replace('bg-emerald-600', 'bg-amber-500');
         viewModeLabel.textContent = "Public View-Only Mode";
         document.getElementById('adminLoginForm').classList.remove('hidden');
@@ -446,7 +546,7 @@
       localStorage.removeItem('isabel_admin_unlocked');
       updateAdminUI();
       toggleModal('adminModal', false);
-      alert("Admin session locked.");
+      alert("Inspector session locked.");
     };
 
     function getFormattedTimestamp() {
@@ -475,7 +575,6 @@
       updateOfflineBadge();
     }
 
-    // CORS Bypass Form Post Method
     function submitViaHiddenForm(payload) {
       return new Promise((resolve) => {
         try {
@@ -505,43 +604,34 @@
           setTimeout(() => {
             document.body.removeChild(form);
             resolve(true);
-          }, 3500); // 3.5 sec safety buffer for 4K/8K Drive upload
+          }, 3500);
         } catch (err) {
-          console.error("Form Post Error:", err);
           resolve(false);
         }
       });
     }
 
-    // Router for online/offline submission
     async function sendCloudAction(payload) {
       if (navigator.onLine) {
-        const success = await submitViaHiddenForm(payload);
-        return success;
+        return await submitViaHiddenForm(payload);
       } else {
         queueOfflineAction(payload);
         return false;
       }
     }
 
-    // Sequential Offline Sync
     async function syncOfflineQueue() {
       let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
       if (queue.length === 0 || !navigator.onLine) return;
 
-      console.log(`Syncing ${queue.length} offline records to Google Sheets...`);
-      
       for (let i = 0; i < queue.length; i++) {
         await submitViaHiddenForm(queue[i]);
       }
 
       localStorage.removeItem(OFFLINE_QUEUE_KEY);
       updateOfflineBadge();
-
-      alert("📡 Signal restored! Offline entries uploaded. Refreshing...");
-      setTimeout(async () => {
-        await loadBusinesses();
-      }, 1500);
+      alert("📡 Offline field logs auto-synced to Google Drive Subfolders & Sheets!");
+      setTimeout(async () => { await loadBusinesses(); }, 1500);
     }
 
     async function loadBusinesses() {
@@ -562,12 +652,11 @@
               lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
               lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
               image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
+              inspector: String(b["Inspector Name"] || b.inspector || "System Admin"),
               uniqueKey: (b["Business ID"] || "N/A") + "_" + (b["Business Name"] || index) + "_" + index
             }));
           }
-        } catch (err) {
-          console.error("Fetch error:", err);
-        }
+        } catch (err) {}
       }
 
       let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
@@ -584,6 +673,7 @@
           lat: b.lat,
           lon: b.lon,
           image: b.image || FALLBACK_IMAGE,
+          inspector: b.inspector || activeInspector,
           uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
         }));
 
@@ -592,6 +682,7 @@
       businesses = Array.from(allMap.values());
 
       renderBusinessList(businesses);
+      updateDashboardStats(businesses);
       updateOfflineBadge();
     }
 
@@ -641,6 +732,7 @@
         document.getElementById('cardPhone').href = '#';
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardTimestamp').textContent = '-';
+        document.getElementById('cardInspector').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
         document.getElementById('cardImage').src = FALLBACK_IMAGE;
         return;
@@ -655,300 +747,32 @@
 
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardTimestamp').textContent = biz.timestamp || getFormattedTimestamp();
+      document.getElementById('cardInspector').textContent = biz.inspector || "System Admin";
       
       const statusBadge = document.getElementById('cardStatus');
       statusBadge.textContent = biz.status;
       statusBadge.style.backgroundColor = colorMap[biz.status] || '#6b7280';
       statusBadge.style.color = '#ffffff';
 
-      const statusSelect = document.getElementById('statusSelect');
-      if (statusSelect) statusSelect.value = biz.status;
-
       const imgElem = document.getElementById('cardImage');
-      const validPhoto = biz.image && biz.image.trim() !== '' && !biz.image.includes('placehold.co') ? biz.image : FALLBACK_IMAGE;
-      imgElem.src = validPhoto;
+      imgElem.src = biz.image && biz.image.trim() !== '' && !biz.image.includes('placehold.co') ? biz.image : FALLBACK_IMAGE;
 
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
-    window.enableMapPinPicker = function() {
-      toggleModal('addBusinessModal', false);
-      isPickingLocation = true;
-      document.getElementById('mapPickNotice').classList.remove('hidden');
-      map.getContainer().classList.add('picking-mode');
-      document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
-    };
-
-    map.on('click', function(e) {
-      if (!isPickingLocation) return;
-
-      const lat = e.latlng.lat.toFixed(6);
-      const lon = e.latlng.lng.toFixed(6);
-
-      document.getElementById('newBizLat').value = lat;
-      document.getElementById('newBizLon').value = lon;
-
-      if (tempPickerMarker) map.removeLayer(tempPickerMarker);
-      tempPickerMarker = L.marker([lat, lon]).addTo(map).bindPopup("Selected Location").openPopup();
-
-      isPickingLocation = false;
-      document.getElementById('mapPickNotice').classList.add('hidden');
-      map.getContainer().classList.remove('picking-mode');
-
-      toggleModal('addBusinessModal', true);
-    });
-
-    window.openEditModal = function() {
-      if (!isAdminUnlocked) return alert("Admin access required.");
-      const selectedVal = selectElem.value;
-      const target = businesses.find(b => (b.uniqueKey || b.id) === selectedVal);
-      if (!target) return alert("No business selected.");
-
-      document.getElementById('editOriginalId').value = target.id;
-      document.getElementById('editBizId').value = target.id;
-      document.getElementById('editBizName').value = target.name.replace(' (Pending Sync)', '');
-      document.getElementById('editBizOwner').value = target.owner;
-      document.getElementById('editBizPhone').value = target.phone || '';
-      document.getElementById('editBizAddress').value = target.address;
-      document.getElementById('editBizStatus').value = target.status;
-
-      toggleModal('editBusinessModal', true);
-    };
-
-    window.triggerDeleteSecurity = function() {
-      if (!isAdminUnlocked) return alert("Admin access required.");
-      const selectedVal = selectElem.value;
-      const target = businesses.find(b => (b.uniqueKey || b.id) === selectedVal);
-      if (!target) return alert("No business selected.");
-
-      pendingDeleteMode = 'single';
-      document.getElementById('deleteModalTargetLabel').textContent = `Re-enter Admin Password to delete "${target.name}" (${target.id}):`;
-      document.getElementById('deleteSecurityPassInput').value = '';
-      toggleModal('deleteConfirmModal', true);
-    };
-
-    window.triggerWipeSecurity = function() {
-      if (!isAdminUnlocked) return alert("Admin access required.");
-      pendingDeleteMode = 'all';
-      document.getElementById('deleteModalTargetLabel').textContent = `🚨 DANGER: Re-enter Admin Password to WIPE ALL database entries:`;
-      document.getElementById('deleteSecurityPassInput').value = '';
-      toggleModal('adminModal', false);
-      toggleModal('deleteConfirmModal', true);
-    };
-
-    document.getElementById('deleteSecurityForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const enteredPass = document.getElementById('deleteSecurityPassInput').value;
-
-      if (enteredPass !== ADMIN_PASSCODE) {
-        alert("❌ Incorrect Admin Password! Action aborted.");
-        return;
-      }
-
-      toggleModal('deleteConfirmModal', false);
-
-      if (pendingDeleteMode === 'single') {
-        const selectedVal = selectElem.value;
-        const targetIndex = businesses.findIndex(b => (b.uniqueKey || b.id) === selectedVal);
-        if (targetIndex !== -1) {
-          const removed = businesses.splice(targetIndex, 1)[0];
-          renderBusinessList(businesses);
-          await sendCloudAction({ action: "deleteBusiness", id: removed.id });
-          alert("🗑️ Successfully deleted " + removed.name + " & its photo from Drive!");
-        }
-      } else if (pendingDeleteMode === 'all') {
-        businesses = [];
-        localStorage.removeItem(OFFLINE_QUEUE_KEY);
-        renderBusinessList(businesses);
-        await sendCloudAction({ action: "clearAll" });
-        alert("🗑️ System wiped! All database rows and Drive photos cleared.");
-      }
-
-      pendingDeleteMode = null;
-    });
-
-    // High-Resolution Canvas Engine supporting 4K / 8K Side Banner Stamps
-    function processHighMbPhoto(file, metadata, maxTargetDim = 3840) {
-      return new Promise((resolve) => {
-        if (!file) return resolve(null);
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              
-              let photoWidth = img.width;
-              let photoHeight = img.height;
-              const maxPhotoDim = parseInt(maxTargetDim) || 3840; // Default 4K
-
-              if (photoWidth > photoHeight) {
-                if (photoWidth > maxPhotoDim) {
-                  photoHeight = Math.round((photoHeight * maxPhotoDim) / photoWidth);
-                  photoWidth = maxPhotoDim;
-                }
-              } else {
-                if (photoHeight > maxPhotoDim) {
-                  photoWidth = Math.round((photoWidth * maxPhotoDim) / photoHeight);
-                  photoHeight = maxPhotoDim;
-                }
-              }
-
-              // Proportional side panel scaling
-              const panelWidth = Math.round(photoWidth * 0.28); 
-              canvas.width = photoWidth + panelWidth;
-              canvas.height = photoHeight;
-
-              const ctx = canvas.getContext('2d');
-              
-              // 1. Uncropped Original Storefront Image
-              ctx.fillStyle = "#FFFFFF";
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(img, 0, 0, photoWidth, photoHeight);
-
-              // 2. Right Side Dark Slate Inspection Panel
-              ctx.fillStyle = "#0F172A"; 
-              ctx.fillRect(photoWidth, 0, panelWidth, photoHeight);
-
-              // Vertical Accent Line
-              ctx.strokeStyle = "#38BDF8";
-              ctx.lineWidth = Math.max(3, Math.round(photoWidth / 250));
-              ctx.beginPath();
-              ctx.moveTo(photoWidth, 0);
-              ctx.lineTo(photoWidth, photoHeight);
-              ctx.stroke();
-
-              // Proportional Dynamic Font Sizing for 4K / 8K High DPI
-              const baseFontSize = Math.max(12, Math.round(photoWidth / 45));
-              const startX = photoWidth + Math.round(panelWidth * 0.08);
-              let currentY = Math.round(photoHeight * 0.08);
-              const lineSpacing = Math.round(baseFontSize * 1.6);
-
-              ctx.fillStyle = "#38BDF8"; 
-              ctx.font = `bold ${Math.round(baseFontSize * 1.2)}px sans-serif`;
-              ctx.fillText("ISABEL BPLO LOG", startX, currentY);
-
-              currentY += lineSpacing;
-              ctx.fillStyle = "#94A3B8";
-              ctx.font = `${Math.round(baseFontSize * 0.85)}px sans-serif`;
-              ctx.fillText("INSPECTION STAMP", startX, currentY);
-
-              currentY += Math.round(lineSpacing * 0.8);
-              ctx.strokeStyle = "#334155";
-              ctx.lineWidth = 1;
-              ctx.beginPath();
-              ctx.moveTo(startX, currentY);
-              ctx.lineTo(photoWidth + panelWidth - 15, currentY);
-              ctx.stroke();
-
-              currentY += lineSpacing;
-              ctx.fillStyle = "#CBD5E1";
-              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("BUSINESS ID:", startX, currentY);
-              currentY += Math.round(lineSpacing * 0.8);
-              ctx.fillStyle = "#FFFFFF";
-              ctx.font = `${baseFontSize}px font-mono`;
-              ctx.fillText(metadata.id || 'N/A', startX, currentY);
-
-              currentY += lineSpacing;
-              ctx.fillStyle = "#CBD5E1";
-              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("BUSINESS NAME:", startX, currentY);
-              currentY += Math.round(lineSpacing * 0.8);
-              ctx.fillStyle = "#FFFFFF";
-              ctx.font = `${baseFontSize}px sans-serif`;
-              ctx.fillText(metadata.name || 'N/A', startX, currentY);
-
-              currentY += lineSpacing;
-              ctx.fillStyle = "#CBD5E1";
-              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("OWNER:", startX, currentY);
-              currentY += Math.round(lineSpacing * 0.8);
-              ctx.fillStyle = "#FFFFFF";
-              ctx.font = `${baseFontSize}px sans-serif`;
-              ctx.fillText(metadata.owner || 'N/A', startX, currentY);
-
-              currentY += lineSpacing;
-              ctx.fillStyle = "#CBD5E1";
-              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("ADDRESS:", startX, currentY);
-              currentY += Math.round(lineSpacing * 0.8);
-              ctx.fillStyle = "#FFFFFF";
-              ctx.font = `${baseFontSize}px sans-serif`;
-              ctx.fillText(metadata.address || 'Isabel', startX, currentY);
-
-              currentY += lineSpacing;
-              ctx.fillStyle = "#CBD5E1";
-              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("LOG DATE:", startX, currentY);
-              currentY += Math.round(lineSpacing * 0.8);
-              ctx.fillStyle = "#38BDF8";
-              ctx.font = `${Math.round(baseFontSize * 0.85)}px font-mono`;
-              ctx.fillText(metadata.timestamp || getFormattedTimestamp(), startX, currentY);
-
-              // 0.65 JPEG compression maintains 4K/8K detail within Drive payload limits
-              resolve(canvas.toDataURL('image/jpeg', 0.65));
-            } catch (err) {
-              resolve(null);
-            }
-          };
-          img.onerror = () => resolve(null);
-          img.src = e.target.result;
-        };
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    window.exportToExcel = function() {
-      if (businesses.length === 0) {
-        alert("No business data available to export.");
-        return;
-      }
-
-      let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude\n";
-      businesses.forEach(b => {
-        csv += '"' + b.id + '","' + b.name + '","' + b.owner + '","' + (b.phone || "N/A") + '","' + b.address + '","' + b.status + '","' + (b.timestamp || 'N/A') + '","' + b.lat + '","' + b.lon + '"\n';
-      });
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "Isabel_BPLO_Businesses.csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-
-    window.detectGPS = function() {
-      if ("geolocation" in navigator) {
-        document.getElementById('gpsBtnText').textContent = "Locating GPS...";
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            document.getElementById('newBizLat').value = pos.coords.latitude.toFixed(6);
-            document.getElementById('newBizLon').value = pos.coords.longitude.toFixed(6);
-            document.getElementById('gpsBtnText').textContent = "GPS Acquired!";
-          },
-          () => {
-            document.getElementById('newBizLat').value = ISABEL_CENTER[0];
-            document.getElementById('newBizLon').value = ISABEL_CENTER[1];
-            document.getElementById('gpsBtnText').textContent = "Used Isabel Center";
-          }
-        );
-      }
-    };
-
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const pass = document.getElementById('adminPassInput').value;
+      const inspector = document.getElementById('inspectorNameInput').value.trim();
+
       if (pass === ADMIN_PASSCODE) {
         isAdminUnlocked = true;
+        activeInspector = inspector || "Officer Juan Cruz";
         localStorage.setItem('isabel_admin_unlocked', 'true');
+        localStorage.setItem('isabel_inspector_name', activeInspector);
         updateAdminUI();
-        document.getElementById('adminPassInput').value = '';
         toggleModal('adminModal', false);
-        alert("Admin Mode Unlocked!");
+        alert("Welcome, " + activeInspector + "! Inspector Session Activated.");
       } else {
         alert("Incorrect Admin Password!");
       }
@@ -960,11 +784,10 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Processing High-Res Photo & Uploading...";
+      submitBtn.textContent = "Stamping Photo & Submitting...";
 
       try {
-        const photoInput = document.getElementById('newBizPhoto');
-        const file = photoInput.files[0];
+        const file = document.getElementById('newBizPhoto').files[0];
         const targetRes = document.getElementById('newBizResolution').value;
         
         const bizData = {
@@ -988,7 +811,8 @@
           timestamp: bizData.timestamp,
           lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
           lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
-          image: stampedImage
+          image: stampedImage,
+          inspector: activeInspector
         };
 
         toggleModal('addBusinessModal', false);
@@ -996,13 +820,10 @@
         if (tempPickerMarker) map.removeLayer(tempPickerMarker);
 
         const synced = await sendCloudAction(newBiz);
-        if (synced) {
-          alert("Successfully submitted " + newBiz.name + "!");
-        } else {
-          alert("⚠️ Offline: Saved locally to phone. Will auto-sync to Google Drive & Sheets when signal returns.");
-        }
+        if (synced) alert("Successfully submitted " + newBiz.name + "!");
+        else alert("⚠️ Offline: Saved locally to phone. Will auto-sync to Google Drive Subfolders & Sheets when signal returns.");
+        
         await loadBusinesses();
-
       } catch (err) {
         alert("An error occurred while saving.");
       } finally {
@@ -1011,105 +832,139 @@
       }
     });
 
-    document.getElementById('editBusinessForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      if (!isAdminUnlocked) return alert("Admin access required.");
+    function processHighMbPhoto(file, metadata, maxTargetDim = 3840) {
+      return new Promise((resolve) => {
+        if (!file) return resolve(null);
 
-      const originalId = document.getElementById('editOriginalId').value;
-      const target = businesses.find(b => b.id === originalId);
-      if (!target) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              let photoWidth = img.width;
+              let photoHeight = img.height;
+              const maxPhotoDim = parseInt(maxTargetDim) || 3840;
 
-      const newId = document.getElementById('editBizId').value.trim();
-      const photoInput = document.getElementById('editBizPhoto');
-      const file = photoInput.files[0];
-      const targetRes = document.getElementById('editBizResolution').value;
-      
-      const bizData = {
-        id: newId,
-        name: document.getElementById('editBizName').value.trim(),
-        owner: document.getElementById('editBizOwner').value.trim(),
-        address: document.getElementById('editBizAddress').value.trim(),
-        timestamp: target.timestamp
-      };
+              if (photoWidth > photoHeight) {
+                if (photoWidth > maxPhotoDim) {
+                  photoHeight = Math.round((photoHeight * maxPhotoDim) / photoWidth);
+                  photoWidth = maxPhotoDim;
+                }
+              } else {
+                if (photoHeight > maxPhotoDim) {
+                  photoWidth = Math.round((photoWidth * maxPhotoDim) / photoHeight);
+                  photoHeight = maxPhotoDim;
+                }
+              }
 
-      const stampedImage = await processHighMbPhoto(file, bizData, targetRes);
+              const panelWidth = Math.round(photoWidth * 0.28); 
+              canvas.width = photoWidth + panelWidth;
+              canvas.height = photoHeight;
 
-      target.id = bizData.id;
-      target.name = bizData.name;
-      target.owner = bizData.owner;
-      target.phone = document.getElementById('editBizPhone').value.trim() || "N/A";
-      target.address = bizData.address;
-      target.status = document.getElementById('editBizStatus').value;
-      if (stampedImage) target.image = stampedImage;
+              const ctx = canvas.getContext('2d');
+              ctx.fillStyle = "#FFFFFF";
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, photoWidth, photoHeight);
 
-      toggleModal('editBusinessModal', false);
+              ctx.fillStyle = "#0F172A"; 
+              ctx.fillRect(photoWidth, 0, panelWidth, photoHeight);
 
-      if (originalId !== newId) {
-        await sendCloudAction({ action: "deleteBusiness", id: originalId });
-      }
-      await sendCloudAction({
-        action: "addBusiness",
-        id: target.id,
-        name: target.name,
-        owner: target.owner,
-        phone: target.phone,
-        address: target.address,
-        status: target.status,
-        timestamp: target.timestamp,
-        lat: target.lat,
-        lon: target.lon,
-        image: target.image
+              ctx.strokeStyle = "#38BDF8";
+              ctx.lineWidth = Math.max(3, Math.round(photoWidth / 250));
+              ctx.beginPath();
+              ctx.moveTo(photoWidth, 0);
+              ctx.lineTo(photoWidth, photoHeight);
+              ctx.stroke();
+
+              const baseFontSize = Math.max(12, Math.round(photoWidth / 45));
+              const startX = photoWidth + Math.round(panelWidth * 0.08);
+              let currentY = Math.round(photoHeight * 0.08);
+              const lineSpacing = Math.round(baseFontSize * 1.6);
+
+              ctx.fillStyle = "#38BDF8"; 
+              ctx.font = `bold ${Math.round(baseFontSize * 1.2)}px sans-serif`;
+              ctx.fillText("ISABEL BPLO LOG", startX, currentY);
+
+              currentY += lineSpacing;
+              ctx.fillStyle = "#94A3B8";
+              ctx.font = `${Math.round(baseFontSize * 0.85)}px sans-serif`;
+              ctx.fillText("INSPECTION STAMP", startX, currentY);
+
+              currentY += lineSpacing;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
+              ctx.fillText("BUSINESS ID:", startX, currentY);
+              currentY += Math.round(lineSpacing * 0.8);
+              ctx.fillStyle = "#FFFFFF";
+              ctx.font = `${baseFontSize}px font-mono`;
+              ctx.fillText(metadata.id || 'N/A', startX, currentY);
+
+              currentY += lineSpacing;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
+              ctx.fillText("BUSINESS NAME:", startX, currentY);
+              currentY += Math.round(lineSpacing * 0.8);
+              ctx.fillStyle = "#FFFFFF";
+              ctx.font = `${baseFontSize}px sans-serif`;
+              ctx.fillText(metadata.name || 'N/A', startX, currentY);
+
+              currentY += lineSpacing;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
+              ctx.fillText("INSPECTOR:", startX, currentY);
+              currentY += Math.round(lineSpacing * 0.8);
+              ctx.fillStyle = "#38BDF8";
+              ctx.font = `${baseFontSize}px sans-serif`;
+              ctx.fillText(activeInspector, startX, currentY);
+
+              resolve(canvas.toDataURL('image/jpeg', 0.65));
+            } catch (err) {
+              resolve(null);
+            }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
       });
+    }
 
-      alert("Updated details for " + target.name + "!");
-      await loadBusinesses();
-    });
+    window.exportToExcel = function() {
+      if (businesses.length === 0) return alert("No business data available to export.");
+      let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
+      businesses.forEach(b => {
+        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${b.timestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "Isabel_BPLO_Businesses.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
 
-    document.getElementById('inspectionForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!isAdminUnlocked) return alert("Admin access required.");
-      
-      const selectedVal = selectElem.value;
-      const target = businesses.find(b => (b.uniqueKey || b.id) === selectedVal);
-      if (target) {
-        target.status = document.getElementById('statusSelect').value;
-        renderBusinessList(businesses);
-        selectElem.value = target.uniqueKey || target.id;
-        updateDetailCard(target);
-
-        await sendCloudAction({ action: "updateStatus", id: target.id, status: target.status });
-        alert("Updated status for " + target.name);
+    window.detectGPS = function() {
+      if ("geolocation" in navigator) {
+        document.getElementById('gpsBtnText').textContent = "Locating...";
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            document.getElementById('newBizLat').value = pos.coords.latitude.toFixed(6);
+            document.getElementById('newBizLon').value = pos.coords.longitude.toFixed(6);
+            document.getElementById('gpsBtnText').textContent = "GPS Acquired!";
+          },
+          () => {
+            document.getElementById('newBizLat').value = ISABEL_CENTER[0];
+            document.getElementById('newBizLon').value = ISABEL_CENTER[1];
+            document.getElementById('gpsBtnText').textContent = "Used Isabel Center";
+          }
+        );
       }
-    });
+    };
 
-    selectElem.addEventListener('change', (e) => {
-      const target = businesses.find(b => (b.uniqueKey || b.id) === e.target.value);
-      if (target) {
-        updateDetailCard(target);
-        if (markers[target.uniqueKey || target.id]) {
-          map.panTo([target.lat, target.lon]);
-          markers[target.uniqueKey || target.id].openPopup();
-        }
-      }
-    });
-
-    searchInput.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
-      const filtered = businesses.filter(b => 
-        b.id.toLowerCase().includes(q) ||
-        b.name.toLowerCase().includes(q) || 
-        b.owner.toLowerCase().includes(q) || 
-        (b.phone && b.phone.toLowerCase().includes(q)) ||
-        b.address.toLowerCase().includes(q)
-      );
-      renderBusinessList(filtered);
-    });
-
-    // Auto-Sync Listeners
     window.addEventListener('online', syncOfflineQueue);
     window.addEventListener('offline', updateOfflineBadge);
 
-    // Initial Execution
     updateAdminUI();
     loadBusinesses();
     syncOfflineQueue();
