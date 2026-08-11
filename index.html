@@ -254,8 +254,13 @@
 
       <form id="adminLoginForm" class="space-y-2.5 text-xs">
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Inspector / Officer Name *</label>
-          <input type="text" id="inspectorNameInput" required placeholder="e.g. Officer Juan Cruz" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          <label class="block font-semibold text-slate-600 mb-1">Select Active Inspector *</label>
+          <select id="inspectorNameInput" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-800">
+            <option value="Officer Juan Cruz">Officer Juan Cruz</option>
+            <option value="Officer Maria Santos">Officer Maria Santos</option>
+            <option value="Officer Pedro Reyes">Officer Pedro Reyes</option>
+            <option value="Officer Ashbel Espenido">Officer Ashbel Espenido</option>
+          </select>
         </div>
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Passcode *</label>
@@ -383,7 +388,7 @@
 
     let businesses = [];
     let displayedList = [];
-    let activeInspector = localStorage.getItem('isabel_inspector_name') || "Guest Inspector";
+    let activeInspector = localStorage.getItem('isabel_inspector_name') || "Officer Juan Cruz";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let isPickingLocation = false;
     let tempPickerMarker = null;
@@ -776,7 +781,6 @@
       toggleModal('deleteConfirmModal', true);
     };
 
-    // FIXED DELETE AND WIPE SECURITY FORM HANDLER
     document.getElementById('deleteSecurityForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const enteredPass = document.getElementById('deleteSecurityPassInput').value;
@@ -816,7 +820,7 @@
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const pass = document.getElementById('adminPassInput').value;
-      const inspector = document.getElementById('inspectorNameInput').value.trim();
+      const inspector = document.getElementById('inspectorNameInput').value;
 
       if (pass === ADMIN_PASSCODE) {
         isAdminUnlocked = true;
