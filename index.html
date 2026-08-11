@@ -270,7 +270,7 @@
       </form>
 
       <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
-        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Single-Device Active Lock</div>
+        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Single-Device Active Lock Engaged</div>
         <button type="button" onclick="triggerWipeSecurity()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
           🗑️ Wipe All Cloud Database Entries
         </button>
@@ -386,7 +386,7 @@
     const ADMIN_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
-    // Unique Client Device ID
+    // Client Device Identifier
     let deviceId = localStorage.getItem('isabel_device_id');
     if (!deviceId) {
       deviceId = 'DEV-' + Math.random().toString(36).substr(2, 9);
@@ -614,6 +614,7 @@
           const resObj = await res.json();
           const data = resObj.data || resObj;
 
+          // Revoke local admin status if another device holds the session lock
           if (resObj.activeSession && resObj.activeSession.deviceId !== deviceId) {
             if (isAdminUnlocked) {
               isAdminUnlocked = false;
@@ -835,7 +836,7 @@
       pendingDeleteMode = null;
     });
 
-    // SINGLE DEVICE LOCK LOGIN LISTENER WITH STRICT GET CHECK
+    // STRICT SINGLE-DEVICE LOGIN VERIFICATION WITH OVERRIDE PROMPT
     document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const pass = document.getElementById('adminPassInput').value;
@@ -853,18 +854,22 @@
       try {
         if (navigator.onLine) {
           // 1. Direct GET parameter verification to bypass POST CORS limits
-          const res = await fetch(GOOGLE_SCRIPT_URL + "?checkLock=true&inspector=" + encodeURIComponent(inspector) + "&deviceId=" + deviceId);
-          const resData = await res.json();
+          let res = await fetch(GOOGLE_SCRIPT_URL + "?checkLock=true&inspector=" + encodeURIComponent(inspector) + "&deviceId=" + deviceId);
+          let resData = await res.json();
 
           if (resData.isLocked && resData.activeDeviceId !== deviceId) {
-            alert(`🚨 ACCESS DENIED!\n\n${resData.activeInspector || 'Another officer'} is currently logged in on another device.\n\nPlease log out from that device first.`);
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Unlock Admin Access";
-            return;
-          }
+            const forceTakeover = confirm(`🚨 ACCESS DENIED!\n\n${resData.activeInspector || 'Another officer'} is currently logged in on another device.\n\nWould you like to FORCE OVERRIDE and log out that device?`);
+            
+            if (!forceTakeover) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Unlock Admin Access";
+              return;
+            }
 
-          // 2. Register active lock on Google Cloud
-          await sendCloudAction({ action: "loginSession", inspector: inspector, deviceId: deviceId });
+            // Force override lock on Google Cloud
+            res = await fetch(GOOGLE_SCRIPT_URL + "?checkLock=true&force=true&inspector=" + encodeURIComponent(inspector) + "&deviceId=" + deviceId);
+            resData = await res.json();
+          }
         }
 
         isAdminUnlocked = true;
