@@ -354,7 +354,7 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhTp2Zs3zBXVcuJkmlOD2EUtmhM6sJnywEZiOJvWdqkAXkTliMNOoZCa7-KZq--2M3/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyPJi1_eYeF6jp3-Lpy58yjJbvwfBGdGGb3xPBucZEv9C5xHpHsBak9HGG_5jG4nFh7/exec";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const ADMIN_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
@@ -436,17 +436,12 @@
     }
 
     async function loadBusinesses() {
-      let customSaved = [];
-      try {
-        customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-      } catch(e) { customSaved = []; }
-
       try {
         const res = await fetch(GOOGLE_SCRIPT_URL);
         const data = await res.json();
 
         if (Array.isArray(data) && data.length > 0) {
-          const remoteList = data.map(b => ({
+          businesses = data.map(b => ({
             id: String(b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4)),
             name: String(b["Business Name"] || b.name || ""),
             owner: String(b["Owner Name"] || b.owner || ""),
@@ -458,26 +453,26 @@
             lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
             image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE)
           }));
-
-          const allMap = new Map();
-          [...customSaved, ...remoteList].forEach(item => allMap.set(item.id, item));
-          businesses = Array.from(allMap.values());
         } else {
-          businesses = customSaved;
+          businesses = [];
         }
       } catch (err) {
-        businesses = customSaved;
+        console.error("Fetch error:", err);
+        businesses = [];
       }
       renderBusinessList(businesses);
     }
 
-    // Direct GET parameter transmission to bypass CORS and write straight to Google Drive
+    // Direct HTTP POST payload transfer
     async function sendCloudAction(payload) {
       try {
-        const url = GOOGLE_SCRIPT_URL + "?payload=" + encodeURIComponent(JSON.stringify(payload));
-        await fetch(url, { method: "GET", mode: "no-cors" });
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
       } catch (err) {
-        console.error("Cloud Sync Error:", err);
+        console.error("Cloud Write Error:", err);
       }
     }
 
@@ -637,18 +632,12 @@
         const targetIndex = businesses.findIndex(b => b.id === selectedId);
         if (targetIndex !== -1) {
           const removed = businesses.splice(targetIndex, 1)[0];
-
-          let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-          customSaved = customSaved.filter(b => b.id !== selectedId);
-          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-
           renderBusinessList(businesses);
           await sendCloudAction({ action: "deleteBusiness", id: selectedId });
           alert("🗑️ Successfully deleted " + removed.name + "!");
         }
       } else if (pendingDeleteMode === 'all') {
         businesses = [];
-        localStorage.removeItem('isabel_custom_businesses');
         renderBusinessList(businesses);
         await sendCloudAction({ action: "clearAll" });
         alert("🗑️ All business entries cleared!");
@@ -657,7 +646,7 @@
       pendingDeleteMode = null;
     });
 
-    // High-resolution photo encoder supporting up to 8K dimensions
+    // Compressed Base64 photo encoder for Drive compatibility
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve(null);
@@ -670,7 +659,7 @@
               const canvas = document.createElement('canvas');
               let width = img.width;
               let height = img.height;
-              const maxDimension = 7680;
+              const maxDimension = 1200;
 
               if (width > height) {
                 if (width > maxDimension) {
@@ -692,7 +681,7 @@
               ctx.fillRect(0, 0, width, height);
               ctx.drawImage(img, 0, 0, width, height);
 
-              resolve(canvas.toDataURL('image/jpeg', 0.85));
+              resolve(canvas.toDataURL('image/jpeg', 0.8));
             } catch (err) {
               resolve(null);
             }
@@ -764,7 +753,7 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Uploading High-Res Photo...";
+      submitBtn.textContent = "Uploading to Cloud Database...";
 
       try {
         const photoInput = document.getElementById('newBizPhoto');
@@ -785,22 +774,13 @@
           image: compressedImage
         };
 
-        businesses.unshift(newBiz);
-        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-        customSaved.unshift(newBiz);
-        localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-
-        renderBusinessList(businesses);
-        selectElem.value = newBiz.id;
-        updateDetailCard(newBiz);
-        map.panTo([newBiz.lat, newBiz.lon]);
-
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
         if (tempPickerMarker) map.removeLayer(tempPickerMarker);
 
         await sendCloudAction(newBiz);
-        alert("Successfully saved " + newBiz.name + "!");
+        alert("Successfully submitted " + newBiz.name + "! Refreshing cloud database...");
+        await loadBusinesses();
 
       } catch (err) {
         alert("An error occurred while saving.");
@@ -831,19 +811,6 @@
       target.status = document.getElementById('editBizStatus').value;
       if (compressedImage) target.image = compressedImage;
 
-      let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-      const idx = customSaved.findIndex(b => b.id === originalId);
-      if (idx !== -1) {
-        customSaved[idx] = target;
-      } else {
-        customSaved.unshift(target);
-      }
-      localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-
-      renderBusinessList(businesses);
-      selectElem.value = target.id;
-      updateDetailCard(target);
-
       toggleModal('editBusinessModal', false);
 
       if (originalId !== newId) {
@@ -864,6 +831,7 @@
       });
 
       alert("Updated details for " + target.name + "!");
+      await loadBusinesses();
     });
 
     document.getElementById('inspectionForm').addEventListener('submit', async (e) => {
@@ -874,14 +842,6 @@
       const target = businesses.find(b => b.id === selectedId);
       if (target) {
         target.status = document.getElementById('statusSelect').value;
-        
-        let customSaved = JSON.parse(localStorage.getItem('isabel_custom_businesses') || '[]');
-        const customIdx = customSaved.findIndex(b => b.id === target.id);
-        if (customIdx !== -1) {
-          customSaved[customIdx].status = target.status;
-          localStorage.setItem('isabel_custom_businesses', JSON.stringify(customSaved));
-        }
-
         renderBusinessList(businesses);
         selectElem.value = target.id;
         updateDetailCard(target);
