@@ -276,6 +276,26 @@
     </div>
   </div>
 
+  <!-- DELETE CONFIRMATION MODAL -->
+  <div id="deleteConfirmModal" style="display: none;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 border-2 border-rose-500">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-bold text-rose-700 flex items-center gap-1">⚠️ Security Password Prompt</h3>
+        <button type="button" onclick="toggleModal('deleteConfirmModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <form id="deleteSecurityForm" class="space-y-2.5 text-xs">
+        <p id="deleteModalTargetLabel" class="text-slate-700 font-medium">Re-enter Admin Password to authorize deletion:</p>
+        <input type="password" id="deleteSecurityPassInput" required placeholder="Enter Admin Password" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none focus:ring-2 focus:ring-rose-500">
+        
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" onclick="toggleModal('deleteConfirmModal', false)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 rounded-lg transition">Cancel</button>
+          <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2 rounded-lg transition shadow-sm">Confirm Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Add Business Modal -->
   <div id="addBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
@@ -703,7 +723,6 @@
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
-    // Direct Select Dropdown Listener
     selectElem.addEventListener('change', (e) => {
       const selectedKey = e.target.value;
       const target = businesses.find(b => String(b.uniqueKey) === String(selectedKey));
@@ -716,7 +735,6 @@
       }
     });
 
-    // Real-Time Search Listener
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase().trim();
       
@@ -735,6 +753,64 @@
       );
 
       renderBusinessList(filtered);
+    });
+
+    window.triggerDeleteSecurity = function() {
+      if (!isAdminUnlocked) return alert("Admin access required.");
+      const selectedVal = selectElem.value;
+      const target = businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
+      if (!target) return alert("No business selected.");
+
+      pendingDeleteMode = 'single';
+      document.getElementById('deleteModalTargetLabel').textContent = `Re-enter Admin Password to delete "${target.name}" (${target.id}):`;
+      document.getElementById('deleteSecurityPassInput').value = '';
+      toggleModal('deleteConfirmModal', true);
+    };
+
+    window.triggerWipeSecurity = function() {
+      if (!isAdminUnlocked) return alert("Admin access required.");
+      pendingDeleteMode = 'all';
+      document.getElementById('deleteModalTargetLabel').textContent = `🚨 DANGER: Re-enter Admin Password to WIPE ALL database entries:`;
+      document.getElementById('deleteSecurityPassInput').value = '';
+      toggleModal('adminModal', false);
+      toggleModal('deleteConfirmModal', true);
+    };
+
+    // FIXED DELETE AND WIPE SECURITY FORM HANDLER
+    document.getElementById('deleteSecurityForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const enteredPass = document.getElementById('deleteSecurityPassInput').value;
+
+      if (enteredPass !== ADMIN_PASSCODE) {
+        alert("❌ Incorrect Admin Password! Action aborted.");
+        return;
+      }
+
+      toggleModal('deleteConfirmModal', false);
+
+      if (pendingDeleteMode === 'single') {
+        const selectedVal = selectElem.value;
+        const targetIndex = businesses.findIndex(b => String(b.uniqueKey || b.id) === String(selectedVal));
+        if (targetIndex !== -1) {
+          const removed = businesses.splice(targetIndex, 1)[0];
+          renderBusinessList(businesses);
+          updateDashboardStats(businesses);
+          await sendCloudAction({ action: "deleteBusiness", id: removed.id });
+          alert("🗑️ Successfully deleted " + removed.name + "!");
+        }
+      } else if (pendingDeleteMode === 'all') {
+        businesses = [];
+        displayedList = [];
+        localStorage.removeItem(OFFLINE_QUEUE_KEY);
+        renderBusinessList([]);
+        updateDashboardStats([]);
+        
+        await sendCloudAction({ action: "clearAll" });
+        alert("🗑️ Cloud Database Wiped! All entries and Drive photos cleared.");
+        await loadBusinesses();
+      }
+
+      pendingDeleteMode = null;
     });
 
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
@@ -759,6 +835,14 @@
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Admin access required.");
 
+      const inputId = document.getElementById('newBizId').value.trim();
+
+      const isDuplicate = businesses.some(b => String(b.id || '').trim().toLowerCase() === inputId.toLowerCase());
+      if (isDuplicate) {
+        alert(`❌ ERROR: Business Permit ID "${inputId}" already exists in the system!\n\nPlease use a unique Permit Number.`);
+        return;
+      }
+
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
       submitBtn.textContent = "Stamping Photo & Submitting...";
@@ -768,7 +852,7 @@
         const targetRes = document.getElementById('newBizResolution').value;
         
         const bizData = {
-          id: document.getElementById('newBizId').value.trim(),
+          id: inputId,
           name: document.getElementById('newBizName').value.trim(),
           owner: document.getElementById('newBizOwner').value.trim(),
           address: document.getElementById('newBizAddress').value.trim(),
