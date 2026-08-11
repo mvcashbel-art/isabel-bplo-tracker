@@ -471,34 +471,13 @@
       renderBusinessList(businesses);
     }
 
-    // Direct Form Post to bypass CORS and write straight to Google Drive
+    // Direct GET parameter transmission to bypass CORS and write straight to Google Drive
     async function sendCloudAction(payload) {
       try {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = GOOGLE_SCRIPT_URL;
-        form.target = 'hidden_iframe';
-
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'postData';
-        input.value = JSON.stringify(payload);
-        form.appendChild(input);
-
-        let iframe = document.getElementById('hidden_iframe');
-        if (!iframe) {
-          iframe = document.createElement('iframe');
-          iframe.id = 'hidden_iframe';
-          iframe.name = 'hidden_iframe';
-          iframe.style.display = 'none';
-          document.body.appendChild(iframe);
-        }
-
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
+        const url = GOOGLE_SCRIPT_URL + "?payload=" + encodeURIComponent(JSON.stringify(payload));
+        await fetch(url, { method: "GET", mode: "no-cors" });
       } catch (err) {
-        console.error("Cloud Write Error:", err);
+        console.error("Cloud Sync Error:", err);
       }
     }
 
