@@ -457,6 +457,56 @@
       updateOfflineBadge();
     }
 
+    // CORS Bypass Form Post Method
+    function submitViaHiddenForm(payload) {
+      return new Promise((resolve) => {
+        try {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = GOOGLE_SCRIPT_URL;
+          form.target = 'hidden_iframe';
+
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'postData';
+          input.value = JSON.stringify(payload);
+          form.appendChild(input);
+
+          let iframe = document.getElementById('hidden_iframe');
+          if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'hidden_iframe';
+            iframe.name = 'hidden_iframe';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+          }
+
+          document.body.appendChild(form);
+          form.submit();
+
+          setTimeout(() => {
+            document.body.removeChild(form);
+            resolve(true);
+          }, 2500); // 2.5 second buffer per item for image processing
+        } catch (err) {
+          console.error("Form Post Error:", err);
+          resolve(false);
+        }
+      });
+    }
+
+    // Router for online/offline submission
+    async function sendCloudAction(payload) {
+      if (navigator.onLine) {
+        const success = await submitViaHiddenForm(payload);
+        return success;
+      } else {
+        queueOfflineAction(payload);
+        return false;
+      }
+    }
+
+    // Sequential Offline Sync
     async function syncOfflineQueue() {
       let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
       if (queue.length === 0 || !navigator.onLine) return;
@@ -464,44 +514,16 @@
       console.log(`Syncing ${queue.length} offline records to Google Sheets...`);
       
       for (let i = 0; i < queue.length; i++) {
-        try {
-          await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(queue[i])
-          });
-        } catch (e) {
-          console.error("Failed syncing offline queue item:", e);
-          localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(i)));
-          updateOfflineBadge();
-          return;
-        }
+        await submitViaHiddenForm(queue[i]);
       }
 
       localStorage.removeItem(OFFLINE_QUEUE_KEY);
       updateOfflineBadge();
-      alert("📡 Signal restored! All offline field logs have auto-synced to Google Sheets & Drive.");
-      await loadBusinesses();
-    }
 
-    async function sendCloudAction(payload) {
-      if (navigator.onLine) {
-        try {
-          await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
-          });
-          return true;
-        } catch (err) {
-          console.warn("Network error during sync. Saving to offline queue...", err);
-          queueOfflineAction(payload);
-          return false;
-        }
-      } else {
-        queueOfflineAction(payload);
-        return false;
-      }
+      alert("📡 Signal restored! Offline entries uploaded. Refreshing...");
+      setTimeout(async () => {
+        await loadBusinesses();
+      }, 1500);
     }
 
     async function loadBusinesses() {
@@ -511,8 +533,8 @@
           const res = await fetch(GOOGLE_SCRIPT_URL);
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            remoteData = data.map(b => ({
-              id: String(b["Business ID"] || b.id || "BIZ-" + Math.random().toString(36).substr(2, 4)),
+            remoteData = data.map((b, index) => ({
+              id: String(b["Business ID"] || b.id || "BIZ-" + index),
               name: String(b["Business Name"] || b.name || ""),
               owner: String(b["Owner Name"] || b.owner || ""),
               phone: String(b["Phone Number"] || b["Phone"] || b.phone || "N/A"),
@@ -521,7 +543,8 @@
               timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()),
               lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
               lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
-              image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE)
+              image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
+              uniqueKey: (b["Business ID"] || "N/A") + "_" + (b["Business Name"] || index) + "_" + index
             }));
           }
         } catch (err) {
@@ -532,7 +555,7 @@
       let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
       let pendingItems = offlineQueue
         .filter(item => item.action === "addBusiness")
-        .map(b => ({
+        .map((b, idx) => ({
           id: b.id,
           name: b.name + " (Pending Sync)",
           owner: b.owner,
@@ -542,11 +565,12 @@
           timestamp: b.timestamp,
           lat: b.lat,
           lon: b.lon,
-          image: b.image || FALLBACK_IMAGE
+          image: b.image || FALLBACK_IMAGE,
+          uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
         }));
 
       const allMap = new Map();
-      [...pendingItems, ...remoteData].forEach(item => allMap.set(item.id, item));
+      [...pendingItems, ...remoteData].forEach(item => allMap.set(item.uniqueKey, item));
       businesses = Array.from(allMap.values());
 
       renderBusinessList(businesses);
@@ -563,8 +587,9 @@
         return;
       }
 
-      list.forEach(biz => {
-        selectElem.appendChild(new Option("[" + biz.id + "] " + biz.name + " (" + biz.status + ")", biz.id));
+      list.forEach((biz, index) => {
+        const optionValue = biz.uniqueKey || biz.id || index;
+        selectElem.appendChild(new Option("[" + biz.id + "] " + biz.name + " (" + biz.status + ")", optionValue));
         addMarker(biz);
       });
       updateDetailCard(list[0]);
@@ -580,13 +605,13 @@
       }).addTo(map);
 
       marker.on('click', () => {
-        selectElem.value = biz.id;
+        selectElem.value = biz.uniqueKey || biz.id;
         updateDetailCard(biz);
         marker.openPopup();
       });
 
       marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Status: " + biz.status);
-      markers[biz.id] = marker;
+      markers[biz.uniqueKey || biz.id] = marker;
     }
 
     function updateDetailCard(biz) {
@@ -657,8 +682,8 @@
 
     window.openEditModal = function() {
       if (!isAdminUnlocked) return alert("Admin access required.");
-      const selectedId = selectElem.value;
-      const target = businesses.find(b => b.id === selectedId);
+      const selectedVal = selectElem.value;
+      const target = businesses.find(b => (b.uniqueKey || b.id) === selectedVal);
       if (!target) return alert("No business selected.");
 
       document.getElementById('editOriginalId').value = target.id;
@@ -674,8 +699,8 @@
 
     window.triggerDeleteSecurity = function() {
       if (!isAdminUnlocked) return alert("Admin access required.");
-      const selectedId = selectElem.value;
-      const target = businesses.find(b => b.id === selectedId);
+      const selectedVal = selectElem.value;
+      const target = businesses.find(b => (b.uniqueKey || b.id) === selectedVal);
       if (!target) return alert("No business selected.");
 
       pendingDeleteMode = 'single';
@@ -705,12 +730,12 @@
       toggleModal('deleteConfirmModal', false);
 
       if (pendingDeleteMode === 'single') {
-        const selectedId = selectElem.value;
-        const targetIndex = businesses.findIndex(b => b.id === selectedId);
+        const selectedVal = selectElem.value;
+        const targetIndex = businesses.findIndex(b => (b.uniqueKey || b.id) === selectedVal);
         if (targetIndex !== -1) {
           const removed = businesses.splice(targetIndex, 1)[0];
           renderBusinessList(businesses);
-          await sendCloudAction({ action: "deleteBusiness", id: selectedId });
+          await sendCloudAction({ action: "deleteBusiness", id: removed.id });
           alert("🗑️ Successfully deleted " + removed.name + "!");
         }
       } else if (pendingDeleteMode === 'all') {
@@ -724,7 +749,7 @@
       pendingDeleteMode = null;
     });
 
-    // Compressed Base64 photo encoder tuned for Google Drive transmission
+    // Compressed Base64 photo encoder
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve(null);
@@ -920,12 +945,12 @@
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Admin access required.");
       
-      const selectedId = selectElem.value;
-      const target = businesses.find(b => b.id === selectedId);
+      const selectedVal = selectElem.value;
+      const target = businesses.find(b => (b.uniqueKey || b.id) === selectedVal);
       if (target) {
         target.status = document.getElementById('statusSelect').value;
         renderBusinessList(businesses);
-        selectElem.value = target.id;
+        selectElem.value = target.uniqueKey || target.id;
         updateDetailCard(target);
 
         await sendCloudAction({ action: "updateStatus", id: target.id, status: target.status });
@@ -934,12 +959,12 @@
     });
 
     selectElem.addEventListener('change', (e) => {
-      const target = businesses.find(b => b.id === e.target.value);
+      const target = businesses.find(b => (b.uniqueKey || b.id) === e.target.value);
       if (target) {
         updateDetailCard(target);
-        if (markers[target.id]) {
+        if (markers[target.uniqueKey || target.id]) {
           map.panTo([target.lat, target.lon]);
-          markers[target.id].openPopup();
+          markers[target.uniqueKey || target.id].openPopup();
         }
       }
     });
