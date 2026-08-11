@@ -368,6 +368,71 @@
     </div>
   </div>
 
+  <!-- EDIT BUSINESS MODAL -->
+  <div id="editBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-800">✏️ Edit Establishment Details</h3>
+        <button type="button" onclick="toggleModal('editBusinessModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+      
+      <form id="editBusinessForm" class="space-y-2.5 text-xs">
+        <input type="hidden" id="editOriginalId">
+        
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
+          <input type="text" id="editBizId" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Business Name *</label>
+          <input type="text" id="editBizName" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Owner Name *</label>
+          <input type="text" id="editBizOwner" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Phone / Telephone Number</label>
+          <input type="tel" id="editBizPhone" placeholder="e.g. 09171234567" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Barangay / Address *</label>
+          <input type="text" id="editBizAddress" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Permit Status</label>
+          <select id="editBizStatus" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+            <option value="No Permit">🔴 No Permit</option>
+            <option value="Expired">🟡 Expired</option>
+            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
+            <option value="Compliant">🟢 Active Permit</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Photo Quality / Resolution</label>
+          <select id="editBizResolution" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-blue-700">
+            <option value="800">Standard HD (800px)</option>
+            <option value="3840" selected>📸 4K Ultra HD (3840px)</option>
+            <option value="7680">📸 8K Super HD (7680px)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Replace Storefront Photo (Optional)</label>
+          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700">
+        </div>
+
+        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Update Establishment Details</button>
+      </form>
+    </div>
+  </div>
+
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzN5p_QHPL8mPjF7xQ2Q7bfMe4zDS50iRV1H9NDs3HIabLUGJ8q4la6E77wQG-9jP11/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
@@ -442,6 +507,24 @@
       toggleModal('printableNoticeModal', true);
     };
 
+    // OPEN EDIT MODAL PRE-FILLED WITH CURRENT BUSINESS DATA
+    window.openEditModal = function() {
+      if (!isAdminUnlocked) return alert("Inspector session required.");
+      const selectedVal = selectElem.value;
+      const target = businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
+      if (!target) return alert("Please select a business to edit.");
+
+      document.getElementById('editOriginalId').value = target.id;
+      document.getElementById('editBizId').value = target.id;
+      document.getElementById('editBizName').value = target.name;
+      document.getElementById('editBizOwner').value = target.owner;
+      document.getElementById('editBizPhone').value = target.phone === 'N/A' ? '' : target.phone;
+      document.getElementById('editBizAddress').value = target.address;
+      document.getElementById('editBizStatus').value = target.status;
+
+      toggleModal('editBusinessModal', true);
+    };
+
     function updateDashboardStats(list) {
       const total = list.length;
       document.getElementById('statTotal').textContent = total;
@@ -466,7 +549,7 @@
       // INSPECTOR ACTIVITY BREAKDOWN
       const inspectorCounts = {};
       list.forEach(b => {
-        const name = b.inspector || "System Admin";
+        const name = b.inspector || "Officer Ashbel Espenido";
         inspectorCounts[name] = (inspectorCounts[name] || 0) + 1;
       });
 
@@ -710,7 +793,7 @@
 
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardTimestamp').textContent = biz.timestamp || getFormattedTimestamp();
-      document.getElementById('cardInspector').textContent = biz.inspector || "System Admin";
+      document.getElementById('cardInspector').textContent = biz.inspector || "Officer Ashbel Espenido";
       
       const statusBadge = document.getElementById('cardStatus');
       statusBadge.textContent = biz.status;
@@ -838,6 +921,7 @@
       }
     });
 
+    // SUBMIT NEW BUSINESS
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector login required.");
@@ -897,6 +981,70 @@
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Save & Pin Business";
+      }
+    });
+
+    // EDIT BUSINESS FORM SUBMISSION
+    document.getElementById('editBusinessForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (!isAdminUnlocked) return alert("Inspector session required.");
+
+      const origId = document.getElementById('editOriginalId').value;
+      const targetIndex = businesses.findIndex(b => String(b.id) === String(origId));
+      if (targetIndex === -1) return alert("Original record not found.");
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Updating Record...";
+
+      try {
+        const file = document.getElementById('editBizPhoto').files[0];
+        const targetRes = document.getElementById('editBizResolution').value;
+
+        const updatedData = {
+          id: document.getElementById('editBizId').value.trim(),
+          name: document.getElementById('editBizName').value.trim(),
+          owner: document.getElementById('editBizOwner').value.trim(),
+          phone: document.getElementById('editBizPhone').value.trim() || "N/A",
+          address: document.getElementById('editBizAddress').value.trim(),
+          status: document.getElementById('editBizStatus').value,
+          timestamp: getFormattedTimestamp(),
+          inspector: activeInspector
+        };
+
+        let photoUrl = businesses[targetIndex].image;
+        if (file) {
+          photoUrl = await processHighMbPhoto(file, updatedData, targetRes) || photoUrl;
+        }
+
+        // Delete old entry and replace with updated entry
+        await sendCloudAction({ action: "deleteBusiness", id: origId });
+
+        const updatedBizPayload = {
+          action: "addBusiness",
+          id: updatedData.id,
+          name: updatedData.name,
+          owner: updatedData.owner,
+          phone: updatedData.phone,
+          address: updatedData.address,
+          status: updatedData.status,
+          timestamp: updatedData.timestamp,
+          lat: businesses[targetIndex].lat,
+          lon: businesses[targetIndex].lon,
+          image: photoUrl,
+          inspector: activeInspector
+        };
+
+        await sendCloudAction(updatedBizPayload);
+        toggleModal('editBusinessModal', false);
+        alert("✏️ Record updated successfully!");
+        await loadBusinesses();
+
+      } catch (err) {
+        alert("An error occurred while updating.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Update Establishment Details";
       }
     });
 
