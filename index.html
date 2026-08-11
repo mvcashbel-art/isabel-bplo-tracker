@@ -256,10 +256,10 @@
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Select Active Inspector *</label>
           <select id="inspectorNameInput" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-800">
+            <option value="Officer Ashbel Espenido">Officer Ashbel Espenido</option>
             <option value="Officer Juan Cruz">Officer Juan Cruz</option>
             <option value="Officer Maria Santos">Officer Maria Santos</option>
             <option value="Officer Pedro Reyes">Officer Pedro Reyes</option>
-            <option value="Officer Ashbel Espenido">Officer Ashbel Espenido</option>
           </select>
         </div>
         <div>
@@ -270,12 +270,12 @@
       </form>
 
       <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
-        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Admin Session Active</div>
+        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Single-Device Active Lock</div>
         <button type="button" onclick="triggerWipeSecurity()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
           🗑️ Wipe All Cloud Database Entries
         </button>
         <button type="button" onclick="lockAdmin()" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 rounded-lg transition">
-          🔒 Lock Session
+          🔒 Lock Session & Release Device Lock
         </button>
       </div>
     </div>
@@ -386,9 +386,16 @@
     const ADMIN_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
+    // Unique Client Device ID
+    let deviceId = localStorage.getItem('isabel_device_id');
+    if (!deviceId) {
+      deviceId = 'DEV-' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('isabel_device_id', deviceId);
+    }
+
     let businesses = [];
     let displayedList = [];
-    let activeInspector = localStorage.getItem('isabel_inspector_name') || "Officer Juan Cruz";
+    let activeInspector = localStorage.getItem('isabel_inspector_name') || "Officer Ashbel Espenido";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let isPickingLocation = false;
     let tempPickerMarker = null;
@@ -416,7 +423,6 @@
     window.openLightbox = function() {
       const imgElem = document.getElementById('cardImage');
       const nameElem = document.getElementById('cardName');
-      
       if (!imgElem || !imgElem.src) return;
 
       document.getElementById('lightboxImage').src = imgElem.src;
@@ -506,12 +512,13 @@
       }
     }
 
-    window.lockAdmin = function() {
+    window.lockAdmin = async function() {
       isAdminUnlocked = false;
       localStorage.removeItem('isabel_admin_unlocked');
       updateAdminUI();
       toggleModal('adminModal', false);
-      alert("Inspector session locked.");
+      await sendCloudAction({ action: "logoutSession" });
+      alert("Session released. Other devices may now log in.");
     };
 
     function getFormattedTimestamp() {
@@ -604,7 +611,18 @@
       if (navigator.onLine) {
         try {
           const res = await fetch(GOOGLE_SCRIPT_URL);
-          const data = await res.json();
+          const resObj = await res.json();
+          const data = resObj.data || resObj;
+
+          if (resObj.activeSession && resObj.activeSession.deviceId !== deviceId) {
+            if (isAdminUnlocked) {
+              isAdminUnlocked = false;
+              localStorage.removeItem('isabel_admin_unlocked');
+              updateAdminUI();
+              alert(`🚨 Active Session Interrupted: ${resObj.activeSession.inspector} logged in on another device.`);
+            }
+          }
+
           if (Array.isArray(data) && data.length > 0) {
             remoteData = data.map((b, index) => ({
               id: String(b["Business ID"] || b.id || "BIZ-" + index),
@@ -817,21 +835,56 @@
       pendingDeleteMode = null;
     });
 
-    document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+    // SINGLE DEVICE LOCK LOGIN LISTENER
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const pass = document.getElementById('adminPassInput').value;
       const inspector = document.getElementById('inspectorNameInput').value;
 
-      if (pass === ADMIN_PASSCODE) {
+      if (pass !== ADMIN_PASSCODE) {
+        alert("Incorrect Admin Password!");
+        return;
+      }
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Verifying Single Device Lock...";
+
+      try {
+        if (navigator.onLine) {
+          const res = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "loginSession", inspector: inspector, deviceId: deviceId })
+          });
+          const resData = await res.json();
+
+          if (resData.status === "locked") {
+            alert(resData.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Unlock Admin Access";
+            return;
+          }
+        }
+
         isAdminUnlocked = true;
-        activeInspector = inspector || "Officer Juan Cruz";
+        activeInspector = inspector;
+        localStorage.setItem('isabel_admin_unlocked', 'true');
+        localStorage.setItem('isabel_inspector_name', activeInspector);
+        
+        updateAdminUI();
+        toggleModal('adminModal', false);
+        alert(`Welcome, ${activeInspector}! Single-Device Active Lock Engaged.`);
+
+      } catch (err) {
+        isAdminUnlocked = true;
+        activeInspector = inspector;
         localStorage.setItem('isabel_admin_unlocked', 'true');
         localStorage.setItem('isabel_inspector_name', activeInspector);
         updateAdminUI();
         toggleModal('adminModal', false);
-        alert("Welcome, " + activeInspector + "! Inspector Session Activated.");
-      } else {
-        alert("Incorrect Admin Password!");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Unlock Admin Access";
       }
     });
 
