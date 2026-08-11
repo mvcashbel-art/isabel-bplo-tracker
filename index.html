@@ -487,7 +487,7 @@
           setTimeout(() => {
             document.body.removeChild(form);
             resolve(true);
-          }, 2500); // 2.5 second buffer per item for image processing
+          }, 2500);
         } catch (err) {
           console.error("Form Post Error:", err);
           resolve(false);
@@ -736,21 +736,21 @@
           const removed = businesses.splice(targetIndex, 1)[0];
           renderBusinessList(businesses);
           await sendCloudAction({ action: "deleteBusiness", id: removed.id });
-          alert("🗑️ Successfully deleted " + removed.name + "!");
+          alert("🗑️ Successfully deleted " + removed.name + " & its photo from Drive!");
         }
       } else if (pendingDeleteMode === 'all') {
         businesses = [];
         localStorage.removeItem(OFFLINE_QUEUE_KEY);
         renderBusinessList(businesses);
         await sendCloudAction({ action: "clearAll" });
-        alert("🗑️ All business entries cleared!");
+        alert("🗑️ System wiped! All database rows and Drive photos cleared.");
       }
 
       pendingDeleteMode = null;
     });
 
-    // Compressed Base64 photo encoder
-    function processHighMbPhoto(file) {
+    // Compressed Photo Encoder WITH BPLO Side Panel Stamp
+    function processHighMbPhoto(file, metadata) {
       return new Promise((resolve) => {
         if (!file) return resolve(null);
 
@@ -760,29 +760,112 @@
           img.onload = () => {
             try {
               const canvas = document.createElement('canvas');
-              let width = img.width;
-              let height = img.height;
-              const maxDimension = 800;
+              
+              // Standard target image size
+              let photoWidth = img.width;
+              let photoHeight = img.height;
+              const maxPhotoDim = 700;
 
-              if (width > height) {
-                if (width > maxDimension) {
-                  height = Math.round((height * maxDimension) / width);
-                  width = maxDimension;
+              if (photoWidth > photoHeight) {
+                if (photoWidth > maxPhotoDim) {
+                  photoHeight = Math.round((photoHeight * maxPhotoDim) / photoWidth);
+                  photoWidth = maxPhotoDim;
                 }
               } else {
-                if (height > maxDimension) {
-                  width = Math.round((width * maxDimension) / height);
-                  height = maxDimension;
+                if (photoHeight > maxPhotoDim) {
+                  photoWidth = Math.round((photoWidth * maxPhotoDim) / photoHeight);
+                  photoHeight = maxPhotoDim;
                 }
               }
 
-              canvas.width = width;
-              canvas.height = height;
+              const panelWidth = 220; // Width of the side info panel
+              canvas.width = photoWidth + panelWidth;
+              canvas.height = photoHeight;
 
               const ctx = canvas.getContext('2d');
+              
+              // 1. Draw Original Photo on the left side
               ctx.fillStyle = "#FFFFFF";
-              ctx.fillRect(0, 0, width, height);
-              ctx.drawImage(img, 0, 0, width, height);
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, photoWidth, photoHeight);
+
+              // 2. Draw Side Panel on the right side
+              ctx.fillStyle = "#0F172A"; // Dark Navy Slate
+              ctx.fillRect(photoWidth, 0, panelWidth, photoHeight);
+
+              // Side Panel Divider Line
+              ctx.strokeStyle = "#38BDF8";
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.moveTo(photoWidth, 0);
+              ctx.lineTo(photoWidth, photoHeight);
+              ctx.stroke();
+
+              // Side Panel Text Watermark
+              const startX = photoWidth + 15;
+              let currentY = 30;
+
+              ctx.fillStyle = "#38BDF8"; // Accent Blue Heading
+              ctx.font = "bold 12px sans-serif";
+              ctx.fillText("ISABEL BPLO FIELD LOG", startX, currentY);
+
+              currentY += 25;
+              ctx.fillStyle = "#94A3B8"; // Subtitle
+              ctx.font = "10px sans-serif";
+              ctx.fillText("INSPECTION STAMP", startX, currentY);
+
+              currentY += 25;
+              ctx.strokeStyle = "#334155";
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(startX, currentY);
+              ctx.lineTo(photoWidth + panelWidth - 15, currentY);
+              ctx.stroke();
+
+              currentY += 25;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = "bold 10px sans-serif";
+              ctx.fillText("BUSINESS ID:", startX, currentY);
+              currentY += 15;
+              ctx.fillStyle = "#FFFFFF";
+              ctx.font = "11px font-mono";
+              ctx.fillText(metadata.id || 'N/A', startX, currentY);
+
+              currentY += 25;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = "bold 10px sans-serif";
+              ctx.fillText("BUSINESS NAME:", startX, currentY);
+              currentY += 15;
+              ctx.fillStyle = "#FFFFFF";
+              ctx.font = "11px sans-serif";
+              ctx.fillText(metadata.name || 'N/A', startX, currentY);
+
+              currentY += 25;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = "bold 10px sans-serif";
+              ctx.fillText("OWNER:", startX, currentY);
+              currentY += 15;
+              ctx.fillStyle = "#FFFFFF";
+              ctx.font = "11px sans-serif";
+              ctx.fillText(metadata.owner || 'N/A', startX, currentY);
+
+              currentY += 25;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = "bold 10px sans-serif";
+              ctx.fillText("ADDRESS:", startX, currentY);
+              currentY += 15;
+              ctx.fillStyle = "#FFFFFF";
+              ctx.font = "11px sans-serif";
+              ctx.fillText(metadata.address || 'Isabel', startX, currentY);
+
+              currentY += 25;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = "bold 10px sans-serif";
+              ctx.fillText("LOG DATE:", startX, currentY);
+              currentY += 15;
+              ctx.fillStyle = "#38BDF8";
+              ctx.font = "10px font-mono";
+              ctx.fillText(metadata.timestamp || getFormattedTimestamp(), startX, currentY);
 
               resolve(canvas.toDataURL('image/jpeg', 0.7));
             } catch (err) {
@@ -856,25 +939,34 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Processing Photo & Uploading...";
+      submitBtn.textContent = "Stamping Photo & Uploading...";
 
       try {
         const photoInput = document.getElementById('newBizPhoto');
         const file = photoInput.files[0];
-        const compressedImage = await processHighMbPhoto(file) || FALLBACK_IMAGE;
-
-        const newBiz = {
-          action: "addBusiness",
+        
+        const bizData = {
           id: document.getElementById('newBizId').value.trim(),
           name: document.getElementById('newBizName').value.trim(),
           owner: document.getElementById('newBizOwner').value.trim(),
-          phone: document.getElementById('newBizPhone').value.trim() || "N/A",
           address: document.getElementById('newBizAddress').value.trim(),
+          timestamp: getFormattedTimestamp()
+        };
+
+        const stampedImage = await processHighMbPhoto(file, bizData) || FALLBACK_IMAGE;
+
+        const newBiz = {
+          action: "addBusiness",
+          id: bizData.id,
+          name: bizData.name,
+          owner: bizData.owner,
+          phone: document.getElementById('newBizPhone').value.trim() || "N/A",
+          address: bizData.address,
           status: document.getElementById('newBizStatus').value,
-          timestamp: getFormattedTimestamp(),
+          timestamp: bizData.timestamp,
           lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
           lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
-          image: compressedImage
+          image: stampedImage
         };
 
         toggleModal('addBusinessModal', false);
@@ -908,15 +1000,24 @@
       const newId = document.getElementById('editBizId').value.trim();
       const photoInput = document.getElementById('editBizPhoto');
       const file = photoInput.files[0];
-      const compressedImage = await processHighMbPhoto(file);
+      
+      const bizData = {
+        id: newId,
+        name: document.getElementById('editBizName').value.trim(),
+        owner: document.getElementById('editBizOwner').value.trim(),
+        address: document.getElementById('editBizAddress').value.trim(),
+        timestamp: target.timestamp
+      };
 
-      target.id = newId;
-      target.name = document.getElementById('editBizName').value.trim();
-      target.owner = document.getElementById('editBizOwner').value.trim();
+      const stampedImage = await processHighMbPhoto(file, bizData);
+
+      target.id = bizData.id;
+      target.name = bizData.name;
+      target.owner = bizData.owner;
       target.phone = document.getElementById('editBizPhone').value.trim() || "N/A";
-      target.address = document.getElementById('editBizAddress').value.trim();
+      target.address = bizData.address;
       target.status = document.getElementById('editBizStatus').value;
-      if (compressedImage) target.image = compressedImage;
+      if (stampedImage) target.image = stampedImage;
 
       toggleModal('editBusinessModal', false);
 
