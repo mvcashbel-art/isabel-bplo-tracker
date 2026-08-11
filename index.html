@@ -154,7 +154,7 @@
           </button>
 
           <button type="button" id="deleteCurrentBizBtn" onclick="triggerDeleteSecurity()" class="admin-only hidden w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-2 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs md:text-sm">
-            <span>🗑️</span> Delete Entry (Master Passcode Required)
+            <span>🗑️</span> Delete Entry (Passcode Required)
           </button>
         </div>
       </section>
@@ -612,7 +612,7 @@
               lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
               lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
               image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
-              inspector: String(b["Inspector Name"] || b.inspector || "System Admin"),
+              inspector: String(b["Inspector Name"] || b["Inspector"] || b.inspector || activeInspector),
               uniqueKey: "REMOTE_" + String(b["Business ID"] || index) + "_" + String(b["Business Name"] || index) + "_" + index
             }));
           }
@@ -1004,7 +1004,6 @@
         csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${b.timestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.append("a");
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "Isabel_BPLO_Businesses.csv";
