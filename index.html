@@ -835,53 +835,49 @@
       pendingDeleteMode = null;
     });
 
-    // SINGLE DEVICE LOCK LOGIN LISTENER
+    // SINGLE DEVICE LOCK LOGIN LISTENER WITH STRICT GET CHECK
     document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const pass = document.getElementById('adminPassInput').value;
       const inspector = document.getElementById('inspectorNameInput').value;
 
       if (pass !== ADMIN_PASSCODE) {
-        alert("Incorrect Admin Password!");
+        alert("❌ Incorrect Admin Password!");
         return;
       }
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Verifying Single Device Lock...";
+      submitBtn.textContent = "Checking Device Lock Status...";
 
       try {
         if (navigator.onLine) {
-          const res = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: "loginSession", inspector: inspector, deviceId: deviceId })
-          });
+          // 1. Direct GET parameter verification to bypass POST CORS limits
+          const res = await fetch(GOOGLE_SCRIPT_URL + "?checkLock=true&inspector=" + encodeURIComponent(inspector) + "&deviceId=" + deviceId);
           const resData = await res.json();
 
-          if (resData.status === "locked") {
-            alert(resData.message);
+          if (resData.isLocked && resData.activeDeviceId !== deviceId) {
+            alert(`🚨 ACCESS DENIED!\n\n${resData.activeInspector || 'Another officer'} is currently logged in on another device.\n\nPlease log out from that device first.`);
             submitBtn.disabled = false;
             submitBtn.textContent = "Unlock Admin Access";
             return;
           }
+
+          // 2. Register active lock on Google Cloud
+          await sendCloudAction({ action: "loginSession", inspector: inspector, deviceId: deviceId });
         }
 
         isAdminUnlocked = true;
         activeInspector = inspector;
         localStorage.setItem('isabel_admin_unlocked', 'true');
         localStorage.setItem('isabel_inspector_name', activeInspector);
-        
+
         updateAdminUI();
         toggleModal('adminModal', false);
-        alert(`Welcome, ${activeInspector}! Single-Device Active Lock Engaged.`);
+        alert(`Welcome, ${activeInspector}!\nSingle-Device Active Lock Engaged.`);
 
       } catch (err) {
-        isAdminUnlocked = true;
-        activeInspector = inspector;
-        localStorage.setItem('isabel_admin_unlocked', 'true');
-        localStorage.setItem('isabel_inspector_name', activeInspector);
-        updateAdminUI();
-        toggleModal('adminModal', false);
+        alert("⚠️ Connection error: Could not verify session lock with Google Cloud. Login aborted for security.");
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Unlock Admin Access";
