@@ -365,71 +365,6 @@
     </div>
   </div>
 
-  <!-- EDIT BUSINESS MODAL -->
-  <div id="editBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">✏️ Edit Establishment Details</h3>
-        <button type="button" onclick="toggleModal('editBusinessModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-      </div>
-      
-      <form id="editBusinessForm" class="space-y-2.5 text-xs">
-        <input type="hidden" id="editOriginalId">
-        
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
-          <input type="text" id="editBizId" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Business Name *</label>
-          <input type="text" id="editBizName" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Owner Name *</label>
-          <input type="text" id="editBizOwner" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Phone / Telephone Number</label>
-          <input type="tel" id="editBizPhone" placeholder="e.g. 09171234567" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Barangay / Address *</label>
-          <input type="text" id="editBizAddress" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Permit Status</label>
-          <select id="editBizStatus" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-            <option value="No Permit">🔴 No Permit</option>
-            <option value="Expired">🟡 Expired</option>
-            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
-            <option value="Compliant">🟢 Active Permit</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Photo Quality / Resolution</label>
-          <select id="editBizResolution" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-blue-700">
-            <option value="800">Standard HD (800px)</option>
-            <option value="3840" selected>📸 4K Ultra HD (3840px)</option>
-            <option value="7680">📸 8K Super HD (7680px)</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Replace Photo (Optional)</label>
-          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700">
-        </div>
-
-        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Update Establishment Entry</button>
-      </form>
-    </div>
-  </div>
-
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzN5p_QHPL8mPjF7xQ2Q7bfMe4zDS50iRV1H9NDs3HIabLUGJ8q4la6E77wQG-9jP11/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
@@ -438,6 +373,7 @@
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
     let businesses = [];
+    let displayedList = [];
     let activeInspector = localStorage.getItem('isabel_inspector_name') || "Guest Inspector";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let isPickingLocation = false;
@@ -465,7 +401,7 @@
 
     window.openNoticeModal = function() {
       const selectedVal = selectElem.value;
-      const target = businesses.find(b => (b.uniqueKey || b.id) === selectedVal);
+      const target = businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
       if (!target) return alert("Please select a business first.");
 
       document.getElementById('noticeDate').textContent = getFormattedTimestamp().split(',')[0];
@@ -653,7 +589,7 @@
               lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
               image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
               inspector: String(b["Inspector Name"] || b.inspector || "System Admin"),
-              uniqueKey: (b["Business ID"] || "N/A") + "_" + (b["Business Name"] || index) + "_" + index
+              uniqueKey: "REMOTE_" + String(b["Business ID"] || index) + "_" + String(b["Business Name"] || index) + "_" + index
             }));
           }
         } catch (err) {}
@@ -680,13 +616,15 @@
       const allMap = new Map();
       [...pendingItems, ...remoteData].forEach(item => allMap.set(item.uniqueKey, item));
       businesses = Array.from(allMap.values());
+      displayedList = [...businesses];
 
-      renderBusinessList(businesses);
+      renderBusinessList(displayedList);
       updateDashboardStats(businesses);
       updateOfflineBadge();
     }
 
     function renderBusinessList(list) {
+      displayedList = list;
       selectElem.innerHTML = '';
       Object.values(markers).forEach(m => map.removeLayer(m));
 
@@ -696,11 +634,12 @@
         return;
       }
 
-      list.forEach((biz, index) => {
-        const optionValue = biz.uniqueKey || biz.id || index;
-        selectElem.appendChild(new Option("[" + biz.id + "] " + biz.name + " (" + biz.status + ")", optionValue));
+      list.forEach((biz) => {
+        selectElem.appendChild(new Option("[" + biz.id + "] " + biz.name + " (" + biz.status + ")", biz.uniqueKey));
         addMarker(biz);
       });
+
+      selectElem.value = list[0].uniqueKey;
       updateDetailCard(list[0]);
     }
 
@@ -714,13 +653,13 @@
       }).addTo(map);
 
       marker.on('click', () => {
-        selectElem.value = biz.uniqueKey || biz.id;
+        selectElem.value = biz.uniqueKey;
         updateDetailCard(biz);
         marker.openPopup();
       });
 
       marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Status: " + biz.status);
-      markers[biz.uniqueKey || biz.id] = marker;
+      markers[biz.uniqueKey] = marker;
     }
 
     function updateDetailCard(biz) {
@@ -759,6 +698,40 @@
 
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
+
+    // Direct Select Dropdown Listener
+    selectElem.addEventListener('change', (e) => {
+      const selectedKey = e.target.value;
+      const target = businesses.find(b => String(b.uniqueKey) === String(selectedKey));
+      if (target) {
+        updateDetailCard(target);
+        if (markers[target.uniqueKey]) {
+          map.panTo([target.lat, target.lon]);
+          markers[target.uniqueKey].openPopup();
+        }
+      }
+    });
+
+    // Real-Time Search Listener
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      
+      if (!q) {
+        renderBusinessList(businesses);
+        return;
+      }
+
+      const filtered = businesses.filter(b => 
+        String(b.id || '').toLowerCase().includes(q) ||
+        String(b.name || '').toLowerCase().includes(q) || 
+        String(b.owner || '').toLowerCase().includes(q) || 
+        String(b.phone || '').toLowerCase().includes(q) ||
+        String(b.address || '').toLowerCase().includes(q) ||
+        String(b.inspector || '').toLowerCase().includes(q)
+      );
+
+      renderBusinessList(filtered);
+    });
 
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
