@@ -724,6 +724,7 @@
       pendingDeleteMode = null;
     });
 
+    // Compressed Base64 photo encoder tuned for Google Drive transmission
     function processHighMbPhoto(file) {
       return new Promise((resolve) => {
         if (!file) return resolve(null);
@@ -736,7 +737,7 @@
               const canvas = document.createElement('canvas');
               let width = img.width;
               let height = img.height;
-              const maxDimension = 1200;
+              const maxDimension = 800; // Optimal 800px max dimension for fast Drive uploads
 
               if (width > height) {
                 if (width > maxDimension) {
@@ -758,7 +759,7 @@
               ctx.fillRect(0, 0, width, height);
               ctx.drawImage(img, 0, 0, width, height);
 
-              resolve(canvas.toDataURL('image/jpeg', 0.8));
+              resolve(canvas.toDataURL('image/jpeg', 0.7));
             } catch (err) {
               resolve(null);
             }
@@ -830,7 +831,7 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Processing Photo & Location...";
+      submitBtn.textContent = "Processing Photo & Uploading...";
 
       try {
         const photoInput = document.getElementById('newBizPhoto');
