@@ -36,7 +36,7 @@
       </div>
       <div class="flex items-center gap-2">
         <span id="offlineQueueBadge" class="hidden bg-amber-500 text-white text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">⚠️ 0 Offline Saved</span>
-        <span id="activeOfficerBadge" class="bg-blue-800 text-white text-xs px-3 py-1.5 rounded-full border border-blue-500 font-mono">Officer: Guest</span>
+        <span id="activeInspectorBadge" class="bg-blue-800 text-white text-xs px-3 py-1.5 rounded-full border border-blue-500 font-mono">Inspector: Guest</span>
       </div>
     </div>
 
@@ -50,7 +50,7 @@
         </div>
       </div>
       <div>
-        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded font-bold text-xs transition shadow-sm cursor-pointer">👑 Officer Login</button>
+        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded font-bold text-xs transition shadow-sm cursor-pointer">👑 Inspector Login</button>
       </div>
     </div>
   </header>
@@ -78,9 +78,9 @@
     </div>
 
     <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200">
-      <div class="text-xs text-blue-600 font-semibold uppercase">Top Officer Activity</div>
-      <div id="statTopOfficer" class="text-sm md:text-base font-bold text-blue-800 truncate mt-1">None</div>
-      <div id="statOfficerDetail" class="text-[10px] text-slate-500 truncate mt-0.5">Submissions: 0</div>
+      <div class="text-xs text-blue-600 font-semibold uppercase">Top Inspector Activity</div>
+      <div id="statTopInspector" class="text-sm md:text-base font-bold text-blue-800 truncate mt-1">None</div>
+      <div id="statInspectorDetail" class="text-[10px] text-slate-500 truncate mt-0.5">Submissions: 0</div>
     </div>
   </section>
 
@@ -104,9 +104,9 @@
         
         <!-- Search Bar -->
         <div class="mb-3">
-          <label class="block text-xs md:text-sm font-semibold text-slate-600 mb-1">Search Establishment / Officer</label>
+          <label class="block text-xs md:text-sm font-semibold text-slate-600 mb-1">Search Establishment / Inspector</label>
           <div class="relative">
-            <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, barangay, or Officer..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, barangay, or Inspector..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
           </div>
         </div>
@@ -135,7 +135,7 @@
               <div><span class="font-semibold text-slate-500">Contact:</span> <a id="cardPhone" href="#" class="text-blue-600 font-medium hover:underline">-</a></div>
               <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
               <div><span class="font-semibold text-slate-500">Log Date:</span> <span id="cardTimestamp" class="text-slate-600 font-mono text-xs">-</span></div>
-              <div><span class="font-semibold text-slate-500">Logged By Officer:</span> <span id="cardOfficer" class="text-blue-700 font-bold">-</span></div>
+              <div><span class="font-semibold text-slate-500">Logged By Inspector:</span> <span id="cardInspector" class="text-blue-700 font-bold">-</span></div>
               <div><span class="font-semibold text-slate-500">Permit Status:</span> <span id="cardStatus" class="font-bold text-slate-800 px-2.5 py-0.5 rounded text-[11px] md:text-xs inline-block mt-0.5">-</span></div>
             </div>
           </div>
@@ -185,25 +185,25 @@
     </div>
   </div>
 
-  <!-- Officer Login Modal -->
+  <!-- Inspector Login Modal -->
   <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-sm font-bold text-slate-800">🔑 Officer Authentication</h3>
+        <h3 class="text-sm font-bold text-slate-800">🔑 Inspector Authentication</h3>
         <button type="button" onclick="toggleModal('adminModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
 
       <form id="adminLoginForm" class="space-y-2.5 text-xs">
-        <p class="text-slate-500">Enter your personal officer passcode to authenticate your portal session:</p>
+        <p class="text-slate-500">Enter your personal Inspector passcode to authenticate your portal session:</p>
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Officer Passcode *</label>
+          <label class="block font-semibold text-slate-600 mb-1">Inspector Passcode *</label>
           <input type="password" id="adminPassInput" required placeholder="Enter Personal Passcode" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none focus:ring-2 focus:ring-blue-500">
         </div>
         <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-lg transition shadow-sm">Authenticate Session</button>
       </form>
 
       <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
-        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Officer Session Active</div>
+        <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Inspector Session Active</div>
         <button type="button" onclick="triggerWipeSecurity()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
           🗑️ Wipe All Cloud Database Entries (Master Passcode Required)
         </button>
@@ -396,18 +396,18 @@
     const MASTER_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
-    // INDIVIDUAL Officer CREDENTIALS
-    const Officer_ACCOUNTS = {
-      "Ashbel2026": "Officer Ashbel Espenido",
-      "Juan2026": "Officer Juan Cruz",
-      "Maria2026": "Officer Maria Santos",
-      "Pedro2026": "Officer Pedro Reyes",
+    // INDIVIDUAL Inspector CREDENTIALS
+    const Inspector_ACCOUNTS = {
+      "Ashbel2026": "Inspector Ashbel Espenido",
+      "Juan2026": "Inspector Juan Cruz",
+      "Maria2026": "Inspector Maria Santos",
+      "Pedro2026": "Inspector Pedro Reyes",
       "IsabelLeyte": "System Admin"
     };
 
     let businesses = [];
     let displayedList = [];
-    let activeOfficer = localStorage.getItem('isabel_Officer_name') || "Officer Ashbel Espenido";
+    let activeInspector = localStorage.getItem('isabel_Inspector_name') || "Inspector Ashbel Espenido";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let isPickingLocation = false;
     let isEditingLocation = false;
@@ -520,7 +520,7 @@
     };
 
     window.openEditModal = function() {
-      if (!isAdminUnlocked) return alert("Officer session required.");
+      if (!isAdminUnlocked) return alert("Inspector session required.");
       const selectedVal = selectElem.value;
       const target = businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
       if (!target) return alert("Please select a business to edit.");
@@ -546,8 +546,8 @@
         document.getElementById('statCompliantRate').textContent = "0%";
         document.getElementById('statCompliantBar').style.width = "0%";
         document.getElementById('statNonCompliant').textContent = "0";
-        document.getElementById('statTopOfficer').textContent = "None";
-        document.getElementById('statOfficerDetail').textContent = "Submissions: 0";
+        document.getElementById('statTopInspector').textContent = "None";
+        document.getElementById('statInspectorDetail').textContent = "Submissions: 0";
         return;
       }
 
@@ -559,35 +559,35 @@
       document.getElementById('statCompliantBar').style.width = rate + "%";
       document.getElementById('statNonCompliant').textContent = nonCompliantCount;
 
-      const OfficerCounts = {};
+      const InspectorCounts = {};
       list.forEach(b => {
-        const name = b.Officer || "Officer Ashbel Espenido";
-        OfficerCounts[name] = (OfficerCounts[name] || 0) + 1;
+        const name = b.Inspector || "Inspector Ashbel Espenido";
+        InspectorCounts[name] = (InspectorCounts[name] || 0) + 1;
       });
 
-      const topOfficer = Object.keys(OfficerCounts).reduce((a, b) => OfficerCounts[a] > OfficerCounts[b] ? a : b);
-      document.getElementById('statTopOfficer').textContent = topOfficer;
-      document.getElementById('statOfficerDetail').textContent = `Submissions: ${OfficerCounts[topOfficer]}`;
+      const topInspector = Object.keys(InspectorCounts).reduce((a, b) => InspectorCounts[a] > InspectorCounts[b] ? a : b);
+      document.getElementById('statTopInspector').textContent = topInspector;
+      document.getElementById('statInspectorDetail').textContent = `Submissions: ${InspectorCounts[topInspector]}`;
     }
 
     function updateAdminUI() {
       const adminElements = document.querySelectorAll('.admin-only');
       const adminBtn = document.getElementById('openAdminModalBtn');
       const viewModeLabel = document.getElementById('viewModeLabel');
-      const OfficerBadge = document.getElementById('activeOfficerBadge');
+      const InspectorBadge = document.getElementById('activeInspectorBadge');
 
-      OfficerBadge.textContent = "Officer: " + activeOfficer;
+      InspectorBadge.textContent = "Inspector: " + activeInspector;
 
       if (isAdminUnlocked) {
         adminElements.forEach(el => el.classList.remove('hidden'));
         adminBtn.textContent = "🔓 Session Active";
         adminBtn.classList.replace('bg-amber-500', 'bg-emerald-600');
-        viewModeLabel.textContent = "Portal Active (" + activeOfficer + ")";
+        viewModeLabel.textContent = "Portal Active (" + activeInspector + ")";
         document.getElementById('adminLoginForm').classList.add('hidden');
         document.getElementById('adminPanelControls').classList.remove('hidden');
       } else {
         adminElements.forEach(el => el.classList.add('hidden'));
-        adminBtn.textContent = "👑 Officer Login";
+        adminBtn.textContent = "👑 Inspector Login";
         adminBtn.classList.replace('bg-emerald-600', 'bg-amber-500');
         viewModeLabel.textContent = "Public View-Only Mode";
         document.getElementById('adminLoginForm').classList.remove('hidden');
@@ -719,7 +719,7 @@
               lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
               lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
               image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
-              Officer: String(b["Officer Name"] || b["Officer"] || b.Officer || activeOfficer),
+              Inspector: String(b["Inspector Name"] || b["Inspector"] || b.Inspector || activeInspector),
               uniqueKey: "REMOTE_" + String(b["Business ID"] || index) + "_" + String(b["Business Name"] || index) + "_" + index
             }));
 
@@ -737,7 +737,7 @@
                 lat: b.lat,
                 lon: b.lon,
                 image: b.image || FALLBACK_IMAGE,
-                Officer: b.Officer || activeOfficer,
+                Inspector: b.Inspector || activeInspector,
                 uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
               }));
 
@@ -793,7 +793,7 @@
         marker.openPopup();
       });
 
-      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Officer: " + biz.Officer);
+      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Inspector: " + biz.Inspector);
       markers[biz.uniqueKey] = marker;
     }
 
@@ -806,7 +806,7 @@
         document.getElementById('cardPhone').href = '#';
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardTimestamp').textContent = '-';
-        document.getElementById('cardOfficer').textContent = '-';
+        document.getElementById('cardInspector').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
         document.getElementById('cardImage').src = FALLBACK_IMAGE;
         return;
@@ -821,7 +821,7 @@
 
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardTimestamp').textContent = biz.timestamp || getFormattedTimestamp();
-      document.getElementById('cardOfficer').textContent = biz.Officer || "Officer Ashbel Espenido";
+      document.getElementById('cardInspector').textContent = biz.Inspector || "Inspector Ashbel Espenido";
       
       const statusBadge = document.getElementById('cardStatus');
       statusBadge.textContent = biz.status;
@@ -860,14 +860,14 @@
         String(b.owner || '').toLowerCase().includes(q) || 
         String(b.phone || '').toLowerCase().includes(q) ||
         String(b.address || '').toLowerCase().includes(q) ||
-        String(b.Officer || '').toLowerCase().includes(q)
+        String(b.Inspector || '').toLowerCase().includes(q)
       );
 
       renderBusinessList(filtered);
     });
 
     window.triggerDeleteSecurity = function() {
-      if (!isAdminUnlocked) return alert("Officer session required.");
+      if (!isAdminUnlocked) return alert("Inspector session required.");
       const selectedVal = selectElem.value;
       const target = businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
       if (!target) return alert("No business selected.");
@@ -879,7 +879,7 @@
     };
 
     window.triggerWipeSecurity = function() {
-      if (!isAdminUnlocked) return alert("Officer session required.");
+      if (!isAdminUnlocked) return alert("Inspector session required.");
       pendingDeleteMode = 'all';
       document.getElementById('deleteModalTargetLabel').textContent = `🚨 DANGER: Re-enter Master Passcode (${MASTER_PASSCODE}) to WIPE ALL database entries:`;
       document.getElementById('deleteSecurityPassInput').value = '';
@@ -891,7 +891,7 @@
       e.preventDefault();
       const enteredPass = document.getElementById('deleteSecurityPassInput').value;
 
-      if (!Officer_ACCOUNTS[enteredPass]) {
+      if (!Inspector_ACCOUNTS[enteredPass]) {
         alert("❌ Incorrect Passcode! Action aborted.");
         return;
       }
@@ -933,26 +933,26 @@
       e.preventDefault();
       const enteredPass = document.getElementById('adminPassInput').value.trim();
 
-      if (Officer_ACCOUNTS[enteredPass]) {
+      if (Inspector_ACCOUNTS[enteredPass]) {
         isAdminUnlocked = true;
-        activeOfficer = Officer_ACCOUNTS[enteredPass];
+        activeInspector = Inspector_ACCOUNTS[enteredPass];
 
         localStorage.setItem('isabel_admin_unlocked', 'true');
-        localStorage.setItem('isabel_Officer_name', activeOfficer);
+        localStorage.setItem('isabel_Inspector_name', activeInspector);
 
         updateAdminUI();
         toggleModal('adminModal', false);
         document.getElementById('adminPassInput').value = '';
 
-        alert(`Welcome, ${activeOfficer}!\nOfficer Portal Authenticated.`);
+        alert(`Welcome, ${activeInspector}!\nInspector Portal Authenticated.`);
       } else {
-        alert("❌ Invalid Officer Passcode! Access Denied.");
+        alert("❌ Invalid Inspector Passcode! Access Denied.");
       }
     });
 
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!isAdminUnlocked) return alert("Officer login required.");
+      if (!isAdminUnlocked) return alert("Inspector login required.");
 
       const inputId = document.getElementById('newBizId').value.trim();
 
@@ -992,7 +992,7 @@
           lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
           lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
           image: stampedImage,
-          Officer: activeOfficer
+          Inspector: activeInspector
         };
 
         toggleModal('addBusinessModal', false);
@@ -1014,7 +1014,7 @@
 
     document.getElementById('editBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!isAdminUnlocked) return alert("Officer session required.");
+      if (!isAdminUnlocked) return alert("Inspector session required.");
 
       const origId = document.getElementById('editOriginalId').value;
       const targetIndex = businesses.findIndex(b => String(b.id) === String(origId));
@@ -1040,7 +1040,7 @@
           timestamp: getFormattedTimestamp(),
           lat: parseFloat(document.getElementById('editBizLat').value) || businesses[targetIndex].lat,
           lon: parseFloat(document.getElementById('editBizLon').value) || businesses[targetIndex].lon,
-          Officer: activeOfficer
+          Inspector: activeInspector
         };
 
         let photoUrl = businesses[targetIndex].image;
@@ -1143,11 +1143,11 @@
               currentY += lineSpacing;
               ctx.fillStyle = "#CBD5E1";
               ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("Officer:", startX, currentY);
+              ctx.fillText("Inspector:", startX, currentY);
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#38BDF8";
               ctx.font = `${baseFontSize}px sans-serif`;
-              ctx.fillText(activeOfficer, startX, currentY);
+              ctx.fillText(activeInspector, startX, currentY);
 
               resolve(canvas.toDataURL('image/jpeg', 0.65));
             } catch (err) {
@@ -1163,10 +1163,10 @@
     // EXPORT FORMATTED LOCAL TIMESTAMPS
     window.exportToExcel = function() {
       if (businesses.length === 0) return alert("No business data available to export.");
-      let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude,Officer\n";
+      let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
       businesses.forEach(b => {
         const cleanTimestamp = (b.timestamp || '').replace(/,/g, '');
-        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.Officer || 'Admin'}"\n`;
+        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.Inspector || 'Admin'}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
