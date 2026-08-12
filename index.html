@@ -434,7 +434,8 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzN5p_QHPL8mPjF7xQ2Q7bfMe4zDS50iRV1H9NDs3HIabLUGJ8q4la6E77wQG-9jP11/exec";
+    // PASTE YOUR FRESH WEB APP URL BELOW BETWEEN THE QUOTES
+    const GOOGLE_SCRIPT_URL = "YOUR_NEW_EXACT_DEPLOYMENT_URL_HERE";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const MASTER_PASSCODE = "IsabelLeyte";
@@ -507,7 +508,6 @@
       toggleModal('printableNoticeModal', true);
     };
 
-    // OPEN EDIT MODAL PRE-FILLED WITH CURRENT BUSINESS DATA
     window.openEditModal = function() {
       if (!isAdminUnlocked) return alert("Inspector session required.");
       const selectedVal = selectElem.value;
@@ -546,7 +546,6 @@
       document.getElementById('statCompliantBar').style.width = rate + "%";
       document.getElementById('statNonCompliant').textContent = nonCompliantCount;
 
-      // INSPECTOR ACTIVITY BREAKDOWN
       const inspectorCounts = {};
       list.forEach(b => {
         const name = b.inspector || "Officer Ashbel Espenido";
@@ -899,7 +898,6 @@
       pendingDeleteMode = null;
     });
 
-    // INDIVIDUAL PASSCODE AUTHENTICATION LISTENER
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const enteredPass = document.getElementById('adminPassInput').value.trim();
@@ -921,7 +919,6 @@
       }
     });
 
-    // SUBMIT NEW BUSINESS
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector login required.");
@@ -984,7 +981,6 @@
       }
     });
 
-    // EDIT BUSINESS FORM SUBMISSION
     document.getElementById('editBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector session required.");
@@ -1002,6 +998,8 @@
         const targetRes = document.getElementById('editBizResolution').value;
 
         const updatedData = {
+          action: "updateBusiness",
+          origId: origId,
           id: document.getElementById('editBizId').value.trim(),
           name: document.getElementById('editBizName').value.trim(),
           owner: document.getElementById('editBizOwner').value.trim(),
@@ -1009,6 +1007,8 @@
           address: document.getElementById('editBizAddress').value.trim(),
           status: document.getElementById('editBizStatus').value,
           timestamp: getFormattedTimestamp(),
+          lat: businesses[targetIndex].lat,
+          lon: businesses[targetIndex].lon,
           inspector: activeInspector
         };
 
@@ -1016,29 +1016,13 @@
         if (file) {
           photoUrl = await processHighMbPhoto(file, updatedData, targetRes) || photoUrl;
         }
+        updatedData.image = photoUrl;
 
-        // Delete old entry and replace with updated entry
-        await sendCloudAction({ action: "deleteBusiness", id: origId });
-
-        const updatedBizPayload = {
-          action: "addBusiness",
-          id: updatedData.id,
-          name: updatedData.name,
-          owner: updatedData.owner,
-          phone: updatedData.phone,
-          address: updatedData.address,
-          status: updatedData.status,
-          timestamp: updatedData.timestamp,
-          lat: businesses[targetIndex].lat,
-          lon: businesses[targetIndex].lon,
-          image: photoUrl,
-          inspector: activeInspector
-        };
-
-        await sendCloudAction(updatedBizPayload);
+        await sendCloudAction(updatedData);
         toggleModal('editBusinessModal', false);
         alert("✏️ Record updated successfully!");
-        await loadBusinesses();
+        
+        setTimeout(async () => { await loadBusinesses(); }, 1000);
 
       } catch (err) {
         alert("An error occurred while updating.");
