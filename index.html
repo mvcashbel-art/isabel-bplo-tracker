@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Leaflet Offline Tile Caching Plugin -->
+  <script src="https://unpkg.com/leaflet.offline@2.2.0/dist/leaflet.offline.min.js"></script>
+
   <style>
     #map { height: 320px; width: 100%; border-radius: 0.75rem; position: relative; z-index: 1; }
     @media (min-width: 1024px) { #map { height: 480px; } }
@@ -106,7 +109,7 @@
         <div class="mb-3">
           <label class="block text-xs md:text-sm font-semibold text-slate-600 mb-1">Search Establishment / Inspector</label>
           <div class="relative">
-            <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, barangay, or Inspector..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, barangay, or inspector..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
           </div>
         </div>
@@ -158,16 +161,16 @@
 
     <!-- RIGHT COLUMN -->
     <div class="lg:col-span-5">
-      <section class="bg-white p-3 md:p-4 rounded-xl shadow-sm sticky top-4">
-        <div class="flex justify-between items-center mb-2">
+      <section class="bg-white p-3 md:p-4 rounded-xl shadow-sm sticky top-4 space-y-2">
+        <div class="flex justify-between items-center mb-1">
           <h2 class="text-xs md:text-sm font-bold text-slate-700">📍 Isabel Municipal Map</h2>
-          <div class="flex gap-2 text-[10px] md:text-xs">
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> No Permit</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Expired</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
-          </div>
+          <button type="button" onclick="downloadOfflineMapTiles()" class="bg-purple-100 hover:bg-purple-200 text-purple-800 text-[10px] md:text-xs px-2.5 py-1 rounded-md font-bold transition flex items-center gap-1 cursor-pointer">
+            <span>📥</span> <span id="downloadMapBtnText">Pre-Cache Isabel Map</span>
+          </button>
         </div>
+        
         <div id="map"></div>
+
         <div id="mapPickNotice" class="hidden mt-2 p-2.5 bg-amber-100 border border-amber-300 text-amber-900 text-xs rounded-lg text-center font-bold animate-pulse">
           👉 Tap anywhere on the map above to pin location!
         </div>
@@ -194,7 +197,7 @@
       </div>
 
       <form id="adminLoginForm" class="space-y-2.5 text-xs">
-        <p class="text-slate-500">Enter your personal Inspector passcode to authenticate your portal session:</p>
+        <p class="text-slate-500">Enter your personal officer passcode to authenticate your portal session:</p>
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Inspector Passcode *</label>
           <input type="password" id="adminPassInput" required placeholder="Enter Personal Passcode" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none focus:ring-2 focus:ring-blue-500">
@@ -391,23 +394,23 @@
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYx8fkc7Mt8if8co0gcIA3UZ4XgjGo4js1aiU2Y7Ao8h9xwwfG4xrRyFTO2koWnHPd/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
-    const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses"; // Local Database Storage
+    const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const MASTER_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
-    // INDIVIDUAL Inspector CREDENTIALS
-    const Inspector_ACCOUNTS = {
-      "Ashbel2026": "Inspector Ashbel Espenido",
-      "Juan2026": "Inspector Juan Cruz",
-      "Maria2026": "Inspector Maria Santos",
-      "Pedro2026": "Inspector Pedro Reyes",
+    // INDIVIDUAL INSPECTOR CREDENTIALS
+    const INSPECTOR_ACCOUNTS = {
+      "Ashbel2026": "Officer Ashbel Espenido",
+      "Juan2026": "Officer Juan Cruz",
+      "Maria2026": "Officer Maria Santos",
+      "Pedro2026": "Officer Pedro Reyes",
       "IsabelLeyte": "System Admin"
     };
 
     let businesses = [];
     let displayedList = [];
-    let activeInspector = localStorage.getItem('isabel_Inspector_name') || "Inspector Ashbel Espenido";
+    let activeInspector = localStorage.getItem('isabel_inspector_name') || "Officer Ashbel Espenido";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let isPickingLocation = false;
     let isEditingLocation = false;
@@ -422,11 +425,35 @@
       "Compliant": "#10b981"
     };
 
+    // MAP INITIALIZATION WITH LEAFLET OFFLINE TILE LAYER
     const map = L.map('map').setView(ISABEL_CENTER, 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    const offlineTileLayer = L.tileLayer.offline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
 
     const selectElem = document.getElementById('businessSelect');
     const searchInput = document.getElementById('searchInput');
+
+    // PRE-CACHE ISABEL MAP TILES FOR OFFLINE USE
+    window.downloadOfflineMapTiles = function() {
+      if (!navigator.onLine) return alert("Please connect to Wi-Fi/data first to download map tiles!");
+      
+      const btnText = document.getElementById('downloadMapBtnText');
+      btnText.textContent = "Caching Map...";
+
+      const bbox = map.getBounds();
+      const saveControl = L.control.savetiles(offlineTileLayer, {
+        zoomlevels: [13, 14, 15, 16, 17],
+        confirm: function(layer, successCallback) { successCallback(); },
+        confirmRemoval: function(layer, successCallback) { successCallback(); }
+      });
+
+      saveControl._saveTiles(bbox, [13, 14, 15, 16, 17], function() {
+        btnText.textContent = "Map Saved Offline!";
+        alert("🗺️ Isabel municipal map tiles downloaded and cached offline!");
+      });
+    };
 
     // MAP CLICK LISTENER FOR "PICK ON MAP"
     map.on('click', function(e) {
@@ -559,24 +586,24 @@
       document.getElementById('statCompliantBar').style.width = rate + "%";
       document.getElementById('statNonCompliant').textContent = nonCompliantCount;
 
-      const InspectorCounts = {};
+      const inspectorCounts = {};
       list.forEach(b => {
-        const name = b.Inspector || "Inspector Ashbel Espenido";
-        InspectorCounts[name] = (InspectorCounts[name] || 0) + 1;
+        const name = b.inspector || "Officer Ashbel Espenido";
+        inspectorCounts[name] = (inspectorCounts[name] || 0) + 1;
       });
 
-      const topInspector = Object.keys(InspectorCounts).reduce((a, b) => InspectorCounts[a] > InspectorCounts[b] ? a : b);
-      document.getElementById('statTopInspector').textContent = topInspector;
-      document.getElementById('statInspectorDetail').textContent = `Submissions: ${InspectorCounts[topInspector]}`;
+      const topOfficer = Object.keys(inspectorCounts).reduce((a, b) => inspectorCounts[a] > inspectorCounts[b] ? a : b);
+      document.getElementById('statTopInspector').textContent = topOfficer;
+      document.getElementById('statInspectorDetail').textContent = `Submissions: ${inspectorCounts[topOfficer]}`;
     }
 
     function updateAdminUI() {
       const adminElements = document.querySelectorAll('.admin-only');
       const adminBtn = document.getElementById('openAdminModalBtn');
       const viewModeLabel = document.getElementById('viewModeLabel');
-      const InspectorBadge = document.getElementById('activeInspectorBadge');
+      const inspectorBadge = document.getElementById('activeInspectorBadge');
 
-      InspectorBadge.textContent = "Inspector: " + activeInspector;
+      inspectorBadge.textContent = "Inspector: " + activeInspector;
 
       if (isAdminUnlocked) {
         adminElements.forEach(el => el.classList.remove('hidden'));
@@ -719,7 +746,7 @@
               lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
               lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
               image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
-              Inspector: String(b["Inspector Name"] || b["Inspector"] || b.Inspector || activeInspector),
+              inspector: String(b["Inspector Name"] || b["Inspector"] || b.inspector || activeInspector),
               uniqueKey: "REMOTE_" + String(b["Business ID"] || index) + "_" + String(b["Business Name"] || index) + "_" + index
             }));
 
@@ -737,7 +764,7 @@
                 lat: b.lat,
                 lon: b.lon,
                 image: b.image || FALLBACK_IMAGE,
-                Inspector: b.Inspector || activeInspector,
+                inspector: b.inspector || activeInspector,
                 uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
               }));
 
@@ -793,7 +820,7 @@
         marker.openPopup();
       });
 
-      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Inspector: " + biz.Inspector);
+      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Inspector: " + biz.inspector);
       markers[biz.uniqueKey] = marker;
     }
 
@@ -821,7 +848,7 @@
 
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardTimestamp').textContent = biz.timestamp || getFormattedTimestamp();
-      document.getElementById('cardInspector').textContent = biz.Inspector || "Inspector Ashbel Espenido";
+      document.getElementById('cardInspector').textContent = biz.inspector || "Officer Ashbel Espenido";
       
       const statusBadge = document.getElementById('cardStatus');
       statusBadge.textContent = biz.status;
@@ -860,7 +887,7 @@
         String(b.owner || '').toLowerCase().includes(q) || 
         String(b.phone || '').toLowerCase().includes(q) ||
         String(b.address || '').toLowerCase().includes(q) ||
-        String(b.Inspector || '').toLowerCase().includes(q)
+        String(b.inspector || '').toLowerCase().includes(q)
       );
 
       renderBusinessList(filtered);
@@ -891,7 +918,7 @@
       e.preventDefault();
       const enteredPass = document.getElementById('deleteSecurityPassInput').value;
 
-      if (!Inspector_ACCOUNTS[enteredPass]) {
+      if (!INSPECTOR_ACCOUNTS[enteredPass]) {
         alert("❌ Incorrect Passcode! Action aborted.");
         return;
       }
@@ -933,12 +960,12 @@
       e.preventDefault();
       const enteredPass = document.getElementById('adminPassInput').value.trim();
 
-      if (Inspector_ACCOUNTS[enteredPass]) {
+      if (INSPECTOR_ACCOUNTS[enteredPass]) {
         isAdminUnlocked = true;
-        activeInspector = Inspector_ACCOUNTS[enteredPass];
+        activeInspector = INSPECTOR_ACCOUNTS[enteredPass];
 
         localStorage.setItem('isabel_admin_unlocked', 'true');
-        localStorage.setItem('isabel_Inspector_name', activeInspector);
+        localStorage.setItem('isabel_inspector_name', activeInspector);
 
         updateAdminUI();
         toggleModal('adminModal', false);
@@ -992,7 +1019,7 @@
           lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
           lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
           image: stampedImage,
-          Inspector: activeInspector
+          inspector: activeInspector
         };
 
         toggleModal('addBusinessModal', false);
@@ -1040,7 +1067,7 @@
           timestamp: getFormattedTimestamp(),
           lat: parseFloat(document.getElementById('editBizLat').value) || businesses[targetIndex].lat,
           lon: parseFloat(document.getElementById('editBizLon').value) || businesses[targetIndex].lon,
-          Inspector: activeInspector
+          inspector: activeInspector
         };
 
         let photoUrl = businesses[targetIndex].image;
@@ -1143,7 +1170,7 @@
               currentY += lineSpacing;
               ctx.fillStyle = "#CBD5E1";
               ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("Inspector:", startX, currentY);
+              ctx.fillText("INSPECTOR:", startX, currentY);
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#38BDF8";
               ctx.font = `${baseFontSize}px sans-serif`;
@@ -1166,7 +1193,7 @@
       let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
       businesses.forEach(b => {
         const cleanTimestamp = (b.timestamp || '').replace(/,/g, '');
-        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.Inspector || 'Admin'}"\n`;
+        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
