@@ -391,6 +391,7 @@
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYx8fkc7Mt8if8co0gcIA3UZ4XgjGo4js1aiU2Y7Ao8h9xwwfG4xrRyFTO2koWnHPd/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
+    const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses"; // Local Database Storage
     const ISABEL_CENTER = [10.9280, 124.4385];
     const MASTER_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
@@ -687,15 +688,27 @@
       setTimeout(async () => { await loadBusinesses(); }, 1500);
     }
 
+    // INSTANT LOCAL LOADING WITH QUIET BACKGROUND REFRESH
     async function loadBusinesses() {
-      let remoteData = [];
+      // 1. Immediately load and render locally saved database from Phone Storage
+      const cached = localStorage.getItem(CACHED_BUSINESSES_KEY);
+      if (cached) {
+        try {
+          businesses = JSON.parse(cached);
+          displayedList = [...businesses];
+          renderBusinessList(displayedList);
+          updateDashboardStats(businesses);
+        } catch (e) {}
+      }
+
+      // 2. Fetch fresh data quietly in background from Google Sheet
       if (navigator.onLine) {
         try {
           const res = await fetch(GOOGLE_SCRIPT_URL);
           const data = await res.json();
 
           if (Array.isArray(data) && data.length > 0) {
-            remoteData = data.map((b, index) => ({
+            const remoteData = data.map((b, index) => ({
               id: String(b["Business ID"] || b.id || "BIZ-" + index),
               name: String(b["Business Name"] || b.name || ""),
               owner: String(b["Owner Name"] || b.owner || ""),
@@ -709,35 +722,39 @@
               inspector: String(b["Inspector Name"] || b["Inspector"] || b.inspector || activeInspector),
               uniqueKey: "REMOTE_" + String(b["Business ID"] || index) + "_" + String(b["Business Name"] || index) + "_" + index
             }));
+
+            let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+            let pendingItems = offlineQueue
+              .filter(item => item.action === "addBusiness")
+              .map((b, idx) => ({
+                id: b.id,
+                name: b.name + " (Pending Sync)",
+                owner: b.owner,
+                phone: b.phone,
+                address: b.address,
+                status: b.status,
+                timestamp: b.timestamp,
+                lat: b.lat,
+                lon: b.lon,
+                image: b.image || FALLBACK_IMAGE,
+                inspector: b.inspector || activeInspector,
+                uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
+              }));
+
+            const allMap = new Map();
+            [...pendingItems, ...remoteData].forEach(item => allMap.set(item.uniqueKey, item));
+            businesses = Array.from(allMap.values());
+            displayedList = [...businesses];
+
+            // Update Phone Local Storage for Next Instant Boot
+            localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
+
+            renderBusinessList(displayedList);
+            updateDashboardStats(businesses);
           }
         } catch (err) {}
       }
 
-      let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
-      let pendingItems = offlineQueue
-        .filter(item => item.action === "addBusiness")
-        .map((b, idx) => ({
-          id: b.id,
-          name: b.name + " (Pending Sync)",
-          owner: b.owner,
-          phone: b.phone,
-          address: b.address,
-          status: b.status,
-          timestamp: b.timestamp,
-          lat: b.lat,
-          lon: b.lon,
-          image: b.image || FALLBACK_IMAGE,
-          inspector: b.inspector || activeInspector,
-          uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
-        }));
-
-      const allMap = new Map();
-      [...pendingItems, ...remoteData].forEach(item => allMap.set(item.uniqueKey, item));
-      businesses = Array.from(allMap.values());
-      displayedList = [...businesses];
-
-      renderBusinessList(displayedList);
-      updateDashboardStats(businesses);
       updateOfflineBadge();
     }
 
@@ -888,6 +905,7 @@
           const removed = businesses.splice(targetIndex, 1)[0];
           renderBusinessList(businesses);
           updateDashboardStats(businesses);
+          localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
           await sendCloudAction({ action: "deleteBusiness", id: removed.id });
           alert("🗑️ Successfully deleted " + removed.name + "!");
         }
@@ -899,6 +917,7 @@
         businesses = [];
         displayedList = [];
         localStorage.removeItem(OFFLINE_QUEUE_KEY);
+        localStorage.removeItem(CACHED_BUSINESSES_KEY);
         renderBusinessList([]);
         updateDashboardStats([]);
         
