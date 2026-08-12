@@ -12,9 +12,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Leaflet Offline Tile Caching Plugin -->
-  <script src="https://unpkg.com/leaflet.offline@2.2.0/dist/leaflet.offline.min.js"></script>
-
   <style>
     #map { height: 320px; width: 100%; border-radius: 0.75rem; position: relative; z-index: 1; }
     @media (min-width: 1024px) { #map { height: 480px; } }
@@ -161,16 +158,16 @@
 
     <!-- RIGHT COLUMN -->
     <div class="lg:col-span-5">
-      <section class="bg-white p-3 md:p-4 rounded-xl shadow-sm sticky top-4 space-y-2">
-        <div class="flex justify-between items-center mb-1">
+      <section class="bg-white p-3 md:p-4 rounded-xl shadow-sm sticky top-4">
+        <div class="flex justify-between items-center mb-2">
           <h2 class="text-xs md:text-sm font-bold text-slate-700">📍 Isabel Municipal Map</h2>
-          <button type="button" onclick="downloadOfflineMapTiles()" class="bg-purple-100 hover:bg-purple-200 text-purple-800 text-[10px] md:text-xs px-2.5 py-1 rounded-md font-bold transition flex items-center gap-1 cursor-pointer">
-            <span>📥</span> <span id="downloadMapBtnText">Pre-Cache Isabel Map</span>
-          </button>
+          <div class="flex gap-2 text-[10px] md:text-xs">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> No Permit</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Expired</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
+          </div>
         </div>
-        
         <div id="map"></div>
-
         <div id="mapPickNotice" class="hidden mt-2 p-2.5 bg-amber-100 border border-amber-300 text-amber-900 text-xs rounded-lg text-center font-bold animate-pulse">
           👉 Tap anywhere on the map above to pin location!
         </div>
@@ -394,7 +391,7 @@
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYx8fkc7Mt8if8co0gcIA3UZ4XgjGo4js1aiU2Y7Ao8h9xwwfG4xrRyFTO2koWnHPd/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
-    const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
+    const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses"; // Local Database Storage
     const ISABEL_CENTER = [10.9280, 124.4385];
     const MASTER_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
@@ -425,35 +422,11 @@
       "Compliant": "#10b981"
     };
 
-    // MAP INITIALIZATION WITH LEAFLET OFFLINE TILE LAYER
     const map = L.map('map').setView(ISABEL_CENTER, 15);
-    const offlineTileLayer = L.tileLayer.offline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
     const selectElem = document.getElementById('businessSelect');
     const searchInput = document.getElementById('searchInput');
-
-    // PRE-CACHE ISABEL MAP TILES FOR OFFLINE USE
-    window.downloadOfflineMapTiles = function() {
-      if (!navigator.onLine) return alert("Please connect to Wi-Fi/data first to download map tiles!");
-      
-      const btnText = document.getElementById('downloadMapBtnText');
-      btnText.textContent = "Caching Map...";
-
-      const bbox = map.getBounds();
-      const saveControl = L.control.savetiles(offlineTileLayer, {
-        zoomlevels: [13, 14, 15, 16, 17],
-        confirm: function(layer, successCallback) { successCallback(); },
-        confirmRemoval: function(layer, successCallback) { successCallback(); }
-      });
-
-      saveControl._saveTiles(bbox, [13, 14, 15, 16, 17], function() {
-        btnText.textContent = "Map Saved Offline!";
-        alert("🗺️ Isabel municipal map tiles downloaded and cached offline!");
-      });
-    };
 
     // MAP CLICK LISTENER FOR "PICK ON MAP"
     map.on('click', function(e) {
