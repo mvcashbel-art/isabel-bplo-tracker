@@ -299,7 +299,7 @@
               <span>📡</span> <span id="gpsBtnText">Detect GPS</span>
             </button>
             <button type="button" onclick="enableMapPinPicker()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 px-2 rounded-lg border border-purple-200 flex items-center justify-center gap-1 transition text-[11px]">
-              <span>🗺️</span> <span>Pick on Map</span>
+              <span>🗺️</span> <span id="mapPinBtnText">Pick on Map</span>
             </button>
           </div>
         </div>
@@ -414,6 +414,43 @@
 
     const selectElem = document.getElementById('businessSelect');
     const searchInput = document.getElementById('searchInput');
+
+    // MAP CLICK LISTENER FOR "PICK ON MAP"
+    map.on('click', function(e) {
+      if (!isPickingLocation) return;
+
+      const lat = e.latlng.lat.toFixed(6);
+      const lon = e.latlng.lng.toFixed(6);
+
+      document.getElementById('newBizLat').value = lat;
+      document.getElementById('newBizLon').value = lon;
+
+      if (tempPickerMarker) map.removeLayer(tempPickerMarker);
+
+      tempPickerMarker = L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: 'custom-pin',
+          html: `<div style="background-color: #9333ea; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        })
+      }).addTo(map);
+
+      isPickingLocation = false;
+      map.getContainer().classList.remove('picking-mode');
+      document.getElementById('mapPickNotice').classList.add('hidden');
+      document.getElementById('mapPinBtnText').textContent = "Pinned (" + lat.substr(0, 6) + ")";
+      
+      toggleModal('addBusinessModal', true);
+    });
+
+    window.enableMapPinPicker = function() {
+      isPickingLocation = true;
+      toggleModal('addBusinessModal', false);
+      map.getContainer().classList.add('picking-mode');
+      document.getElementById('mapPickNotice').classList.remove('hidden');
+      document.getElementById('mapPinBtnText').textContent = "Tap Map...";
+    };
 
     window.toggleModal = function(modalId, show) {
       const el = document.getElementById(modalId);
