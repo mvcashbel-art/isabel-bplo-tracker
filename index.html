@@ -149,10 +149,6 @@
             </button>
           </div>
 
-          <button type="button" id="generateNoticeBtn" onclick="openNoticeModal()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-2 rounded-lg transition text-xs md:text-sm shadow-sm flex items-center justify-center gap-1">
-            <span>📄</span> Generate Compliance Notice / Violation Slip
-          </button>
-
           <button type="button" id="deleteCurrentBizBtn" onclick="triggerDeleteSecurity()" class="admin-only hidden w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-2 px-2 rounded-lg border border-rose-200 flex items-center justify-center gap-1 transition text-xs md:text-sm">
             <span>🗑️</span> Delete Entry (Passcode Required)
           </button>
@@ -189,58 +185,6 @@
     </div>
   </div>
 
-  <!-- PRINTABLE NOTICE MODAL -->
-  <div id="printableNoticeModal" style="display: none;" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4 max-h-[90vh] overflow-y-auto border-4 border-rose-600">
-      <div class="text-center border-b pb-3 no-print flex justify-between items-center">
-        <h3 class="text-sm font-bold text-rose-700">📄 Official Notice Preview</h3>
-        <button type="button" onclick="toggleModal('printableNoticeModal', false)" class="text-slate-400 hover:text-slate-600 font-bold">✕ Close</button>
-      </div>
-
-      <div class="text-center space-y-1">
-        <div class="text-xs uppercase font-bold text-slate-500 tracking-wider">Republic of the Philippines</div>
-        <div class="text-xs uppercase font-bold text-slate-700">Municipality of Isabel, Leyte</div>
-        <div class="text-sm uppercase font-extrabold text-blue-900">Business Permit & Licensing Office (BPLO)</div>
-        <div class="text-xs font-semibold text-rose-600 uppercase tracking-widest mt-2 border-t border-b border-rose-200 py-1">Notice of Violation / Compliance Order</div>
-      </div>
-
-      <div class="text-xs space-y-2 pt-2">
-        <div class="flex justify-between">
-          <span><strong>Date:</strong> <span id="noticeDate">-</span></span>
-          <span><strong>Notice No:</strong> <span id="noticeNo" class="font-mono text-rose-700 font-bold">-</span></span>
-        </div>
-        <div><strong>Establishment Name:</strong> <span id="noticeBizName" class="font-bold text-slate-900">-</span></div>
-        <div><strong>Business ID:</strong> <span id="noticeBizId" class="font-mono font-bold">-</span></div>
-        <div><strong>Owner / Operator:</strong> <span id="noticeOwner">-</span></div>
-        <div><strong>Barangay Address:</strong> <span id="noticeAddress">-</span></div>
-        <div class="p-2.5 bg-rose-50 border border-rose-200 text-rose-900 rounded font-semibold">
-          <strong>Violation Status:</strong> <span id="noticeStatus" class="uppercase font-bold">-</span>
-        </div>
-        <p class="text-justify leading-relaxed">
-          Please be informed that during a field inspection conducted by the Isabel BPLO inspection team, your establishment was found operating without a valid Business Permit or with an expired permit in violation of Municipal Revenue Code provisions.
-        </p>
-        <p class="text-justify font-bold text-slate-900">
-          You are hereby given five (5) working days from receipt of this notice to present yourself at the Isabel BPLO Municipal Hall to complete permit compliance.
-        </p>
-        <div class="pt-4 flex justify-between items-end">
-          <div>
-            <div class="font-bold text-slate-900" id="noticeInspectorName">Inspector Name</div>
-            <div class="text-[10px] text-slate-500">BPLO Field Inspector</div>
-          </div>
-          <div class="text-right">
-            <div class="w-32 border-b border-slate-400 mb-1"></div>
-            <div class="text-[10px] text-slate-500">Owner Signature / Received Date</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="pt-3 border-t flex gap-2 no-print">
-        <button type="button" onclick="window.print()" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 rounded-lg text-xs transition">🖨️ Print / Save PDF</button>
-        <button type="button" onclick="toggleModal('printableNoticeModal', false)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs transition">Close</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Inspector Login Modal -->
   <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3">
@@ -250,7 +194,7 @@
       </div>
 
       <form id="adminLoginForm" class="space-y-2.5 text-xs">
-        <p class="text-slate-500">Enter your personal Inspector passcode to authenticate your portal session:</p>
+        <p class="text-slate-500">Enter your personal officer passcode to authenticate your portal session:</p>
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Inspector Passcode *</label>
           <input type="password" id="adminPassInput" required placeholder="Enter Personal Passcode" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none focus:ring-2 focus:ring-blue-500">
@@ -442,16 +386,16 @@
 
     // INDIVIDUAL INSPECTOR CREDENTIALS
     const INSPECTOR_ACCOUNTS = {
-      "Ashbel2026": "Inspector Ashbel Espenido",
-      "Juan2026": "Inspector Juan Cruz",
-      "Maria2026": "Inspector Maria Santos",
-      "Pedro2026": "Inspector Pedro Reyes",
+      "Ashbel2026": "Officer Ashbel Espenido",
+      "Juan2026": "Officer Juan Cruz",
+      "Maria2026": "Officer Maria Santos",
+      "Pedro2026": "Officer Pedro Reyes",
       "IsabelLeyte": "System Admin"
     };
 
     let businesses = [];
     let displayedList = [];
-    let activeInspector = localStorage.getItem('isabel_inspector_name') || "Inspector Ashbel Espenido";
+    let activeInspector = localStorage.getItem('isabel_inspector_name') || "Officer Ashbel Espenido";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let isPickingLocation = false;
     let tempPickerMarker = null;
@@ -488,23 +432,6 @@
 
     window.closeLightbox = function() {
       toggleModal('imageLightboxModal', false);
-    };
-
-    window.openNoticeModal = function() {
-      const selectedVal = selectElem.value;
-      const target = businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
-      if (!target) return alert("Please select a business first.");
-
-      document.getElementById('noticeDate').textContent = getFormattedTimestamp().split(',')[0];
-      document.getElementById('noticeNo').textContent = "BPLO-NOV-" + Math.floor(100000 + Math.random() * 900000);
-      document.getElementById('noticeBizName').textContent = target.name;
-      document.getElementById('noticeBizId').textContent = target.id;
-      document.getElementById('noticeOwner').textContent = target.owner;
-      document.getElementById('noticeAddress').textContent = target.address;
-      document.getElementById('noticeStatus').textContent = target.status;
-      document.getElementById('noticeInspectorName').textContent = target.inspector || activeInspector;
-
-      toggleModal('printableNoticeModal', true);
     };
 
     window.openEditModal = function() {
@@ -547,13 +474,13 @@
 
       const inspectorCounts = {};
       list.forEach(b => {
-        const name = b.inspector || "Inspector Ashbel Espenido";
+        const name = b.inspector || "Officer Ashbel Espenido";
         inspectorCounts[name] = (inspectorCounts[name] || 0) + 1;
       });
 
-      const topInspector = Object.keys(inspectorCounts).reduce((a, b) => inspectorCounts[a] > inspectorCounts[b] ? a : b);
-      document.getElementById('statTopInspector').textContent = topInspector;
-      document.getElementById('statInspectorDetail').textContent = `Submissions: ${inspectorCounts[topInspector]}`;
+      const topOfficer = Object.keys(inspectorCounts).reduce((a, b) => inspectorCounts[a] > inspectorCounts[b] ? a : b);
+      document.getElementById('statTopInspector').textContent = topOfficer;
+      document.getElementById('statInspectorDetail').textContent = `Submissions: ${inspectorCounts[topOfficer]}`;
     }
 
     function updateAdminUI() {
@@ -791,7 +718,7 @@
 
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardTimestamp').textContent = biz.timestamp || getFormattedTimestamp();
-      document.getElementById('cardInspector').textContent = biz.inspector || "Inspector Ashbel Espenido";
+      document.getElementById('cardInspector').textContent = biz.inspector || "Officer Ashbel Espenido";
       
       const statusBadge = document.getElementById('cardStatus');
       statusBadge.textContent = biz.status;
