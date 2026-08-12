@@ -281,9 +281,7 @@
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Photo Quality / Resolution</label>
           <select id="newBizResolution" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-blue-700">
-            <option value="800">Standard HD (800px)</option>
             <option value="3840" selected>📸 4K Ultra HD (3840px)</option>
-            <option value="7680">📸 8K Super HD (7680px)</option>
           </select>
         </div>
 
@@ -361,9 +359,7 @@
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Photo Quality / Resolution</label>
           <select id="editBizResolution" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-blue-700">
-            <option value="800">Standard HD (800px)</option>
             <option value="3840" selected>📸 4K Ultra HD (3840px)</option>
-            <option value="7680">📸 8K Super HD (7680px)</option>
           </select>
         </div>
 
@@ -900,7 +896,7 @@
 
       try {
         const file = document.getElementById('newBizPhoto').files[0];
-        const targetRes = document.getElementById('newBizResolution').value;
+        const targetRes = 3840;
         
         const bizData = {
           id: inputId,
@@ -958,7 +954,7 @@
 
       try {
         const file = document.getElementById('editBizPhoto').files[0];
-        const targetRes = document.getElementById('editBizResolution').value;
+        const targetRes = 3840;
 
         const updatedData = {
           action: "updateBusiness",
