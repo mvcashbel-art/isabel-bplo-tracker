@@ -378,7 +378,7 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYx8fkc7Mt8if8co0gcIA3UZ4XgjGo4js1aiU2Y7Ao8h9xwwfG4xrRyFTO2koWnHPd/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwMwOkhN1P992PrqB2j4aBJtm8kRrCqUKXID9lTx2inx0oKUUbqFDZeL2p7hoJP5tv-/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const MASTER_PASSCODE = "IsabelLeyte";
@@ -1092,11 +1092,13 @@
       });
     }
 
+    // EXPORT FORMATTED LOCAL TIMESTAMPS
     window.exportToExcel = function() {
       if (businesses.length === 0) return alert("No business data available to export.");
       let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
       businesses.forEach(b => {
-        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${b.timestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
+        const cleanTimestamp = (b.timestamp || '').replace(/,/g, '');
+        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
