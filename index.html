@@ -182,9 +182,6 @@
           </div>
         </div>
         <div id="map"></div>
-        <div id="mapPickNotice" class="hidden mt-2 p-2.5 bg-amber-100 border border-amber-300 text-amber-900 text-xs rounded-lg text-center font-bold animate-pulse">
-          👉 Tap anywhere on the map above to pin location!
-        </div>
       </section>
     </div>
 
@@ -298,14 +295,15 @@
         </div>
 
         <!-- Google Maps Offline Paste Option -->
-        <div class="p-2 bg-slate-100 rounded-lg border border-slate-200">
-          <label class="block font-semibold text-slate-600 mb-1">Paste Google Maps Coordinates (Offline)</label>
+        <div class="p-2.5 bg-blue-50/70 rounded-lg border border-blue-200">
+          <label class="block font-semibold text-blue-900 mb-1">📍 Google Maps Coordinates (Copy & Paste)</label>
           <div class="flex gap-1.5">
-            <input type="text" id="gmapsCoordInput" placeholder="e.g. 10.928123, 124.438541" class="w-full p-1.5 bg-white border border-slate-200 rounded outline-none text-[11px] font-mono">
-            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-[11px] font-bold shrink-0">
+            <input type="text" id="gmapsCoordInput" placeholder="e.g. 10.928123, 124.438541" class="w-full p-2 bg-white border border-blue-200 rounded outline-none text-xs font-mono">
+            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold shrink-0 cursor-pointer">
               Apply
             </button>
           </div>
+          <div id="newCoordStatus" class="text-[10px] text-slate-500 mt-1 font-mono">Default: 10.928000, 124.438500</div>
         </div>
 
         <div>
@@ -320,22 +318,10 @@
           <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
         </div>
 
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Hardware Location Pin Method</label>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="detectGPS()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
-              <span>📡</span> <span id="gpsBtnText">Satellite GPS</span>
-            </button>
-            <button type="button" onclick="enableMapPinPicker()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 px-2 rounded-lg border border-purple-200 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
-              <span>🗺️</span> <span id="mapPinBtnText">Pick on Map</span>
-            </button>
-          </div>
-        </div>
+        <input type="hidden" id="newBizLat" value="10.928000">
+        <input type="hidden" id="newBizLon" value="124.438500">
 
-        <input type="hidden" id="newBizLat">
-        <input type="hidden" id="newBizLon">
-
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3 cursor-pointer">Save & Pin Business</button>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3 cursor-pointer">Save Establishment</button>
       </form>
     </div>
   </div>
@@ -392,14 +378,15 @@
         </div>
 
         <!-- Google Maps Offline Paste Option (Edit) -->
-        <div class="p-2 bg-slate-100 rounded-lg border border-slate-200">
-          <label class="block font-semibold text-slate-600 mb-1">Paste Google Maps Coordinates (Offline)</label>
+        <div class="p-2.5 bg-amber-50/70 rounded-lg border border-amber-200">
+          <label class="block font-semibold text-amber-900 mb-1">📍 Google Maps Coordinates (Copy & Paste)</label>
           <div class="flex gap-1.5">
-            <input type="text" id="editGmapsCoordInput" placeholder="e.g. 10.928123, 124.438541" class="w-full p-1.5 bg-white border border-slate-200 rounded outline-none text-[11px] font-mono">
-            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-[11px] font-bold shrink-0">
+            <input type="text" id="editGmapsCoordInput" placeholder="e.g. 10.928123, 124.438541" class="w-full p-2 bg-white border border-amber-200 rounded outline-none text-xs font-mono">
+            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-bold shrink-0 cursor-pointer">
               Apply
             </button>
           </div>
+          <div id="editCoordStatus" class="text-[10px] text-slate-500 mt-1 font-mono">Current: 10.928000, 124.438500</div>
         </div>
 
         <div>
@@ -412,18 +399,6 @@
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Replace Storefront Photo (Optional)</label>
           <input type="file" id="editBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700">
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Update Location Pin</label>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="detectGPSForEdit()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
-              <span>📡</span> <span id="editGpsBtnText">Satellite GPS</span>
-            </button>
-            <button type="button" onclick="enableMapPinPickerForEdit()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 px-2 rounded-lg border border-purple-200 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
-              <span>🗺️</span> <span id="editMapPinBtnText">Pick on Map</span>
-            </button>
-          </div>
         </div>
 
         <input type="hidden" id="editBizLat">
@@ -450,19 +425,10 @@
       "IsabelLeyte": "System Admin"
     };
 
-    const GPS_OPTIONS = {
-      enableHighAccuracy: true,
-      timeout: 20000,
-      maximumAge: 0
-    };
-
     let businesses = [];
     let displayedList = [];
     let activeInspector = localStorage.getItem('isabel_inspector_name') || "Officer Ashbel Espenido";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
-    let isPickingLocation = false;
-    let isEditingLocation = false;
-    let tempPickerMarker = null;
     let pendingDeleteMode = null;
     const markers = {};
 
@@ -557,115 +523,16 @@
         if (mode === 'new') {
           document.getElementById('newBizLat').value = lat;
           document.getElementById('newBizLon').value = lon;
-          document.getElementById('mapPinBtnText').textContent = `Pinned (${lat.slice(0, 6)})`;
+          document.getElementById('newCoordStatus').textContent = `Applied: ${lat}, ${lon}`;
         } else {
           document.getElementById('editBizLat').value = lat;
           document.getElementById('editBizLon').value = lon;
-          document.getElementById('editMapPinBtnText').textContent = `Pinned (${lat.slice(0, 6)})`;
+          document.getElementById('editCoordStatus').textContent = `Applied: ${lat}, ${lon}`;
         }
         alert(`✅ Coordinates Applied:\nLat: ${lat}\nLon: ${lon}`);
       } else {
         alert("❌ Invalid coordinate format!\nPlease paste like: 10.928123, 124.438541");
       }
-    };
-
-    // MAP CLICK LISTENER FOR "PICK ON MAP"
-    map.on('click', function(e) {
-      if (!isPickingLocation && !isEditingLocation) return;
-
-      const lat = e.latlng.lat.toFixed(6);
-      const lon = e.latlng.lng.toFixed(6);
-
-      if (isEditingLocation) {
-        document.getElementById('editBizLat').value = lat;
-        document.getElementById('editBizLon').value = lon;
-        isEditingLocation = false;
-        map.getContainer().classList.remove('picking-mode');
-        document.getElementById('mapPickNotice').classList.add('hidden');
-        document.getElementById('editMapPinBtnText').textContent = "Pinned (" + lat.substr(0, 6) + ")";
-        toggleModal('editBusinessModal', true);
-        return;
-      }
-
-      document.getElementById('newBizLat').value = lat;
-      document.getElementById('newBizLon').value = lon;
-
-      if (tempPickerMarker) map.removeLayer(tempPickerMarker);
-
-      tempPickerMarker = L.marker([lat, lon], {
-        icon: L.divIcon({
-          className: 'custom-pin',
-          html: `<div style="background-color: #9333ea; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
-          iconSize: [14, 14],
-          iconAnchor: [7, 7]
-        })
-      }).addTo(map);
-
-      isPickingLocation = false;
-      map.getContainer().classList.remove('picking-mode');
-      document.getElementById('mapPickNotice').classList.add('hidden');
-      document.getElementById('mapPinBtnText').textContent = "Pinned (" + lat.substr(0, 6) + ")";
-      
-      toggleModal('addBusinessModal', true);
-    });
-
-    window.enableMapPinPicker = function() {
-      isPickingLocation = true;
-      toggleModal('addBusinessModal', false);
-      map.getContainer().classList.add('picking-mode');
-      document.getElementById('mapPickNotice').classList.remove('hidden');
-      document.getElementById('mapPinBtnText').textContent = "Tap Map...";
-    };
-
-    window.detectGPS = function() {
-      if ("geolocation" in navigator) {
-        document.getElementById('gpsBtnText').textContent = "📡 Satellites...";
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const lat = pos.coords.latitude.toFixed(6);
-            const lon = pos.coords.longitude.toFixed(6);
-            document.getElementById('newBizLat').value = lat;
-            document.getElementById('newBizLon').value = lon;
-            document.getElementById('gpsBtnText').textContent = `GPS (${lat.slice(0, 6)})`;
-          },
-          () => {
-            document.getElementById('newBizLat').value = ISABEL_CENTER[0];
-            document.getElementById('newBizLon').value = ISABEL_CENTER[1];
-            document.getElementById('gpsBtnText').textContent = "⚠️ Default Pin";
-            alert("Satellite lock timeout: Ensure device Location is ON with clear sky visibility.");
-          },
-          GPS_OPTIONS
-        );
-      }
-    };
-
-    window.detectGPSForEdit = function() {
-      if ("geolocation" in navigator) {
-        document.getElementById('editGpsBtnText').textContent = "📡 Satellites...";
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const lat = pos.coords.latitude.toFixed(6);
-            const lon = pos.coords.longitude.toFixed(6);
-            document.getElementById('editBizLat').value = lat;
-            document.getElementById('editBizLon').value = lon;
-            document.getElementById('editBizLat').value = lat;
-            document.getElementById('editGpsBtnText').textContent = `GPS (${lat.slice(0, 6)})`;
-          },
-          () => {
-            document.getElementById('editGpsBtnText').textContent = "⚠️ GPS Failed";
-            alert("Satellite lock timeout: Ensure device Location is ON with clear sky visibility.");
-          },
-          GPS_OPTIONS
-        );
-      }
-    };
-
-    window.enableMapPinPickerForEdit = function() {
-      isEditingLocation = true;
-      toggleModal('editBusinessModal', false);
-      map.getContainer().classList.add('picking-mode');
-      document.getElementById('mapPickNotice').classList.remove('hidden');
-      document.getElementById('editMapPinBtnText').textContent = "Tap Map...";
     };
 
     window.toggleModal = function(modalId, show) {
@@ -710,6 +577,7 @@
       
       const editCoordInput = document.getElementById('editGmapsCoordInput');
       if (editCoordInput) editCoordInput.value = `${target.lat}, ${target.lon}`;
+      document.getElementById('editCoordStatus').textContent = `Current: ${target.lat}, ${target.lon}`;
 
       toggleModal('editBusinessModal', true);
     };
@@ -906,7 +774,6 @@
               };
             });
 
-            // Keep offline queue items that have not synced yet
             let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
             let pendingItems = offlineQueue
               .filter(item => item.action === "addBusiness")
@@ -1196,7 +1063,7 @@
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
-        if (tempPickerMarker) map.removeLayer(tempPickerMarker);
+        document.getElementById('newCoordStatus').textContent = "Default: 10.928000, 124.438500";
 
         const synced = await sendCloudAction(newBiz);
         if (synced) alert("Successfully submitted " + newBiz.name + "!");
@@ -1207,7 +1074,7 @@
         alert("An error occurred while saving.");
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = "Save & Pin Business";
+        submitBtn.textContent = "Save Establishment";
       }
     });
 
@@ -1229,7 +1096,6 @@
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
         const socialInputVal = document.getElementById('editBizSocial').value.trim();
 
-        // Direct numeric coordinates
         const latVal = parseFloat(document.getElementById('editBizLat').value);
         const lonVal = parseFloat(document.getElementById('editBizLon').value);
 
@@ -1255,26 +1121,20 @@
         }
         updatedData.image = photoUrl;
 
-        // 1. Instantly update in-memory active list
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
         };
         
-        // 2. Persist to phone storage
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
-        
-        // 3. Keep selected card locked to edited business
         renderBusinessList(businesses, businesses[targetIndex].uniqueKey);
 
-        // 4. Update the map marker position & popup
         if (markers[businesses[targetIndex].uniqueKey]) {
           map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
         }
         addMarker(businesses[targetIndex]);
         map.panTo([businesses[targetIndex].lat, businesses[targetIndex].lon]);
 
-        // 5. Send to Google Sheets
         await sendCloudAction(updatedData);
         toggleModal('editBusinessModal', false);
         alert("✏️ Record & Coordinates updated successfully!");
