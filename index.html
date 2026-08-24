@@ -15,7 +15,6 @@
   <style>
     #map { height: 320px; width: 100%; border-radius: 0.75rem; position: relative; z-index: 1; }
     @media (min-width: 1024px) { #map { height: 480px; } }
-    .picking-mode { cursor: crosshair !important; }
     .leaflet-pane, .leaflet-top, .leaflet-bottom { z-index: 10 !important; }
     @media print {
       body * { visibility: hidden; }
@@ -294,16 +293,19 @@
           </select>
         </div>
 
-        <!-- Google Maps Offline Paste Option -->
-        <div class="p-2.5 bg-blue-50/70 rounded-lg border border-blue-200">
-          <label class="block font-semibold text-blue-900 mb-1">📍 Google Maps Coordinates (Copy & Paste)</label>
+        <!-- Google Maps Offline Auto-Paste Card -->
+        <div class="p-2.5 bg-blue-50/80 rounded-lg border border-blue-200 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <label class="block font-semibold text-blue-950">📍 Google Maps Coordinates</label>
+            <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-blue-700 underline font-semibold">Open Maps ↗</a>
+          </div>
           <div class="flex gap-1.5">
-            <input type="text" id="gmapsCoordInput" placeholder="e.g. 10.928123, 124.438541" class="w-full p-2 bg-white border border-blue-200 rounded outline-none text-xs font-mono">
+            <input type="text" id="gmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-blue-300 rounded outline-none text-xs font-mono">
             <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold shrink-0 cursor-pointer">
               Apply
             </button>
           </div>
-          <div id="newCoordStatus" class="text-[10px] text-slate-500 mt-1 font-mono">Default: 10.928000, 124.438500</div>
+          <div id="newCoordStatus" class="text-[10px] text-blue-800 font-mono">✨ Auto-pastes when switching back from Google Maps</div>
         </div>
 
         <div>
@@ -377,16 +379,19 @@
           </select>
         </div>
 
-        <!-- Google Maps Offline Paste Option (Edit) -->
-        <div class="p-2.5 bg-amber-50/70 rounded-lg border border-amber-200">
-          <label class="block font-semibold text-amber-900 mb-1">📍 Google Maps Coordinates (Copy & Paste)</label>
+        <!-- Google Maps Offline Auto-Paste Card (Edit) -->
+        <div class="p-2.5 bg-amber-50/80 rounded-lg border border-amber-200 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <label class="block font-semibold text-amber-950">📍 Update Google Maps Coordinates</label>
+            <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-amber-800 underline font-semibold">Open Maps ↗</a>
+          </div>
           <div class="flex gap-1.5">
-            <input type="text" id="editGmapsCoordInput" placeholder="e.g. 10.928123, 124.438541" class="w-full p-2 bg-white border border-amber-200 rounded outline-none text-xs font-mono">
+            <input type="text" id="editGmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-amber-300 rounded outline-none text-xs font-mono">
             <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-bold shrink-0 cursor-pointer">
               Apply
             </button>
           </div>
-          <div id="editCoordStatus" class="text-[10px] text-slate-500 mt-1 font-mono">Current: 10.928000, 124.438500</div>
+          <div id="editCoordStatus" class="text-[10px] text-amber-900 font-mono">✨ Auto-pastes when switching back from Google Maps</div>
         </div>
 
         <div>
@@ -531,13 +536,57 @@
         }
         alert(`✅ Coordinates Applied:\nLat: ${lat}\nLon: ${lon}`);
       } else {
-        alert("❌ Invalid coordinate format!\nPlease paste like: 10.928123, 124.438541");
+        alert("❌ Invalid format! Please paste coordinates like: 10.928123, 124.438541");
       }
     };
+
+    // AUTO-DETECT CLIPBOARD COORDS WHEN RETURNING FROM GOOGLE MAPS
+    async function autoDetectClipboardCoords() {
+      const isAddOpen = document.getElementById('addBusinessModal').style.display === 'flex';
+      const isEditOpen = document.getElementById('editBusinessModal').style.display === 'flex';
+
+      if (!isAddOpen && !isEditOpen) return;
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const clipText = await navigator.clipboard.readText();
+          const match = clipText.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+
+          if (match) {
+            const lat = parseFloat(match[1]).toFixed(6);
+            const lon = parseFloat(match[2]).toFixed(6);
+
+            if (isAddOpen) {
+              const currentLat = document.getElementById('newBizLat').value;
+              if (currentLat !== lat) {
+                document.getElementById('newBizLat').value = lat;
+                document.getElementById('newBizLon').value = lon;
+                document.getElementById('gmapsCoordInput').value = `${lat}, ${lon}`;
+                document.getElementById('newCoordStatus').textContent = `✨ Auto-Applied from GMaps: ${lat}, ${lon}`;
+              }
+            } else if (isEditOpen) {
+              const currentLat = document.getElementById('editBizLat').value;
+              if (currentLat !== lat) {
+                document.getElementById('editBizLat').value = lat;
+                document.getElementById('editBizLon').value = lon;
+                document.getElementById('editGmapsCoordInput').value = `${lat}, ${lon}`;
+                document.getElementById('editCoordStatus').textContent = `✨ Auto-Applied from GMaps: ${lat}, ${lon}`;
+              }
+            }
+          }
+        }
+      } catch (err) {}
+    }
+
+    window.addEventListener('focus', autoDetectClipboardCoords);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') autoDetectClipboardCoords();
+    });
 
     window.toggleModal = function(modalId, show) {
       const el = document.getElementById(modalId);
       if (el) el.style.display = show ? 'flex' : 'none';
+      if (show) autoDetectClipboardCoords();
     };
 
     window.openLightbox = function() {
@@ -1075,7 +1124,7 @@
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
-        document.getElementById('newCoordStatus').textContent = "Default: 10.928000, 124.438500";
+        document.getElementById('newCoordStatus').textContent = "✨ Auto-pastes when switching back from Google Maps";
 
         const synced = await sendCloudAction(newBiz);
         if (synced) alert("Successfully submitted " + newBiz.name + "!");
