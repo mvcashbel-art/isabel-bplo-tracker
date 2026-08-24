@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Tesseract.js for In-Browser Optical Character Recognition (OCR) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <style>
     #map { height: 320px; width: 100%; border-radius: 0.75rem; position: relative; z-index: 1; }
     @media (min-width: 1024px) { #map { height: 480px; } }
@@ -255,7 +258,7 @@
       <form id="addBusinessForm" class="space-y-2.5 text-xs">
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
-          <input type="text" id="newBizId" required placeholder="e.g. BPLO-2026-0012" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono">
+          <input type="text" id="newBizId" required placeholder="Auto-extracted or type e.g. BPLO-2026-0012" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono">
         </div>
 
         <div>
@@ -316,8 +319,11 @@
         </div>
 
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Storefront / Camera Photo</label>
-          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
+          <label class="block font-semibold text-slate-600 mb-1">Storefront / Permit Photo (Auto-Extracts ID)</label>
+          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'new')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
+          <div id="newBizOcrStatus" class="hidden text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
+            <span>🔍</span> <span>Reading image...</span>
+          </div>
         </div>
 
         <input type="hidden" id="newBizLat" value="10.928000">
@@ -402,8 +408,11 @@
         </div>
 
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Replace Storefront Photo (Optional)</label>
-          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700">
+          <label class="block font-semibold text-slate-600 mb-1">Replace Storefront Photo (Auto-Extracts ID)</label>
+          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700">
+          <div id="editBizOcrStatus" class="hidden text-[11px] font-semibold text-amber-700 mt-1 flex items-center gap-1">
+            <span>🔍</span> <span>Reading image...</span>
+          </div>
         </div>
 
         <input type="hidden" id="editBizLat">
@@ -540,6 +549,64 @@
       }
     };
 
+    // ON-DEVICE OCR SCANNER FOR BUSINESS ID
+    window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
+      const file = inputElement.files[0];
+      if (!file) return;
+
+      const statusLabel = mode === 'new' 
+        ? document.getElementById('newBizOcrStatus') 
+        : document.getElementById('editBizOcrStatus');
+      const targetIdInput = mode === 'new' 
+        ? document.getElementById('newBizId') 
+        : document.getElementById('editBizId');
+
+      if (statusLabel) {
+        statusLabel.classList.remove('hidden');
+        statusLabel.className = "text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1 animate-pulse";
+        statusLabel.innerHTML = "<span>🔍</span> <span>Scanning photo for Business ID...</span>";
+      }
+
+      try {
+        const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+          logger: m => {
+            if (m.status === 'recognizing text' && statusLabel) {
+              statusLabel.innerHTML = `<span>🔍</span> <span>Scanning photo: ${Math.round(m.progress * 100)}%</span>`;
+            }
+          }
+        });
+
+        let detectedId = "";
+        const permitMatch = text.match(/(?:BPLO|PERMIT|ID|BIN|NO|NO\.)[\s\:\-\#]*([A-Z0-9\-]{3,15})/i);
+        
+        if (permitMatch && permitMatch[1]) {
+          detectedId = permitMatch[1].trim();
+        } else {
+          const genericCodeMatch = text.match(/\b([A-Z0-9]{2,5}-[A-Z0-9]{2,6}|\d{3,8})\b/i);
+          if (genericCodeMatch && genericCodeMatch[1]) {
+            detectedId = genericCodeMatch[1].trim();
+          }
+        }
+
+        if (detectedId) {
+          targetIdInput.value = detectedId;
+          if (statusLabel) {
+            statusLabel.classList.remove('animate-pulse');
+            statusLabel.className = "text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1";
+            statusLabel.innerHTML = `<span>✅</span> <span>Auto-Extracted ID: <b>${detectedId}</b></span>`;
+          }
+        } else {
+          if (statusLabel) {
+            statusLabel.classList.remove('animate-pulse');
+            statusLabel.className = "text-[11px] font-semibold text-slate-500 mt-1";
+            statusLabel.textContent = "ℹ️ No clear ID detected. You can type it manually.";
+          }
+        }
+      } catch (err) {
+        if (statusLabel) statusLabel.classList.add('hidden');
+      }
+    };
+
     // AUTO-DETECT CLIPBOARD COORDS WHEN RETURNING FROM GOOGLE MAPS
     async function autoDetectClipboardCoords() {
       const isAddOpen = document.getElementById('addBusinessModal').style.display === 'flex';
@@ -627,6 +694,9 @@
       const editCoordInput = document.getElementById('editGmapsCoordInput');
       if (editCoordInput) editCoordInput.value = `${target.lat}, ${target.lon}`;
       document.getElementById('editCoordStatus').textContent = `Current: ${target.lat}, ${target.lon}`;
+
+      const ocrStatus = document.getElementById('editBizOcrStatus');
+      if (ocrStatus) ocrStatus.classList.add('hidden');
 
       toggleModal('editBusinessModal', true);
     };
@@ -823,11 +893,11 @@
               };
             });
 
-            // Preserve locally updated record so background fetch doesn't overwrite with stale data
+            // Lock the freshly edited record so background fetch doesn't overwrite it
             if (preventOverwriteId) {
-              const localProtected = businesses.find(b => String(b.id).trim() === String(preventOverwriteId).trim());
+              const localProtected = businesses.find(b => String(b.id).trim().toLowerCase() === String(preventOverwriteId).trim().toLowerCase());
               if (localProtected) {
-                const remoteIdx = remoteData.findIndex(b => String(b.id).trim() === String(preventOverwriteId).trim());
+                const remoteIdx = remoteData.findIndex(b => String(b.id).trim().toLowerCase() === String(preventOverwriteId).trim().toLowerCase());
                 if (remoteIdx !== -1) {
                   remoteData[remoteIdx] = { ...remoteData[remoteIdx], ...localProtected };
                 }
@@ -1095,7 +1165,6 @@
         const phoneInput = document.getElementById('newBizPhone').value.trim();
         const socialInput = document.getElementById('newBizSocial').value.trim();
         
-        // Auto-extract coordinates if typed directly into gmaps box
         const rawPastedCoords = document.getElementById('gmapsCoordInput').value.trim();
         const coordMatch = rawPastedCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
         
@@ -1136,6 +1205,8 @@
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
         document.getElementById('newCoordStatus').textContent = "✨ Auto-pastes when switching back from Google Maps";
+        const ocrStatus = document.getElementById('newBizOcrStatus');
+        if (ocrStatus) ocrStatus.classList.add('hidden');
 
         const synced = await sendCloudAction(newBiz);
         if (synced) alert("Successfully submitted " + newBiz.name + "!");
@@ -1155,7 +1226,7 @@
       if (!isAdminUnlocked) return alert("Inspector session required.");
 
       const origId = String(document.getElementById('editOriginalId').value).trim();
-      const targetIndex = businesses.findIndex(b => String(b.id).trim() === origId);
+      const targetIndex = businesses.findIndex(b => String(b.id).trim().toLowerCase() === origId.toLowerCase());
       if (targetIndex === -1) return alert("Original record not found.");
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -1169,7 +1240,6 @@
         const socialInputVal = document.getElementById('editBizSocial').value.trim();
         const addressInputVal = document.getElementById('editBizAddress').value.trim();
 
-        // Check if user pasted coordinates directly into box without clicking Apply
         const rawPastedCoords = document.getElementById('editGmapsCoordInput').value.trim();
         const coordMatch = rawPastedCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
         
