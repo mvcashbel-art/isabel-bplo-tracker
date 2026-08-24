@@ -864,12 +864,13 @@
     }
 
     async function loadBusinesses() {
+      const currentSelectedKey = selectElem.value;
       const cached = localStorage.getItem(CACHED_BUSINESSES_KEY);
       if (cached) {
         try {
           businesses = JSON.parse(cached);
           displayedList = [...businesses];
-          renderBusinessList(displayedList);
+          renderBusinessList(displayedList, currentSelectedKey);
           updateDashboardStats(businesses);
         } catch (e) {}
       }
@@ -926,7 +927,7 @@
 
             localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
 
-            renderBusinessList(displayedList);
+            renderBusinessList(displayedList, currentSelectedKey);
             updateDashboardStats(businesses);
           }
         } catch (err) {}
@@ -935,7 +936,7 @@
       updateOfflineBadge();
     }
 
-    function renderBusinessList(list) {
+    function renderBusinessList(list, preferredSelectedKey = null) {
       displayedList = list;
       selectElem.innerHTML = '';
       Object.values(markers).forEach(m => map.removeLayer(m));
@@ -951,8 +952,14 @@
         addMarker(biz);
       });
 
-      selectElem.value = list[0].uniqueKey;
-      updateDetailCard(list[0]);
+      let selectKey = list[0].uniqueKey;
+      if (preferredSelectedKey && list.some(b => b.uniqueKey === preferredSelectedKey)) {
+        selectKey = preferredSelectedKey;
+      }
+
+      selectElem.value = selectKey;
+      const activeBiz = list.find(b => b.uniqueKey === selectKey) || list[0];
+      updateDetailCard(activeBiz);
     }
 
     function addMarker(biz) {
@@ -1034,7 +1041,7 @@
       const q = e.target.value.toLowerCase().trim();
       
       if (!q) {
-        renderBusinessList(businesses);
+        renderBusinessList(businesses, selectElem.value);
         return;
       }
 
@@ -1217,7 +1224,6 @@
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
         const socialInputVal = document.getElementById('editBizSocial').value.trim();
 
-        // Read exact coordinate values directly from hidden inputs
         const latVal = parseFloat(document.getElementById('editBizLat').value);
         const lonVal = parseFloat(document.getElementById('editBizLon').value);
 
@@ -1243,28 +1249,26 @@
         }
         updatedData.image = photoUrl;
 
-        // 1. Instantly update active data array
+        // 1. Immediately update active state
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
         };
         
-        // 2. Persist locally to phone storage
+        // 2. Persist locally to storage
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
         
-        // 3. Refresh directory list and card display
-        renderBusinessList(businesses);
-        selectElem.value = businesses[targetIndex].uniqueKey;
-        updateDetailCard(businesses[targetIndex]);
+        // 3. Keep selected card locked to the updated business
+        renderBusinessList(businesses, businesses[targetIndex].uniqueKey);
 
-        // 4. Move map pin to the new coordinates
+        // 4. Update the map marker position & popup
         if (markers[businesses[targetIndex].uniqueKey]) {
           map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
         }
         addMarker(businesses[targetIndex]);
         map.panTo([businesses[targetIndex].lat, businesses[targetIndex].lon]);
 
-        // 5. Send to Google Sheets
+        // 5. Send payload to Google Sheets
         await sendCloudAction(updatedData);
         toggleModal('editBusinessModal', false);
         alert("✏️ Record & Coordinates updated successfully!");
