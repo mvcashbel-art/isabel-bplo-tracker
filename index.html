@@ -380,7 +380,7 @@
         </div>
 
         <!-- Google Maps Offline Auto-Paste Card (Edit) -->
-        <div class="p-2.5 bg-amber-50/80 rounded-lg border border-amber-200 space-y-1.5">
+        <div class="p-2.5 bg-amber-50/70 rounded-lg border border-amber-200 space-y-1.5">
           <div class="flex justify-between items-center">
             <label class="block font-semibold text-amber-950">📍 Update Google Maps Coordinates</label>
             <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-amber-800 underline font-semibold">Open Maps ↗</a>
@@ -781,7 +781,7 @@
       setTimeout(async () => { await loadBusinesses(); }, 1500);
     }
 
-    async function loadBusinesses() {
+    async function loadBusinesses(preventOverwriteId = null) {
       const currentSelectedKey = selectElem.value;
       const cached = localStorage.getItem(CACHED_BUSINESSES_KEY);
       if (cached) {
@@ -822,6 +822,17 @@
                 uniqueKey: "REMOTE_" + rawId + "_" + rawName + "_" + index
               };
             });
+
+            // Preserve locally updated record so background fetch doesn't overwrite with stale data
+            if (preventOverwriteId) {
+              const localProtected = businesses.find(b => String(b.id).trim() === String(preventOverwriteId).trim());
+              if (localProtected) {
+                const remoteIdx = remoteData.findIndex(b => String(b.id).trim() === String(preventOverwriteId).trim());
+                if (remoteIdx !== -1) {
+                  remoteData[remoteIdx] = { ...remoteData[remoteIdx], ...localProtected };
+                }
+              }
+            }
 
             let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
             let pendingItems = offlineQueue
@@ -1173,10 +1184,12 @@
           finalLon = parseFloat(document.getElementById('editBizLon').value);
         }
 
+        const newId = document.getElementById('editBizId').value.trim();
+
         const updatedData = {
           action: "updateBusiness",
           origId: origId,
-          id: document.getElementById('editBizId').value.trim(),
+          id: newId,
           name: document.getElementById('editBizName').value.trim(),
           owner: document.getElementById('editBizOwner').value.trim(),
           phone: phoneInputVal !== '' ? String(phoneInputVal) : "N/A",
@@ -1195,29 +1208,31 @@
         }
         updatedData.image = photoUrl;
 
-        // 1. Instantly update active memory state
+        // 1. Immediately update active in-memory record
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
         };
         
-        // 2. Persist to phone local storage
+        // 2. Persist locally to storage
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
         
-        // 3. Keep selected card locked to edited business
+        // 3. Lock card view to this updated item
         renderBusinessList(businesses, businesses[targetIndex].uniqueKey);
 
-        // 4. Update the map marker position & popup
+        // 4. Update marker
         if (markers[businesses[targetIndex].uniqueKey]) {
           map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
         }
         addMarker(businesses[targetIndex]);
         map.panTo([finalLat, finalLon]);
 
-        // 5. Send to Google Sheets
-        await sendCloudAction(updatedData);
+        // 5. Send to Google Sheets and protect from stale background fetch
         toggleModal('editBusinessModal', false);
-        alert("✏️ Details & Coordinates updated successfully!");
+        await sendCloudAction(updatedData);
+        await loadBusinesses(newId);
+        
+        alert("✏️ Record & Coordinates updated successfully!");
 
       } catch (err) {
         alert("An error occurred while updating.");
