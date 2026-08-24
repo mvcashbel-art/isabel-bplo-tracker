@@ -273,7 +273,7 @@
 
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Phone / Telephone Number</label>
-          <input type="tel" id="newBizPhone" placeholder="e.g. 09171234567 or (053) 123-4567" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          <input type="text" id="newBizPhone" placeholder="e.g. 09171234567 or (053) 123-4567" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
         </div>
 
         <div>
@@ -351,7 +351,7 @@
 
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Phone / Telephone Number</label>
-          <input type="tel" id="editBizPhone" placeholder="e.g. 09171234567" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          <input type="text" id="editBizPhone" placeholder="e.g. 09171234567" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
         </div>
 
         <div>
@@ -468,7 +468,6 @@
       const rawPhone = (biz.phone || "").replace(/[^0-9+]/g, '');
       const message = generateNoticeText(biz);
 
-      // Detect iOS vs Android/standard SMS schema
       const separator = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? '&' : '?';
       const smsUrl = rawPhone && rawPhone !== "N/A" 
         ? `sms:${rawPhone}${separator}body=${encodeURIComponent(message)}`
@@ -491,10 +490,8 @@
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
       if (isMobile) {
-        // Direct intent or fallback web dialog
         window.open(`https://www.messenger.com/t/?text=${encodedMsg}`, '_blank');
       } else {
-        // Direct Facebook / Messenger Share web modal
         window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(window.location.href)}&quote=${encodedMsg}&app_id=291494419107518&redirect_uri=${encodeURIComponent(window.location.href)}`, '_blank');
       }
 
@@ -597,13 +594,16 @@
       const target = getSelectedBusiness();
       if (!target) return alert("Please select a business to edit.");
 
-      document.getElementById('editOriginalId').value = target.id;
-      document.getElementById('editBizId').value = target.id;
-      document.getElementById('editBizName').value = target.name;
-      document.getElementById('editBizOwner').value = target.owner;
-      document.getElementById('editBizPhone').value = target.phone === 'N/A' ? '' : target.phone;
-      document.getElementById('editBizAddress').value = target.address;
-      document.getElementById('editBizStatus').value = target.status;
+      document.getElementById('editOriginalId').value = String(target.id).trim();
+      document.getElementById('editBizId').value = String(target.id).trim();
+      document.getElementById('editBizName').value = target.name || '';
+      document.getElementById('editBizOwner').value = target.owner || '';
+      
+      const cleanPhone = String(target.phone || '').trim();
+      document.getElementById('editBizPhone').value = (cleanPhone === 'N/A' || cleanPhone === 'undefined') ? '' : cleanPhone;
+      
+      document.getElementById('editBizAddress').value = target.address || '';
+      document.getElementById('editBizStatus').value = target.status || 'No Permit';
       document.getElementById('editBizLat').value = target.lat;
       document.getElementById('editBizLon').value = target.lon;
 
@@ -778,20 +778,23 @@
           const data = await res.json();
 
           if (Array.isArray(data) && data.length > 0) {
-            const remoteData = data.map((b, index) => ({
-              id: String(b["Business ID"] || b.id || "BIZ-" + index),
-              name: String(b["Business Name"] || b.name || ""),
-              owner: String(b["Owner Name"] || b.owner || ""),
-              phone: String(b["Phone Number"] || b["Phone"] || b.phone || "N/A"),
-              address: String(b["Barangay Address"] || b.address || ""),
-              status: String(b["Permit Status"] || b.status || "No Permit"),
-              timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()),
-              lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
-              lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
-              image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
-              inspector: String(b["Inspector Name"] || b["Inspector"] || b.inspector || activeInspector),
-              uniqueKey: "REMOTE_" + String(b["Business ID"] || index) + "_" + String(b["Business Name"] || index) + "_" + index
-            }));
+            const remoteData = data.map((b, index) => {
+              const rawPhone = String(b["Phone Number"] || b["Phone"] || b.phone || "").trim();
+              return {
+                id: String(b["Business ID"] || b.id || "BIZ-" + index).trim(),
+                name: String(b["Business Name"] || b.name || "").trim(),
+                owner: String(b["Owner Name"] || b.owner || "").trim(),
+                phone: (rawPhone !== '' && rawPhone !== 'undefined') ? rawPhone : "N/A",
+                address: String(b["Barangay Address"] || b.address || "").trim(),
+                status: String(b["Permit Status"] || b.status || "No Permit").trim(),
+                timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()).trim(),
+                lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
+                lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
+                image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
+                inspector: String(b["Inspector Name"] || b["Inspector"] || b.inspector || activeInspector),
+                uniqueKey: "REMOTE_" + String(b["Business ID"] || index) + "_" + String(b["Business Name"] || index) + "_" + index
+              };
+            });
 
             let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
             let pendingItems = offlineQueue
@@ -886,7 +889,7 @@
       
       const phoneElem = document.getElementById('cardPhone');
       phoneElem.textContent = biz.phone || 'N/A';
-      phoneElem.href = biz.phone && biz.phone !== 'N/A' ? "tel:" + biz.phone.replace(/[^0-9+]/g, '') : '#';
+      phoneElem.href = biz.phone && biz.phone !== 'N/A' ? "tel:" + String(biz.phone).replace(/[^0-9+]/g, '') : '#';
 
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardTimestamp').textContent = biz.timestamp || getFormattedTimestamp();
@@ -1037,6 +1040,7 @@
       try {
         const file = document.getElementById('newBizPhoto').files[0];
         const targetRes = 3840;
+        const phoneInput = document.getElementById('newBizPhone').value.trim();
         
         const bizData = {
           id: inputId,
@@ -1053,7 +1057,7 @@
           id: bizData.id,
           name: bizData.name,
           owner: bizData.owner,
-          phone: document.getElementById('newBizPhone').value.trim() || "N/A",
+          phone: phoneInput !== '' ? phoneInput : "N/A",
           address: bizData.address,
           status: document.getElementById('newBizStatus').value,
           timestamp: bizData.timestamp,
@@ -1084,8 +1088,8 @@
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector session required.");
 
-      const origId = document.getElementById('editOriginalId').value;
-      const targetIndex = businesses.findIndex(b => String(b.id) === String(origId));
+      const origId = String(document.getElementById('editOriginalId').value).trim();
+      const targetIndex = businesses.findIndex(b => String(b.id).trim() === origId);
       if (targetIndex === -1) return alert("Original record not found.");
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -1095,6 +1099,7 @@
       try {
         const file = document.getElementById('editBizPhoto').files[0];
         const targetRes = 3840;
+        const phoneInputVal = document.getElementById('editBizPhone').value.trim();
 
         const updatedData = {
           action: "updateBusiness",
@@ -1102,7 +1107,7 @@
           id: document.getElementById('editBizId').value.trim(),
           name: document.getElementById('editBizName').value.trim(),
           owner: document.getElementById('editBizOwner').value.trim(),
-          phone: document.getElementById('editBizPhone').value.trim() || "N/A",
+          phone: phoneInputVal !== '' ? String(phoneInputVal) : "N/A",
           address: document.getElementById('editBizAddress').value.trim(),
           status: document.getElementById('editBizStatus').value,
           timestamp: getFormattedTimestamp(),
@@ -1117,11 +1122,18 @@
         }
         updatedData.image = photoUrl;
 
+        // Immediately update local cache and memory to prevent overrides
+        businesses[targetIndex] = {
+          ...businesses[targetIndex],
+          ...updatedData
+        };
+        localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
+        renderBusinessList(businesses);
+        updateDetailCard(businesses[targetIndex]);
+
         await sendCloudAction(updatedData);
         toggleModal('editBusinessModal', false);
         alert("✏️ Record updated successfully!");
-        
-        setTimeout(async () => { await loadBusinesses(); }, 1000);
 
       } catch (err) {
         alert("An error occurred while updating.");
