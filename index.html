@@ -256,18 +256,24 @@
       </div>
       
       <form id="addBusinessForm" class="space-y-2.5 text-xs">
-        <!-- Photo Picker First for Instant Plate Capture & Autofill -->
-        <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-1">
-          <label class="block font-bold text-blue-950">📸 Snap Business ID Plate (Auto-Fills ID & Attaches Photo) *</label>
-          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" required onchange="scanImageForBusinessId(this, 'new')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
-          <div id="newBizOcrStatus" class="hidden text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
+        <!-- 1. Plate Scanner (For Auto-Filling ID) -->
+        <div class="p-2.5 bg-blue-50/80 rounded-xl border border-blue-200 space-y-1">
+          <label class="block font-bold text-blue-950">🔍 Snap Business Plate (Auto-Extracts ID)</label>
+          <input type="file" id="newBizPlatePhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'new')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+          <div id="newBizOcrStatus" class="hidden text-[11px] font-semibold text-blue-700 mt-0.5 flex items-center gap-1">
             <span>🔍</span> <span>Isolating Plate Number...</span>
           </div>
         </div>
 
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
-          <input type="text" id="newBizId" required placeholder="Auto-fills from photo or type e.g. 1026" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-blue-700">
+          <input type="text" id="newBizId" required placeholder="Auto-fills from plate or type e.g. 1026" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-blue-700">
+        </div>
+
+        <!-- 2. Main Storefront / Building Photo -->
+        <div class="p-2.5 bg-slate-100 rounded-xl border border-slate-200 space-y-1">
+          <label class="block font-bold text-slate-700">🏢 Storefront / Building Photo (Main Photo) *</label>
+          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-800 cursor-pointer">
         </div>
 
         <div>
@@ -346,10 +352,11 @@
       <form id="editBusinessForm" class="space-y-2.5 text-xs">
         <input type="hidden" id="editOriginalId">
         
-        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1">
-          <label class="block font-bold text-amber-950">📸 Replace Plate / Storefront Photo (Auto-Reads ID)</label>
-          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer">
-          <div id="editBizOcrStatus" class="hidden text-[11px] font-semibold text-amber-700 mt-1 flex items-center gap-1">
+        <!-- Plate Scanner (Edit Mode) -->
+        <div class="p-2.5 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1">
+          <label class="block font-bold text-amber-950">🔍 Snap Plate to Update ID</label>
+          <input type="file" id="editBizPlatePhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer">
+          <div id="editBizOcrStatus" class="hidden text-[11px] font-semibold text-amber-700 mt-0.5 flex items-center gap-1">
             <span>🔍</span> <span>Isolating Plate Number...</span>
           </div>
         </div>
@@ -357,6 +364,12 @@
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
           <input type="text" id="editBizId" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-amber-700">
+        </div>
+
+        <!-- Replace Storefront / Building Photo -->
+        <div class="p-2.5 bg-slate-100 rounded-xl border border-slate-200 space-y-1">
+          <label class="block font-bold text-slate-700">🏢 Replace Storefront / Building Photo</label>
+          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-800 cursor-pointer">
         </div>
 
         <div>
@@ -550,7 +563,7 @@
       }
     };
 
-    // TARGETED PLATE OCR: ISOLATES CENTER REGISTRATION NUMBER & ATTACHES PHOTO
+    // TARGETED PLATE OCR: CROPS OUT YEAR & SIGNATURE, AUTO-FILLS ID FIELD
     window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
       const file = inputElement.files[0];
       if (!file) return;
@@ -565,19 +578,18 @@
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
         statusLabel.className = "text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1 animate-pulse";
-        statusLabel.innerHTML = "<span>🔍</span> <span>Isolating Plate Number & Attaching Photo...</span>";
+        statusLabel.innerHTML = "<span>🔍</span> <span>Isolating Plate Number...</span>";
       }
 
       try {
-        // Preprocess: Crop to the central number zone to drop blue 2026 panel & mayor's signature
         const croppedBlob = await new Promise((resolve) => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const cropX = img.width * 0.12;
-            const cropY = img.height * 0.18;
-            const cropW = img.width * 0.58;
-            const cropH = img.height * 0.60;
+            const cropX = img.width * 0.10;
+            const cropY = img.height * 0.15;
+            const cropW = img.width * 0.60;
+            const cropH = img.height * 0.65;
 
             canvas.width = cropW;
             canvas.height = cropH;
@@ -589,7 +601,7 @@
             const d = imgData.data;
             for (let i = 0; i < d.length; i += 4) {
               const avg = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-              const val = avg > 135 ? 255 : 0;
+              const val = avg > 130 ? 255 : 0;
               d[i] = val;
               d[i + 1] = val;
               d[i + 2] = val;
@@ -600,7 +612,6 @@
           img.src = URL.createObjectURL(file);
         });
 
-        // Run OCR on cropped & contrast-enhanced area
         const { data } = await Tesseract.recognize(croppedBlob || file, 'eng', {
           logger: m => {
             if (m.status === 'recognizing text' && statusLabel) {
@@ -611,7 +622,6 @@
 
         let detectedId = "";
 
-        // Look for word bounding boxes to pick the largest digits
         if (data.words && data.words.length > 0) {
           const candidates = data.words
             .map(w => {
@@ -640,13 +650,13 @@
           if (statusLabel) {
             statusLabel.classList.remove('animate-pulse');
             statusLabel.className = "text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1";
-            statusLabel.innerHTML = `<span>✅</span> <span>Auto-Detected Plate ID: <b>${detectedId}</b> (Photo attached)</span>`;
+            statusLabel.innerHTML = `<span>✅</span> <span>Auto-Extracted Plate ID: <b>${detectedId}</b></span>`;
           }
         } else {
           if (statusLabel) {
             statusLabel.classList.remove('animate-pulse');
             statusLabel.className = "text-[11px] font-semibold text-slate-500 mt-1";
-            statusLabel.textContent = "ℹ️ Photo attached. Type ID manually if needed.";
+            statusLabel.textContent = "ℹ️ Plate ID unclear. You can type it manually.";
           }
         }
       } catch (err) {
@@ -1203,10 +1213,14 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Stamping Photo & Submitting...";
+      submitBtn.textContent = "Stamping Building Photo & Submitting...";
 
       try {
-        const file = document.getElementById('newBizPhoto').files[0];
+        // Main photo takes building/storefront photo, or falls back to plate photo if only plate was taken
+        const buildingFile = document.getElementById('newBizPhoto').files[0];
+        const plateFile = document.getElementById('newBizPlatePhoto').files[0];
+        const chosenFile = buildingFile || plateFile;
+
         const targetRes = 3840;
         const phoneInput = document.getElementById('newBizPhone').value.trim();
         const socialInput = document.getElementById('newBizSocial').value.trim();
@@ -1230,7 +1244,7 @@
           timestamp: getFormattedTimestamp()
         };
 
-        const stampedImage = await processHighMbPhoto(file, bizData, targetRes) || FALLBACK_IMAGE;
+        const stampedImage = await processHighMbPhoto(chosenFile, bizData, targetRes) || FALLBACK_IMAGE;
 
         const newBiz = {
           action: "addBusiness",
@@ -1280,7 +1294,10 @@
       submitBtn.textContent = "Updating Record...";
 
       try {
-        const file = document.getElementById('editBizPhoto').files[0];
+        const buildingFile = document.getElementById('editBizPhoto').files[0];
+        const plateFile = document.getElementById('editBizPlatePhoto').files[0];
+        const chosenFile = buildingFile || plateFile;
+
         const targetRes = 3840;
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
         const socialInputVal = document.getElementById('editBizSocial').value.trim();
@@ -1319,8 +1336,8 @@
         };
 
         let photoUrl = businesses[targetIndex].image;
-        if (file) {
-          photoUrl = await processHighMbPhoto(file, updatedData, targetRes) || photoUrl;
+        if (chosenFile) {
+          photoUrl = await processHighMbPhoto(chosenFile, updatedData, targetRes) || photoUrl;
         }
         updatedData.image = photoUrl;
 
