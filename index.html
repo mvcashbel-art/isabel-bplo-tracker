@@ -1035,6 +1035,18 @@
         const phoneInput = document.getElementById('newBizPhone').value.trim();
         const socialInput = document.getElementById('newBizSocial').value.trim();
         
+        // Auto-extract coordinates if typed directly into gmaps box
+        const rawPastedCoords = document.getElementById('gmapsCoordInput').value.trim();
+        const coordMatch = rawPastedCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+        
+        let finalLat = parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0];
+        let finalLon = parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1];
+
+        if (coordMatch) {
+          finalLat = parseFloat(coordMatch[1]);
+          finalLon = parseFloat(coordMatch[2]);
+        }
+
         const bizData = {
           id: inputId,
           name: document.getElementById('newBizName').value.trim(),
@@ -1055,8 +1067,8 @@
           address: bizData.address,
           status: document.getElementById('newBizStatus').value,
           timestamp: bizData.timestamp,
-          lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
-          lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
+          lat: finalLat,
+          lon: finalLon,
           image: stampedImage,
           inspector: activeInspector
         };
@@ -1095,9 +1107,22 @@
         const targetRes = 3840;
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
         const socialInputVal = document.getElementById('editBizSocial').value.trim();
+        const addressInputVal = document.getElementById('editBizAddress').value.trim();
 
-        const latVal = parseFloat(document.getElementById('editBizLat').value);
-        const lonVal = parseFloat(document.getElementById('editBizLon').value);
+        // Check if user pasted coordinates directly into box without clicking Apply
+        const rawPastedCoords = document.getElementById('editGmapsCoordInput').value.trim();
+        const coordMatch = rawPastedCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+        
+        let finalLat = businesses[targetIndex].lat;
+        let finalLon = businesses[targetIndex].lon;
+
+        if (coordMatch) {
+          finalLat = parseFloat(coordMatch[1]);
+          finalLon = parseFloat(coordMatch[2]);
+        } else if (document.getElementById('editBizLat').value) {
+          finalLat = parseFloat(document.getElementById('editBizLat').value);
+          finalLon = parseFloat(document.getElementById('editBizLon').value);
+        }
 
         const updatedData = {
           action: "updateBusiness",
@@ -1107,11 +1132,11 @@
           owner: document.getElementById('editBizOwner').value.trim(),
           phone: phoneInputVal !== '' ? String(phoneInputVal) : "N/A",
           social: socialInputVal !== '' ? String(socialInputVal) : "N/A",
-          address: document.getElementById('editBizAddress').value.trim(),
+          address: addressInputVal !== '' ? addressInputVal : businesses[targetIndex].address,
           status: document.getElementById('editBizStatus').value,
           timestamp: getFormattedTimestamp(),
-          lat: !isNaN(latVal) ? latVal : businesses[targetIndex].lat,
-          lon: !isNaN(lonVal) ? lonVal : businesses[targetIndex].lon,
+          lat: finalLat,
+          lon: finalLon,
           inspector: activeInspector
         };
 
@@ -1121,23 +1146,29 @@
         }
         updatedData.image = photoUrl;
 
+        // 1. Instantly update active memory state
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
         };
         
+        // 2. Persist to phone local storage
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
+        
+        // 3. Keep selected card locked to edited business
         renderBusinessList(businesses, businesses[targetIndex].uniqueKey);
 
+        // 4. Update the map marker position & popup
         if (markers[businesses[targetIndex].uniqueKey]) {
           map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
         }
         addMarker(businesses[targetIndex]);
-        map.panTo([businesses[targetIndex].lat, businesses[targetIndex].lon]);
+        map.panTo([finalLat, finalLon]);
 
+        // 5. Send to Google Sheets
         await sendCloudAction(updatedData);
         toggleModal('editBusinessModal', false);
-        alert("✏️ Record & Coordinates updated successfully!");
+        alert("✏️ Details & Coordinates updated successfully!");
 
       } catch (err) {
         alert("An error occurred while updating.");
