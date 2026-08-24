@@ -140,6 +140,19 @@
             </div>
           </div>
 
+          <!-- NOTICE DISPATCH BUTTONS (SMS & MESSENGER) -->
+          <div class="pt-2 border-t border-slate-200">
+            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Dispatch Official Notice</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" onclick="sendNoticeSMS()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-semibold py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition text-xs md:text-sm">
+                <span>💬</span> Send SMS Notice
+              </button>
+              <button type="button" onclick="sendNoticeMessenger()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 font-semibold py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition text-xs md:text-sm">
+                <span>⚡</span> Messenger Notice
+              </button>
+            </div>
+          </div>
+
           <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200">
             <a id="getDirectionsBtn" href="#" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-xs md:text-sm">
               <span>🧭</span> Directions
@@ -428,6 +441,66 @@
     const selectElem = document.getElementById('businessSelect');
     const searchInput = document.getElementById('searchInput');
 
+    function getSelectedBusiness() {
+      const selectedVal = selectElem.value;
+      return businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
+    }
+
+    function generateNoticeText(biz) {
+      let statusMsg = "";
+      if (biz.status === "No Permit") {
+        statusMsg = "You are currently operating with NO VALID BUSINESS PERMIT on record. Please settle your compliance at the Isabel BPLO immediately to avoid penalties.";
+      } else if (biz.status === "Expired") {
+        statusMsg = "Your Business Permit is EXPIRED. Please process your annual renewal at the Isabel BPLO as soon as possible.";
+      } else if (biz.status === "Pending Follow-Up") {
+        statusMsg = "Your Business Permit status is PENDING COMPLIANCE. Please submit the necessary documents to the Isabel BPLO.";
+      } else {
+        statusMsg = "Your Business Permit status is COMPLIANT (Active). Thank you for keeping your establishment updated!";
+      }
+
+      return `[ISABEL BPLO OFFICIAL NOTICE]\n\nDear ${biz.owner},\n\nEstablishment: ${biz.name}\nBusiness ID: ${biz.id}\nAddress: ${biz.address}\nCurrent Status: ${biz.status.toUpperCase()}\n\n${statusMsg}\n\nInspected by: ${biz.inspector || activeInspector}\nDate: ${biz.timestamp || getFormattedTimestamp()}`;
+    }
+
+    window.sendNoticeSMS = function() {
+      const biz = getSelectedBusiness();
+      if (!biz) return alert("Please select a business first.");
+
+      const rawPhone = (biz.phone || "").replace(/[^0-9+]/g, '');
+      const message = generateNoticeText(biz);
+
+      // Detect iOS vs Android/standard SMS schema
+      const separator = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? '&' : '?';
+      const smsUrl = rawPhone && rawPhone !== "N/A" 
+        ? `sms:${rawPhone}${separator}body=${encodeURIComponent(message)}`
+        : `sms:${separator}body=${encodeURIComponent(message)}`;
+
+      window.location.href = smsUrl;
+    };
+
+    window.sendNoticeMessenger = function() {
+      const biz = getSelectedBusiness();
+      if (!biz) return alert("Please select a business first.");
+
+      const message = generateNoticeText(biz);
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(message).catch(() => {});
+      }
+
+      const encodedMsg = encodeURIComponent(message);
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // Direct intent or fallback web dialog
+        window.open(`https://www.messenger.com/t/?text=${encodedMsg}`, '_blank');
+      } else {
+        // Direct Facebook / Messenger Share web modal
+        window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(window.location.href)}&quote=${encodedMsg}&app_id=291494419107518&redirect_uri=${encodeURIComponent(window.location.href)}`, '_blank');
+      }
+
+      alert("📋 Notice text has been copied to your clipboard!\nPaste it directly into the Messenger chat.");
+    };
+
     // MAP CLICK LISTENER FOR "PICK ON MAP"
     map.on('click', function(e) {
       if (!isPickingLocation && !isEditingLocation) return;
@@ -521,8 +594,7 @@
 
     window.openEditModal = function() {
       if (!isAdminUnlocked) return alert("Inspector session required.");
-      const selectedVal = selectElem.value;
-      const target = businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
+      const target = getSelectedBusiness();
       if (!target) return alert("Please select a business to edit.");
 
       document.getElementById('editOriginalId').value = target.id;
@@ -690,7 +762,6 @@
 
     // INSTANT LOCAL LOADING WITH QUIET BACKGROUND REFRESH
     async function loadBusinesses() {
-      // 1. Immediately load and render locally saved database from Phone Storage
       const cached = localStorage.getItem(CACHED_BUSINESSES_KEY);
       if (cached) {
         try {
@@ -701,7 +772,6 @@
         } catch (e) {}
       }
 
-      // 2. Fetch fresh data quietly in background from Google Sheet
       if (navigator.onLine) {
         try {
           const res = await fetch(GOOGLE_SCRIPT_URL);
@@ -746,7 +816,6 @@
             businesses = Array.from(allMap.values());
             displayedList = [...businesses];
 
-            // Update Phone Local Storage for Next Instant Boot
             localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
 
             renderBusinessList(displayedList);
@@ -868,8 +937,7 @@
 
     window.triggerDeleteSecurity = function() {
       if (!isAdminUnlocked) return alert("Inspector session required.");
-      const selectedVal = selectElem.value;
-      const target = businesses.find(b => String(b.uniqueKey || b.id) === String(selectedVal));
+      const target = getSelectedBusiness();
       if (!target) return alert("No business selected.");
 
       pendingDeleteMode = 'single';
