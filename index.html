@@ -258,7 +258,7 @@
       <form id="addBusinessForm" class="space-y-2.5 text-xs">
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
-          <input type="text" id="newBizId" required placeholder="Auto-extracted or type e.g. BPLO-2026-0012" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono">
+          <input type="text" id="newBizId" required placeholder="Auto-extracted or type e.g. 1026" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-blue-700">
         </div>
 
         <div>
@@ -319,7 +319,7 @@
         </div>
 
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Storefront / Permit Photo (Auto-Extracts ID)</label>
+          <label class="block font-semibold text-slate-600 mb-1">Storefront / Permit Photo (Auto-Extracts Plate ID)</label>
           <input type="file" id="newBizPhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'new')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
           <div id="newBizOcrStatus" class="hidden text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
             <span>🔍</span> <span>Reading image...</span>
@@ -347,7 +347,7 @@
         
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
-          <input type="text" id="editBizId" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono">
+          <input type="text" id="editBizId" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-amber-700">
         </div>
 
         <div>
@@ -408,7 +408,7 @@
         </div>
 
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Replace Storefront Photo (Auto-Extracts ID)</label>
+          <label class="block font-semibold text-slate-600 mb-1">Replace Storefront / Permit Photo (Auto-Extracts Plate ID)</label>
           <input type="file" id="editBizPhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700">
           <div id="editBizOcrStatus" class="hidden text-[11px] font-semibold text-amber-700 mt-1 flex items-center gap-1">
             <span>🔍</span> <span>Reading image...</span>
@@ -549,7 +549,7 @@
       }
     };
 
-    // ON-DEVICE OCR SCANNER FOR BUSINESS ID
+    // OPTIMIZED OCR SCANNER FOR ISABEL BUSINESS REGISTRATION PLATES
     window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
       const file = inputElement.files[0];
       if (!file) return;
@@ -564,28 +564,44 @@
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
         statusLabel.className = "text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1 animate-pulse";
-        statusLabel.innerHTML = "<span>🔍</span> <span>Scanning photo for Business ID...</span>";
+        statusLabel.innerHTML = "<span>🔍</span> <span>Scanning plate for Business ID...</span>";
       }
 
       try {
-        const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+        const { data } = await Tesseract.recognize(file, 'eng', {
           logger: m => {
             if (m.status === 'recognizing text' && statusLabel) {
-              statusLabel.innerHTML = `<span>🔍</span> <span>Scanning photo: ${Math.round(m.progress * 100)}%</span>`;
+              statusLabel.innerHTML = `<span>🔍</span> <span>Scanning plate: ${Math.round(m.progress * 100)}%</span>`;
             }
           }
         });
 
+        const rawText = data.text || "";
+        const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
         let detectedId = "";
-        const permitMatch = text.match(/(?:BPLO|PERMIT|ID|BIN|NO|NO\.)[\s\:\-\#]*([A-Z0-9\-]{3,15})/i);
-        
-        if (permitMatch && permitMatch[1]) {
-          detectedId = permitMatch[1].trim();
-        } else {
-          const genericCodeMatch = text.match(/\b([A-Z0-9]{2,5}-[A-Z0-9]{2,6}|\d{3,8})\b/i);
-          if (genericCodeMatch && genericCodeMatch[1]) {
-            detectedId = genericCodeMatch[1].trim();
+
+        // 1. Direct match: Number right below or after "BUSINESS REGISTRATION"
+        const regIdx = lines.findIndex(l => /BUSINESS\s*REGISTRATION/i.test(l));
+        if (regIdx !== -1 && lines[regIdx + 1]) {
+          const nextMatch = lines[regIdx + 1].match(/\b(\d{1,6})\b/);
+          if (nextMatch && nextMatch[1] !== "2026") {
+            detectedId = nextMatch[1];
           }
+        }
+
+        // 2. Fallback: Find all numeric blocks and exclude the current year (2024-2028)
+        if (!detectedId) {
+          const allNumbers = rawText.match(/\b\d{1,6}\b/g) || [];
+          const candidateNumbers = allNumbers.filter(n => !/^(2024|2025|2026|2027|2028)$/.test(n));
+          if (candidateNumbers.length > 0) {
+            detectedId = candidateNumbers[0];
+          }
+        }
+
+        // 3. Fallback: Check for format prefixes like BPLO-2026-0012
+        if (!detectedId) {
+          const prefixMatch = rawText.match(/(?:BPLO|PERMIT|ID|BIN|NO)[\s\:\-\#]*([A-Z0-9\-]{2,15})/i);
+          if (prefixMatch) detectedId = prefixMatch[1].trim();
         }
 
         if (detectedId) {
@@ -593,13 +609,13 @@
           if (statusLabel) {
             statusLabel.classList.remove('animate-pulse');
             statusLabel.className = "text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1";
-            statusLabel.innerHTML = `<span>✅</span> <span>Auto-Extracted ID: <b>${detectedId}</b></span>`;
+            statusLabel.innerHTML = `<span>✅</span> <span>Auto-Extracted Plate ID: <b>${detectedId}</b></span>`;
           }
         } else {
           if (statusLabel) {
             statusLabel.classList.remove('animate-pulse');
             statusLabel.className = "text-[11px] font-semibold text-slate-500 mt-1";
-            statusLabel.textContent = "ℹ️ No clear ID detected. You can type it manually.";
+            statusLabel.textContent = "ℹ️ Plate ID unclear. You can type it manually.";
           }
         }
       } catch (err) {
@@ -893,7 +909,7 @@
               };
             });
 
-            // Lock the freshly edited record so background fetch doesn't overwrite it
+            // Prevent overwriting freshly updated rows before cloud sync settles
             if (preventOverwriteId) {
               const localProtected = businesses.find(b => String(b.id).trim().toLowerCase() === String(preventOverwriteId).trim().toLowerCase());
               if (localProtected) {
