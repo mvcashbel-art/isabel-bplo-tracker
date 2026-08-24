@@ -549,7 +549,7 @@
       }
     };
 
-    // OPTIMIZED OCR SCANNER FOR ISABEL BUSINESS REGISTRATION PLATES
+    // HIGH-ACCURACY PLATE OCR WITH CONTRAST PRE-PROCESSING
     window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
       const file = inputElement.files[0];
       if (!file) return;
@@ -564,44 +564,64 @@
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
         statusLabel.className = "text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1 animate-pulse";
-        statusLabel.innerHTML = "<span>🔍</span> <span>Scanning plate for Business ID...</span>";
+        statusLabel.innerHTML = "<span>🔍</span> <span>Enhancing & Scanning Plate...</span>";
       }
 
       try {
-        const { data } = await Tesseract.recognize(file, 'eng', {
+        // 1. Preprocess photo on hidden canvas to eliminate glare & sharpen numbers
+        const processedBlob = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(1.0, 1600 / Math.max(img.width, img.height));
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw image and apply high contrast thresholding
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+              const avg = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+              const val = avg > 140 ? 255 : 0;
+              d[i] = val;
+              d[i + 1] = val;
+              d[i + 2] = val;
+            }
+            ctx.putImageData(imgData, 0, 0);
+            canvas.toBlob(resolve, 'image/jpeg', 0.9);
+          };
+          img.src = URL.createObjectURL(file);
+        });
+
+        // 2. Run Tesseract recognition
+        const { data } = await Tesseract.recognize(processedBlob || file, 'eng', {
           logger: m => {
             if (m.status === 'recognizing text' && statusLabel) {
-              statusLabel.innerHTML = `<span>🔍</span> <span>Scanning plate: ${Math.round(m.progress * 100)}%</span>`;
+              statusLabel.innerHTML = `<span>🔍</span> <span>Reading plate digits: ${Math.round(m.progress * 100)}%</span>`;
             }
           }
         });
 
-        const rawText = data.text || "";
-        const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+        // 3. Clean text & repair OCR glyph confusions (e.g. 1O26 -> 1026)
+        let cleanText = (data.text || "")
+          .replace(/[Oo]/g, '0')
+          .replace(/[lI]/g, '1')
+          .replace(/[\r\n]+/g, ' ');
+
         let detectedId = "";
 
-        // 1. Direct match: Number right below or after "BUSINESS REGISTRATION"
-        const regIdx = lines.findIndex(l => /BUSINESS\s*REGISTRATION/i.test(l));
-        if (regIdx !== -1 && lines[regIdx + 1]) {
-          const nextMatch = lines[regIdx + 1].match(/\b(\d{1,6})\b/);
-          if (nextMatch && nextMatch[1] !== "2026") {
-            detectedId = nextMatch[1];
-          }
-        }
+        const candidateMatches = cleanText.match(/\b\d{2,6}\b/g) || [];
+        const validPlateNumbers = candidateMatches.filter(n => !/^(2024|2025|2026|2027|2028)$/.test(n));
 
-        // 2. Fallback: Find all numeric blocks and exclude the current year (2024-2028)
-        if (!detectedId) {
-          const allNumbers = rawText.match(/\b\d{1,6}\b/g) || [];
-          const candidateNumbers = allNumbers.filter(n => !/^(2024|2025|2026|2027|2028)$/.test(n));
-          if (candidateNumbers.length > 0) {
-            detectedId = candidateNumbers[0];
+        if (validPlateNumbers.length > 0) {
+          detectedId = validPlateNumbers[0];
+        } else {
+          const fallbackMatch = cleanText.match(/(?:BPLO|PERMIT|BIN|ID)[\s\:\-\#]*([0-9A-Z]{2,8})/i);
+          if (fallbackMatch && fallbackMatch[1]) {
+            detectedId = fallbackMatch[1].trim();
           }
-        }
-
-        // 3. Fallback: Check for format prefixes like BPLO-2026-0012
-        if (!detectedId) {
-          const prefixMatch = rawText.match(/(?:BPLO|PERMIT|ID|BIN|NO)[\s\:\-\#]*([A-Z0-9\-]{2,15})/i);
-          if (prefixMatch) detectedId = prefixMatch[1].trim();
         }
 
         if (detectedId) {
