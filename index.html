@@ -106,7 +106,7 @@
         <div class="mb-3">
           <label class="block text-xs md:text-sm font-semibold text-slate-600 mb-1">Search Establishment / Inspector</label>
           <div class="relative">
-            <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, barangay, or inspector..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, social, barangay, or inspector..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
           </div>
         </div>
@@ -133,6 +133,7 @@
               <div><span class="font-semibold text-slate-500">Business ID:</span> <span id="cardId" class="text-blue-700 font-mono font-bold">-</span></div>
               <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
               <div><span class="font-semibold text-slate-500">Contact:</span> <a id="cardPhone" href="#" class="text-blue-600 font-medium hover:underline">-</a></div>
+              <div><span class="font-semibold text-slate-500">Messenger/Social:</span> <a id="cardSocial" href="#" target="_blank" class="text-blue-600 font-medium hover:underline">-</a></div>
               <div><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
               <div><span class="font-semibold text-slate-500">Log Date:</span> <span id="cardTimestamp" class="text-slate-600 font-mono text-xs">-</span></div>
               <div><span class="font-semibold text-slate-500">Logged By Inspector:</span> <span id="cardInspector" class="text-blue-700 font-bold">-</span></div>
@@ -144,10 +145,10 @@
           <div class="pt-2 border-t border-slate-200">
             <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Dispatch Official Notice</div>
             <div class="grid grid-cols-2 gap-2">
-              <button type="button" onclick="sendNoticeSMS()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-semibold py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition text-xs md:text-sm">
+              <button type="button" onclick="sendNoticeSMS()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-semibold py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition text-xs md:text-sm cursor-pointer">
                 <span>💬</span> Send SMS Notice
               </button>
-              <button type="button" onclick="sendNoticeMessenger()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 font-semibold py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition text-xs md:text-sm">
+              <button type="button" onclick="sendNoticeMessenger()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 font-semibold py-2 px-2 rounded-lg flex items-center justify-center gap-1.5 transition text-xs md:text-sm cursor-pointer">
                 <span>⚡</span> Messenger Notice
               </button>
             </div>
@@ -212,15 +213,15 @@
           <label class="block font-semibold text-slate-600 mb-1">Inspector Passcode *</label>
           <input type="password" id="adminPassInput" required placeholder="Enter Personal Passcode" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono outline-none focus:ring-2 focus:ring-blue-500">
         </div>
-        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-lg transition shadow-sm">Authenticate Session</button>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-lg transition shadow-sm cursor-pointer">Authenticate Session</button>
       </form>
 
       <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
         <div class="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-center font-bold">Inspector Session Active</div>
-        <button type="button" onclick="triggerWipeSecurity()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition">
+        <button type="button" onclick="triggerWipeSecurity()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg transition cursor-pointer">
           🗑️ Wipe All Cloud Database Entries (Master Passcode Required)
         </button>
-        <button type="button" onclick="lockAdmin()" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 rounded-lg transition">
+        <button type="button" onclick="lockAdmin()" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 rounded-lg transition cursor-pointer">
           🔒 Lock & Exit Session
         </button>
       </div>
@@ -273,7 +274,12 @@
 
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Phone / Telephone Number</label>
-          <input type="text" id="newBizPhone" placeholder="e.g. 09171234567 or (053) 123-4567" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          <input type="text" id="newBizPhone" placeholder="e.g. 09171234567" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Social Media / Messenger Link or Username</label>
+          <input type="text" id="newBizSocial" placeholder="e.g. maria.santos or fb.com/mariasantos" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
         </div>
 
         <div>
@@ -291,6 +297,17 @@
           </select>
         </div>
 
+        <!-- Google Maps Offline Paste Option -->
+        <div class="p-2 bg-slate-100 rounded-lg border border-slate-200">
+          <label class="block font-semibold text-slate-600 mb-1">Paste Google Maps Coordinates (Offline)</label>
+          <div class="flex gap-1.5">
+            <input type="text" id="gmapsCoordInput" placeholder="e.g. 10.928123, 124.438541" class="w-full p-1.5 bg-white border border-slate-200 rounded outline-none text-[11px] font-mono">
+            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-[11px] font-bold shrink-0">
+              Apply
+            </button>
+          </div>
+        </div>
+
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Photo Quality / Resolution</label>
           <select id="newBizResolution" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-blue-700">
@@ -304,12 +321,12 @@
         </div>
 
         <div>
-          <label class="block font-semibold text-slate-600 mb-1">Location Pin Method</label>
+          <label class="block font-semibold text-slate-600 mb-1">Hardware Location Pin Method</label>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="detectGPS()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px]">
-              <span>📡</span> <span id="gpsBtnText">Detect GPS</span>
+            <button type="button" onclick="detectGPS()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
+              <span>📡</span> <span id="gpsBtnText">Satellite GPS</span>
             </button>
-            <button type="button" onclick="enableMapPinPicker()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 px-2 rounded-lg border border-purple-200 flex items-center justify-center gap-1 transition text-[11px]">
+            <button type="button" onclick="enableMapPinPicker()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 px-2 rounded-lg border border-purple-200 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
               <span>🗺️</span> <span id="mapPinBtnText">Pick on Map</span>
             </button>
           </div>
@@ -318,7 +335,7 @@
         <input type="hidden" id="newBizLat">
         <input type="hidden" id="newBizLon">
 
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Save & Pin Business</button>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3 cursor-pointer">Save & Pin Business</button>
       </form>
     </div>
   </div>
@@ -355,6 +372,11 @@
         </div>
 
         <div>
+          <label class="block font-semibold text-slate-600 mb-1">Social Media / Messenger Link or Username</label>
+          <input type="text" id="editBizSocial" placeholder="e.g. maria.santos or fb.com/mariasantos" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+        </div>
+
+        <div>
           <label class="block font-semibold text-slate-600 mb-1">Barangay / Address *</label>
           <input type="text" id="editBizAddress" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
         </div>
@@ -367,6 +389,17 @@
             <option value="Pending Follow-Up">🔵 Pending Compliance</option>
             <option value="Compliant">🟢 Active Permit</option>
           </select>
+        </div>
+
+        <!-- Google Maps Offline Paste Option (Edit) -->
+        <div class="p-2 bg-slate-100 rounded-lg border border-slate-200">
+          <label class="block font-semibold text-slate-600 mb-1">Paste Google Maps Coordinates (Offline)</label>
+          <div class="flex gap-1.5">
+            <input type="text" id="editGmapsCoordInput" placeholder="e.g. 10.928123, 124.438541" class="w-full p-1.5 bg-white border border-slate-200 rounded outline-none text-[11px] font-mono">
+            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-[11px] font-bold shrink-0">
+              Apply
+            </button>
+          </div>
         </div>
 
         <div>
@@ -384,10 +417,10 @@
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Update Location Pin</label>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="detectGPSForEdit()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px]">
-              <span>📡</span> <span id="editGpsBtnText">Detect GPS</span>
+            <button type="button" onclick="detectGPSForEdit()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2 px-2 rounded-lg border border-blue-200 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
+              <span>📡</span> <span id="editGpsBtnText">Satellite GPS</span>
             </button>
-            <button type="button" onclick="enableMapPinPickerForEdit()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 px-2 rounded-lg border border-purple-200 flex items-center justify-center gap-1 transition text-[11px]">
+            <button type="button" onclick="enableMapPinPickerForEdit()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 px-2 rounded-lg border border-purple-200 flex items-center justify-center gap-1 transition text-[11px] cursor-pointer">
               <span>🗺️</span> <span id="editMapPinBtnText">Pick on Map</span>
             </button>
           </div>
@@ -396,7 +429,7 @@
         <input type="hidden" id="editBizLat">
         <input type="hidden" id="editBizLon">
 
-        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3">Update Establishment Details</button>
+        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-sm mt-3 cursor-pointer">Update Establishment Details</button>
       </form>
     </div>
   </div>
@@ -404,18 +437,23 @@
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYx8fkc7Mt8if8co0gcIA3UZ4XgjGo4js1aiU2Y7Ao8h9xwwfG4xrRyFTO2koWnHPd/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
-    const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses"; // Local Database Storage
+    const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const MASTER_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
-    // INDIVIDUAL INSPECTOR CREDENTIALS
     const INSPECTOR_ACCOUNTS = {
       "Ashbel2026": "Officer Ashbel Espenido",
       "Juan2026": "Officer Juan Cruz",
       "Maria2026": "Officer Maria Santos",
       "Pedro2026": "Officer Pedro Reyes",
       "IsabelLeyte": "System Admin"
+    };
+
+    const GPS_OPTIONS = {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0
     };
 
     let businesses = [];
@@ -476,6 +514,14 @@
       window.location.href = smsUrl;
     };
 
+    function sanitizeMessengerUsername(val) {
+      if (!val || val === "N/A") return "";
+      let clean = val.trim();
+      clean = clean.replace(/^(https?:\/\/)?(www\.)?(facebook\.com|fb\.com|m\.me)\//i, '');
+      clean = clean.replace(/^\/|\/$/g, '');
+      return clean;
+    }
+
     window.sendNoticeMessenger = function() {
       const biz = getSelectedBusiness();
       if (!biz) return alert("Please select a business first.");
@@ -486,16 +532,41 @@
         navigator.clipboard.writeText(message).catch(() => {});
       }
 
-      const encodedMsg = encodeURIComponent(message);
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const rawSocial = biz.social || "";
+      const cleanUser = sanitizeMessengerUsername(rawSocial);
 
-      if (isMobile) {
-        window.open(`https://www.messenger.com/t/?text=${encodedMsg}`, '_blank');
+      if (cleanUser) {
+        window.open(`https://m.me/${cleanUser}`, '_blank');
+        alert("📋 Notice copied to clipboard!\nOpening direct chat with " + cleanUser + " — just paste your message.");
       } else {
-        window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(window.location.href)}&quote=${encodedMsg}&app_id=291494419107518&redirect_uri=${encodeURIComponent(window.location.href)}`, '_blank');
+        const encodedMsg = encodeURIComponent(message);
+        window.open(`https://www.messenger.com/t/?text=${encodedMsg}`, '_blank');
+        alert("📋 Notice copied to clipboard!\nSelect a recipient and paste the notice.");
       }
+    };
 
-      alert("📋 Notice text has been copied to your clipboard!\nPaste it directly into the Messenger chat.");
+    window.parseGmapsCoords = function(mode = 'new') {
+      const inputElem = mode === 'new' ? document.getElementById('gmapsCoordInput') : document.getElementById('editGmapsCoordInput');
+      const val = (inputElem ? inputElem.value : '').trim();
+      
+      const match = val.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+      if (match) {
+        const lat = parseFloat(match[1]).toFixed(6);
+        const lon = parseFloat(match[2]).toFixed(6);
+        
+        if (mode === 'new') {
+          document.getElementById('newBizLat').value = lat;
+          document.getElementById('newBizLon').value = lon;
+          document.getElementById('mapPinBtnText').textContent = `Pinned (${lat.slice(0, 6)})`;
+        } else {
+          document.getElementById('editBizLat').value = lat;
+          document.getElementById('editBizLon').value = lon;
+          document.getElementById('editMapPinBtnText').textContent = `Pinned (${lat.slice(0, 6)})`;
+        }
+        alert(`✅ Coordinates Applied:\nLat: ${lat}\nLon: ${lon}`);
+      } else {
+        alert("❌ Invalid format! Please paste coordinates like: 10.928045, 124.438512");
+      }
     };
 
     // MAP CLICK LISTENER FOR "PICK ON MAP"
@@ -546,18 +617,44 @@
       document.getElementById('mapPinBtnText').textContent = "Tap Map...";
     };
 
-    window.detectGPSForEdit = function() {
+    window.detectGPS = function() {
       if ("geolocation" in navigator) {
-        document.getElementById('editGpsBtnText').textContent = "Locating...";
+        document.getElementById('gpsBtnText').textContent = "📡 Satellites...";
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            document.getElementById('editBizLat').value = pos.coords.latitude.toFixed(6);
-            document.getElementById('editBizLon').value = pos.coords.longitude.toFixed(6);
-            document.getElementById('editGpsBtnText').textContent = "GPS Acquired!";
+            const lat = pos.coords.latitude.toFixed(6);
+            const lon = pos.coords.longitude.toFixed(6);
+            document.getElementById('newBizLat').value = lat;
+            document.getElementById('newBizLon').value = lon;
+            document.getElementById('gpsBtnText').textContent = `GPS (${lat.slice(0, 6)})`;
           },
           () => {
-            document.getElementById('editGpsBtnText').textContent = "GPS Failed";
-          }
+            document.getElementById('newBizLat').value = ISABEL_CENTER[0];
+            document.getElementById('newBizLon').value = ISABEL_CENTER[1];
+            document.getElementById('gpsBtnText').textContent = "⚠️ Default Pin";
+            alert("Satellite lock timeout: Ensure device Location is ON with clear sky visibility.");
+          },
+          GPS_OPTIONS
+        );
+      }
+    };
+
+    window.detectGPSForEdit = function() {
+      if ("geolocation" in navigator) {
+        document.getElementById('editGpsBtnText').textContent = "📡 Satellites...";
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude.toFixed(6);
+            const lon = pos.coords.longitude.toFixed(6);
+            document.getElementById('editBizLat').value = lat;
+            document.getElementById('editBizLon').value = lon;
+            document.getElementById('editGpsBtnText').textContent = `GPS (${lat.slice(0, 6)})`;
+          },
+          () => {
+            document.getElementById('editGpsBtnText').textContent = "⚠️ GPS Failed";
+            alert("Satellite lock timeout: Ensure device Location is ON with clear sky visibility.");
+          },
+          GPS_OPTIONS
         );
       }
     };
@@ -602,6 +699,9 @@
       const cleanPhone = String(target.phone || '').trim();
       document.getElementById('editBizPhone').value = (cleanPhone === 'N/A' || cleanPhone === 'undefined') ? '' : cleanPhone;
       
+      const cleanSocial = String(target.social || '').trim();
+      document.getElementById('editBizSocial').value = (cleanSocial === 'N/A' || cleanSocial === 'undefined') ? '' : cleanSocial;
+
       document.getElementById('editBizAddress').value = target.address || '';
       document.getElementById('editBizStatus').value = target.status || 'No Permit';
       document.getElementById('editBizLat').value = target.lat;
@@ -760,7 +860,6 @@
       setTimeout(async () => { await loadBusinesses(); }, 1500);
     }
 
-    // INSTANT LOCAL LOADING WITH QUIET BACKGROUND REFRESH
     async function loadBusinesses() {
       const cached = localStorage.getItem(CACHED_BUSINESSES_KEY);
       if (cached) {
@@ -780,11 +879,13 @@
           if (Array.isArray(data) && data.length > 0) {
             const remoteData = data.map((b, index) => {
               const rawPhone = String(b["Phone Number"] || b["Phone"] || b.phone || "").trim();
+              const rawSocial = String(b["Social Media"] || b["Messenger"] || b.social || "").trim();
               return {
                 id: String(b["Business ID"] || b.id || "BIZ-" + index).trim(),
                 name: String(b["Business Name"] || b.name || "").trim(),
                 owner: String(b["Owner Name"] || b.owner || "").trim(),
                 phone: (rawPhone !== '' && rawPhone !== 'undefined') ? rawPhone : "N/A",
+                social: (rawSocial !== '' && rawSocial !== 'undefined') ? rawSocial : "N/A",
                 address: String(b["Barangay Address"] || b.address || "").trim(),
                 status: String(b["Permit Status"] || b.status || "No Permit").trim(),
                 timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()).trim(),
@@ -804,6 +905,7 @@
                 name: b.name + " (Pending Sync)",
                 owner: b.owner,
                 phone: b.phone,
+                social: b.social,
                 address: b.address,
                 status: b.status,
                 timestamp: b.timestamp,
@@ -876,6 +978,8 @@
         document.getElementById('cardOwner').textContent = '-';
         document.getElementById('cardPhone').textContent = '-';
         document.getElementById('cardPhone').href = '#';
+        document.getElementById('cardSocial').textContent = '-';
+        document.getElementById('cardSocial').href = '#';
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardTimestamp').textContent = '-';
         document.getElementById('cardInspector').textContent = '-';
@@ -890,6 +994,11 @@
       const phoneElem = document.getElementById('cardPhone');
       phoneElem.textContent = biz.phone || 'N/A';
       phoneElem.href = biz.phone && biz.phone !== 'N/A' ? "tel:" + String(biz.phone).replace(/[^0-9+]/g, '') : '#';
+
+      const socialElem = document.getElementById('cardSocial');
+      const cleanUser = sanitizeMessengerUsername(biz.social);
+      socialElem.textContent = biz.social || 'N/A';
+      socialElem.href = cleanUser ? `https://m.me/${cleanUser}` : '#';
 
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardTimestamp').textContent = biz.timestamp || getFormattedTimestamp();
@@ -931,6 +1040,7 @@
         String(b.name || '').toLowerCase().includes(q) || 
         String(b.owner || '').toLowerCase().includes(q) || 
         String(b.phone || '').toLowerCase().includes(q) ||
+        String(b.social || '').toLowerCase().includes(q) ||
         String(b.address || '').toLowerCase().includes(q) ||
         String(b.inspector || '').toLowerCase().includes(q)
       );
@@ -1041,6 +1151,7 @@
         const file = document.getElementById('newBizPhoto').files[0];
         const targetRes = 3840;
         const phoneInput = document.getElementById('newBizPhone').value.trim();
+        const socialInput = document.getElementById('newBizSocial').value.trim();
         
         const bizData = {
           id: inputId,
@@ -1058,6 +1169,7 @@
           name: bizData.name,
           owner: bizData.owner,
           phone: phoneInput !== '' ? phoneInput : "N/A",
+          social: socialInput !== '' ? socialInput : "N/A",
           address: bizData.address,
           status: document.getElementById('newBizStatus').value,
           timestamp: bizData.timestamp,
@@ -1100,6 +1212,7 @@
         const file = document.getElementById('editBizPhoto').files[0];
         const targetRes = 3840;
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
+        const socialInputVal = document.getElementById('editBizSocial').value.trim();
 
         const updatedData = {
           action: "updateBusiness",
@@ -1108,6 +1221,7 @@
           name: document.getElementById('editBizName').value.trim(),
           owner: document.getElementById('editBizOwner').value.trim(),
           phone: phoneInputVal !== '' ? String(phoneInputVal) : "N/A",
+          social: socialInputVal !== '' ? String(socialInputVal) : "N/A",
           address: document.getElementById('editBizAddress').value.trim(),
           status: document.getElementById('editBizStatus').value,
           timestamp: getFormattedTimestamp(),
@@ -1122,7 +1236,6 @@
         }
         updatedData.image = photoUrl;
 
-        // Immediately update local cache and memory to prevent overrides
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
@@ -1240,13 +1353,12 @@
       });
     }
 
-    // EXPORT FORMATTED LOCAL TIMESTAMPS
     window.exportToExcel = function() {
       if (businesses.length === 0) return alert("No business data available to export.");
-      let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
+      let csv = "Business ID,Business Name,Owner Name,Phone Number,Social Media,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
       businesses.forEach(b => {
         const cleanTimestamp = (b.timestamp || '').replace(/,/g, '');
-        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
+        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.social || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
@@ -1255,24 +1367,6 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    };
-
-    window.detectGPS = function() {
-      if ("geolocation" in navigator) {
-        document.getElementById('gpsBtnText').textContent = "Locating...";
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            document.getElementById('newBizLat').value = pos.coords.latitude.toFixed(6);
-            document.getElementById('newBizLon').value = pos.coords.longitude.toFixed(6);
-            document.getElementById('gpsBtnText').textContent = "GPS Acquired!";
-          },
-          () => {
-            document.getElementById('newBizLat').value = ISABEL_CENTER[0];
-            document.getElementById('newBizLon').value = ISABEL_CENTER[1];
-            document.getElementById('gpsBtnText').textContent = "Used Isabel Center";
-          }
-        );
-      }
     };
 
     window.addEventListener('online', syncOfflineQueue);
