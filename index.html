@@ -648,6 +648,7 @@
             const lon = pos.coords.longitude.toFixed(6);
             document.getElementById('editBizLat').value = lat;
             document.getElementById('editBizLon').value = lon;
+            document.getElementById('editBizLat').value = lat;
             document.getElementById('editGpsBtnText').textContent = `GPS (${lat.slice(0, 6)})`;
           },
           () => {
@@ -882,25 +883,30 @@
 
           if (Array.isArray(data) && data.length > 0) {
             const remoteData = data.map((b, index) => {
-              const rawPhone = String(b["Phone Number"] || b["Phone"] || b.phone || "").trim();
-              const rawSocial = String(b["Social Media"] || b["Messenger"] || b.social || "").trim();
+              const rawPhone = String(b.phone || b["Phone Number"] || b["Phone"] || "").trim();
+              const rawSocial = String(b.social || b["Social Media"] || b["Messenger"] || "").trim();
+              const rawAddress = String(b.address || b["Barangay Address"] || b["Address"] || b["Barangay / Address"] || "").trim();
+              const rawId = String(b.id || b["Business ID"] || "BIZ-" + index).trim();
+              const rawName = String(b.name || b["Business Name"] || "").trim();
+              
               return {
-                id: String(b["Business ID"] || b.id || "BIZ-" + index).trim(),
-                name: String(b["Business Name"] || b.name || "").trim(),
-                owner: String(b["Owner Name"] || b.owner || "").trim(),
+                id: rawId,
+                name: rawName,
+                owner: String(b.owner || b["Owner Name"] || "").trim(),
                 phone: (rawPhone !== '' && rawPhone !== 'undefined') ? rawPhone : "N/A",
                 social: (rawSocial !== '' && rawSocial !== 'undefined') ? rawSocial : "N/A",
-                address: String(b["Barangay Address"] || b.address || "").trim(),
-                status: String(b["Permit Status"] || b.status || "No Permit").trim(),
-                timestamp: String(b["Timestamp"] || b.timestamp || getFormattedTimestamp()).trim(),
-                lat: parseFloat(b["Latitude"] || b.lat) || ISABEL_CENTER[0],
-                lon: parseFloat(b["Longitude"] || b.lon) || ISABEL_CENTER[1],
-                image: String(b["Photo URL"] || b.image || FALLBACK_IMAGE),
-                inspector: String(b["Inspector Name"] || b["Inspector"] || b.inspector || activeInspector),
-                uniqueKey: "REMOTE_" + String(b["Business ID"] || index) + "_" + String(b["Business Name"] || index) + "_" + index
+                address: rawAddress,
+                status: String(b.status || b["Permit Status"] || "No Permit").trim(),
+                timestamp: String(b.timestamp || b["Timestamp"] || getFormattedTimestamp()).trim(),
+                lat: parseFloat(b.lat || b["Latitude"]) || ISABEL_CENTER[0],
+                lon: parseFloat(b.lon || b["Longitude"]) || ISABEL_CENTER[1],
+                image: String(b.image || b["Photo URL"] || FALLBACK_IMAGE),
+                inspector: String(b.inspector || b["Inspector Name"] || b["Inspector"] || activeInspector),
+                uniqueKey: "REMOTE_" + rawId + "_" + rawName + "_" + index
               };
             });
 
+            // Keep offline queue items that have not synced yet
             let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
             let pendingItems = offlineQueue
               .filter(item => item.action === "addBusiness")
@@ -926,7 +932,6 @@
             displayedList = [...businesses];
 
             localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
-
             renderBusinessList(displayedList, currentSelectedKey);
             updateDashboardStats(businesses);
           }
@@ -1224,6 +1229,7 @@
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
         const socialInputVal = document.getElementById('editBizSocial').value.trim();
 
+        // Direct numeric coordinates
         const latVal = parseFloat(document.getElementById('editBizLat').value);
         const lonVal = parseFloat(document.getElementById('editBizLon').value);
 
@@ -1249,16 +1255,16 @@
         }
         updatedData.image = photoUrl;
 
-        // 1. Immediately update active state
+        // 1. Instantly update in-memory active list
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
         };
         
-        // 2. Persist locally to storage
+        // 2. Persist to phone storage
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
         
-        // 3. Keep selected card locked to the updated business
+        // 3. Keep selected card locked to edited business
         renderBusinessList(businesses, businesses[targetIndex].uniqueKey);
 
         // 4. Update the map marker position & popup
@@ -1268,7 +1274,7 @@
         addMarker(businesses[targetIndex]);
         map.panTo([businesses[targetIndex].lat, businesses[targetIndex].lon]);
 
-        // 5. Send payload to Google Sheets
+        // 5. Send to Google Sheets
         await sendCloudAction(updatedData);
         toggleModal('editBusinessModal', false);
         alert("✏️ Record & Coordinates updated successfully!");
