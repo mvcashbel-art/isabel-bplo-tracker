@@ -565,7 +565,7 @@
         }
         alert(`✅ Coordinates Applied:\nLat: ${lat}\nLon: ${lon}`);
       } else {
-        alert("❌ Invalid format! Please paste coordinates like: 10.928045, 124.438512");
+        alert("❌ Invalid coordinate format!\nPlease paste like: 10.928123, 124.438541");
       }
     };
 
@@ -706,6 +706,9 @@
       document.getElementById('editBizStatus').value = target.status || 'No Permit';
       document.getElementById('editBizLat').value = target.lat;
       document.getElementById('editBizLon').value = target.lon;
+      
+      const editCoordInput = document.getElementById('editGmapsCoordInput');
+      if (editCoordInput) editCoordInput.value = `${target.lat}, ${target.lon}`;
 
       toggleModal('editBusinessModal', true);
     };
@@ -1214,6 +1217,10 @@
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
         const socialInputVal = document.getElementById('editBizSocial').value.trim();
 
+        // Read exact coordinate values directly from hidden inputs
+        const latVal = parseFloat(document.getElementById('editBizLat').value);
+        const lonVal = parseFloat(document.getElementById('editBizLon').value);
+
         const updatedData = {
           action: "updateBusiness",
           origId: origId,
@@ -1225,8 +1232,8 @@
           address: document.getElementById('editBizAddress').value.trim(),
           status: document.getElementById('editBizStatus').value,
           timestamp: getFormattedTimestamp(),
-          lat: parseFloat(document.getElementById('editBizLat').value) || businesses[targetIndex].lat,
-          lon: parseFloat(document.getElementById('editBizLon').value) || businesses[targetIndex].lon,
+          lat: !isNaN(latVal) ? latVal : businesses[targetIndex].lat,
+          lon: !isNaN(lonVal) ? lonVal : businesses[targetIndex].lon,
           inspector: activeInspector
         };
 
@@ -1236,17 +1243,31 @@
         }
         updatedData.image = photoUrl;
 
+        // 1. Instantly update active data array
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
         };
+        
+        // 2. Persist locally to phone storage
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
+        
+        // 3. Refresh directory list and card display
         renderBusinessList(businesses);
+        selectElem.value = businesses[targetIndex].uniqueKey;
         updateDetailCard(businesses[targetIndex]);
 
+        // 4. Move map pin to the new coordinates
+        if (markers[businesses[targetIndex].uniqueKey]) {
+          map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
+        }
+        addMarker(businesses[targetIndex]);
+        map.panTo([businesses[targetIndex].lat, businesses[targetIndex].lon]);
+
+        // 5. Send to Google Sheets
         await sendCloudAction(updatedData);
         toggleModal('editBusinessModal', false);
-        alert("✏️ Record updated successfully!");
+        alert("✏️ Record & Coordinates updated successfully!");
 
       } catch (err) {
         alert("An error occurred while updating.");
