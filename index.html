@@ -256,9 +256,18 @@
       </div>
       
       <form id="addBusinessForm" class="space-y-2.5 text-xs">
+        <!-- Photo Picker First for Instant Plate Capture & Autofill -->
+        <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-1">
+          <label class="block font-bold text-blue-950">📸 Snap Business ID Plate (Auto-Fills ID & Attaches Photo) *</label>
+          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" required onchange="scanImageForBusinessId(this, 'new')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+          <div id="newBizOcrStatus" class="hidden text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
+            <span>🔍</span> <span>Isolating Plate Number...</span>
+          </div>
+        </div>
+
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
-          <input type="text" id="newBizId" required placeholder="Auto-extracted or type e.g. 1026" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-blue-700">
+          <input type="text" id="newBizId" required placeholder="Auto-fills from photo or type e.g. 1026" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-blue-700">
         </div>
 
         <div>
@@ -292,11 +301,11 @@
             <option value="No Permit">🔴 No Permit</option>
             <option value="Expired">🟡 Expired</option>
             <option value="Pending Follow-Up">🔵 Pending Compliance</option>
-            <option value="Compliant">🟢 Active Permit</option>
+            <option value="Compliant" selected>🟢 Active Permit</option>
           </select>
         </div>
 
-        <!-- Google Maps Offline Auto-Paste Card -->
+        <!-- Google Maps Auto-Paste Card -->
         <div class="p-2.5 bg-blue-50/80 rounded-lg border border-blue-200 space-y-1.5">
           <div class="flex justify-between items-center">
             <label class="block font-semibold text-blue-950">📍 Google Maps Coordinates</label>
@@ -318,14 +327,6 @@
           </select>
         </div>
 
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Storefront / Permit Photo (Auto-Extracts Plate ID)</label>
-          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'new')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
-          <div id="newBizOcrStatus" class="hidden text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
-            <span>🔍</span> <span>Reading image...</span>
-          </div>
-        </div>
-
         <input type="hidden" id="newBizLat" value="10.928000">
         <input type="hidden" id="newBizLon" value="124.438500">
 
@@ -345,6 +346,14 @@
       <form id="editBusinessForm" class="space-y-2.5 text-xs">
         <input type="hidden" id="editOriginalId">
         
+        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1">
+          <label class="block font-bold text-amber-950">📸 Replace Plate / Storefront Photo (Auto-Reads ID)</label>
+          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer">
+          <div id="editBizOcrStatus" class="hidden text-[11px] font-semibold text-amber-700 mt-1 flex items-center gap-1">
+            <span>🔍</span> <span>Isolating Plate Number...</span>
+          </div>
+        </div>
+
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Business ID / Permit No. *</label>
           <input type="text" id="editBizId" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-amber-700">
@@ -405,14 +414,6 @@
           <select id="editBizResolution" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-blue-700">
             <option value="3840" selected>📸 4K Ultra HD (3840px)</option>
           </select>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Replace Storefront / Permit Photo (Auto-Extracts Plate ID)</label>
-          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700">
-          <div id="editBizOcrStatus" class="hidden text-[11px] font-semibold text-amber-700 mt-1 flex items-center gap-1">
-            <span>🔍</span> <span>Reading image...</span>
-          </div>
         </div>
 
         <input type="hidden" id="editBizLat">
@@ -549,7 +550,7 @@
       }
     };
 
-    // HIGH-ACCURACY PLATE OCR WITH CONTRAST PRE-PROCESSING
+    // TARGETED PLATE OCR: ISOLATES CENTER REGISTRATION NUMBER & ATTACHES PHOTO
     window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
       const file = inputElement.files[0];
       if (!file) return;
@@ -564,39 +565,43 @@
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
         statusLabel.className = "text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1 animate-pulse";
-        statusLabel.innerHTML = "<span>🔍</span> <span>Enhancing & Scanning Plate...</span>";
+        statusLabel.innerHTML = "<span>🔍</span> <span>Isolating Plate Number & Attaching Photo...</span>";
       }
 
       try {
-        // 1. Preprocess photo on hidden canvas to eliminate glare & sharpen numbers
-        const processedBlob = await new Promise((resolve) => {
+        // Preprocess: Crop to the central number zone to drop blue 2026 panel & mayor's signature
+        const croppedBlob = await new Promise((resolve) => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const scale = Math.min(1.0, 1600 / Math.max(img.width, img.height));
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
+            const cropX = img.width * 0.12;
+            const cropY = img.height * 0.18;
+            const cropW = img.width * 0.58;
+            const cropH = img.height * 0.60;
+
+            canvas.width = cropW;
+            canvas.height = cropH;
+
             const ctx = canvas.getContext('2d');
-            
-            // Draw image and apply high contrast thresholding
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+            const imgData = ctx.getImageData(0, 0, cropW, cropH);
             const d = imgData.data;
             for (let i = 0; i < d.length; i += 4) {
               const avg = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-              const val = avg > 140 ? 255 : 0;
+              const val = avg > 135 ? 255 : 0;
               d[i] = val;
               d[i + 1] = val;
               d[i + 2] = val;
             }
             ctx.putImageData(imgData, 0, 0);
-            canvas.toBlob(resolve, 'image/jpeg', 0.9);
+            canvas.toBlob(resolve, 'image/jpeg', 0.95);
           };
           img.src = URL.createObjectURL(file);
         });
 
-        // 2. Run Tesseract recognition
-        const { data } = await Tesseract.recognize(processedBlob || file, 'eng', {
+        // Run OCR on cropped & contrast-enhanced area
+        const { data } = await Tesseract.recognize(croppedBlob || file, 'eng', {
           logger: m => {
             if (m.status === 'recognizing text' && statusLabel) {
               statusLabel.innerHTML = `<span>🔍</span> <span>Reading plate digits: ${Math.round(m.progress * 100)}%</span>`;
@@ -604,24 +609,30 @@
           }
         });
 
-        // 3. Clean text & repair OCR glyph confusions (e.g. 1O26 -> 1026)
-        let cleanText = (data.text || "")
-          .replace(/[Oo]/g, '0')
-          .replace(/[lI]/g, '1')
-          .replace(/[\r\n]+/g, ' ');
-
         let detectedId = "";
 
-        const candidateMatches = cleanText.match(/\b\d{2,6}\b/g) || [];
-        const validPlateNumbers = candidateMatches.filter(n => !/^(2024|2025|2026|2027|2028)$/.test(n));
+        // Look for word bounding boxes to pick the largest digits
+        if (data.words && data.words.length > 0) {
+          const candidates = data.words
+            .map(w => {
+              const cleaned = w.text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1').replace(/[^0-9]/g, '');
+              const height = (w.bbox.y1 - w.bbox.y0) || 0;
+              return { text: cleaned, height: height };
+            })
+            .filter(w => w.text.length >= 2 && w.text.length <= 6 && !/^(2024|2025|2026|2027|2028)$/.test(w.text));
 
-        if (validPlateNumbers.length > 0) {
-          detectedId = validPlateNumbers[0];
-        } else {
-          const fallbackMatch = cleanText.match(/(?:BPLO|PERMIT|BIN|ID)[\s\:\-\#]*([0-9A-Z]{2,8})/i);
-          if (fallbackMatch && fallbackMatch[1]) {
-            detectedId = fallbackMatch[1].trim();
-          }
+          candidates.sort((a, b) => b.height - a.height);
+          if (candidates.length > 0) detectedId = candidates[0].text;
+        }
+
+        if (!detectedId) {
+          const rawMatches = (data.text || "")
+            .replace(/[Oo]/g, '0')
+            .replace(/[lI]/g, '1')
+            .match(/\b\d{2,6}\b/g) || [];
+
+          const validMatches = rawMatches.filter(n => !/^(2024|2025|2026|2027|2028)$/.test(n));
+          if (validMatches.length > 0) detectedId = validMatches[0];
         }
 
         if (detectedId) {
@@ -629,13 +640,13 @@
           if (statusLabel) {
             statusLabel.classList.remove('animate-pulse');
             statusLabel.className = "text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1";
-            statusLabel.innerHTML = `<span>✅</span> <span>Auto-Extracted Plate ID: <b>${detectedId}</b></span>`;
+            statusLabel.innerHTML = `<span>✅</span> <span>Auto-Detected Plate ID: <b>${detectedId}</b> (Photo attached)</span>`;
           }
         } else {
           if (statusLabel) {
             statusLabel.classList.remove('animate-pulse');
             statusLabel.className = "text-[11px] font-semibold text-slate-500 mt-1";
-            statusLabel.textContent = "ℹ️ Plate ID unclear. You can type it manually.";
+            statusLabel.textContent = "ℹ️ Photo attached. Type ID manually if needed.";
           }
         }
       } catch (err) {
@@ -929,7 +940,6 @@
               };
             });
 
-            // Prevent overwriting freshly updated rows before cloud sync settles
             if (preventOverwriteId) {
               const localProtected = businesses.find(b => String(b.id).trim().toLowerCase() === String(preventOverwriteId).trim().toLowerCase());
               if (localProtected) {
@@ -1087,9 +1097,9 @@
         String(b.id || '').toLowerCase().includes(q) ||
         String(b.name || '').toLowerCase().includes(q) || 
         String(b.owner || '').toLowerCase().includes(q) || 
-        String(b.phone || '').toLowerCase().includes(q) ||
-        String(b.social || '').toLowerCase().includes(q) ||
-        String(b.address || '').toLowerCase().includes(q) ||
+        String(b.phone || '').toLowerCase().includes(q) || 
+        String(b.social || '').toLowerCase().includes(q) || 
+        String(b.address || '').toLowerCase().includes(q) || 
         String(b.inspector || '').toLowerCase().includes(q)
       );
 
@@ -1314,26 +1324,20 @@
         }
         updatedData.image = photoUrl;
 
-        // 1. Immediately update active in-memory record
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
         };
         
-        // 2. Persist locally to storage
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
-        
-        // 3. Lock card view to this updated item
         renderBusinessList(businesses, businesses[targetIndex].uniqueKey);
 
-        // 4. Update marker
         if (markers[businesses[targetIndex].uniqueKey]) {
           map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
         }
         addMarker(businesses[targetIndex]);
         map.panTo([finalLat, finalLon]);
 
-        // 5. Send to Google Sheets and protect from stale background fetch
         toggleModal('editBusinessModal', false);
         await sendCloudAction(updatedData);
         await loadBusinesses(newId);
