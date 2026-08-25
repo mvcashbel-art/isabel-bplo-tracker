@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Isabel BPLO - Permit Field Tracker</title>
   
+  <!-- Mobile & Progressive Web App (PWA) Settings -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Isabel BPLO">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2684/2684860.png">
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -490,7 +499,9 @@
         statusMsg = "Your Business Permit status is COMPLIANT (Active). Thank you for keeping your establishment updated!";
       }
 
-      return `[ISABEL BPLO OFFICIAL NOTICE]\n\nDear ${biz.owner},\n\nEstablishment: ${biz.name}\nBusiness ID: ${biz.id}\nAddress: ${biz.address}\nCurrent Status: ${biz.status.toUpperCase()}\n\n${statusMsg}\n\nInspected by: ${biz.inspector || activeInspector}\nDate: ${biz.timestamp || getFormattedTimestamp()}`;
+      const noticeDispatchTime = getFormattedTimestamp();
+
+      return `[ISABEL BPLO OFFICIAL NOTICE]\n\nDear ${biz.owner},\n\nEstablishment: ${biz.name}\nBusiness ID: ${biz.id}\nAddress: ${biz.address}\nCurrent Status: ${biz.status.toUpperCase()}\n\n${statusMsg}\n\nInspected On: ${biz.timestamp || 'N/A'}\nNotice Sent: ${noticeDispatchTime}\nOfficer: ${activeInspector}`;
     }
 
     window.sendNoticeSMS = function() {
@@ -1100,9 +1111,9 @@
         String(b.id || '').toLowerCase().includes(q) ||
         String(b.name || '').toLowerCase().includes(q) || 
         String(b.owner || '').toLowerCase().includes(q) || 
-        String(b.phone || '').toLowerCase().includes(q) ||
-        String(b.social || '').toLowerCase().includes(q) ||
-        String(b.address || '').toLowerCase().includes(q) ||
+        String(b.phone || '').toLowerCase().includes(q) || 
+        String(b.social || '').toLowerCase().includes(q) || 
+        String(b.address || '').toLowerCase().includes(q) || 
         String(b.inspector || '').toLowerCase().includes(q)
       );
 
