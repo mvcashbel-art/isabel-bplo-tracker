@@ -5,244 +5,436 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Isabel BPLO - Permit Field Tracker</title>
   
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Tesseract.js for In-Browser OCR -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
-    #map { height: 260px; width: 100%; border-radius: 0.75rem; }
-    @media (min-width: 1024px) { #map { height: 100%; min-height: 480px; } }
+    #map { height: 320px; width: 100%; border-radius: 0.875rem; position: relative; z-index: 1; }
+    @media (min-width: 1024px) { #map { height: 480px; } }
     .leaflet-pane, .leaflet-top, .leaflet-bottom { z-index: 10 !important; }
+    @media print {
+      body * { visibility: hidden; }
+      #printableNoticeModal, #printableNoticeModal * { visibility: visible; }
+      #printableNoticeModal { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen antialiased p-3 md:p-6 max-w-6xl mx-auto space-y-4">
+<body class="bg-gradient-to-br from-slate-100 via-blue-50/40 to-slate-100 text-slate-800 font-sans min-h-screen p-3 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6">
 
-  <!-- Header -->
-  <header class="flex items-center justify-between border-b border-slate-200 pb-3">
-    <div>
-      <h1 class="text-base md:text-lg font-bold text-slate-900 tracking-tight">Isabel BPLO Tracker</h1>
-      <p id="viewModeLabel" class="text-xs text-slate-500">Public View</p>
+  <!-- Header Banner -->
+  <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white p-4 lg:p-6 rounded-2xl shadow-lg border border-blue-600/30">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-xl md:text-2xl">🏛️</span>
+          <h1 class="text-lg md:text-2xl font-black tracking-tight">Isabel BPLO Field Tracker</h1>
+        </div>
+        <p class="text-xs md:text-sm text-blue-200 mt-0.5 font-medium">Business Permit & Licensing Office — Isabel, Leyte</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="offlineQueueBadge" class="hidden bg-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold animate-pulse shadow-sm">⚠️ 0 Offline Saved</span>
+        <span id="activeInspectorBadge" class="bg-blue-900/80 text-white text-xs px-3.5 py-1.5 rounded-full border border-blue-400/40 font-mono font-bold shadow-inner">Inspector: Guest</span>
+      </div>
     </div>
-    <div class="flex items-center gap-2">
-      <span id="offlineQueueBadge" class="hidden bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-0.5 rounded-md">0 Offline</span>
-      <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition">Officer Login</button>
+
+    <!-- Active Field Status Bar -->
+    <div class="flex items-center justify-between bg-blue-900/60 backdrop-blur-md p-2.5 rounded-xl border border-blue-400/30 text-xs md:text-sm">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 border border-white/40 flex items-center justify-center font-bold text-white text-sm shadow-sm">📋</div>
+        <div>
+          <div class="font-bold text-white leading-tight">Field Inspection & Monitoring Portal</div>
+          <div id="viewModeLabel" class="text-[10px] md:text-xs text-blue-200 font-medium">Public View-Only Mode</div>
+        </div>
+      </div>
+      <div>
+        <button id="openAdminModalBtn" onclick="toggleModal('adminModal', true)" type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-1.5 rounded-lg font-bold text-xs transition shadow cursor-pointer">👑 Inspector Login</button>
+      </div>
     </div>
   </header>
 
-  <!-- Metrics -->
-  <section class="grid grid-cols-4 gap-2 text-center">
-    <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-sm">
-      <div class="text-[10px] uppercase font-semibold text-slate-400">Total</div>
-      <div id="statTotal" class="text-base md:text-lg font-bold text-slate-800 mt-0.5">0</div>
+  <!-- Metric Statistics Cards -->
+  <section class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 hover:shadow-md transition">
+      <div class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Total Records</div>
+      <div id="statTotal" class="text-2xl md:text-3xl font-black text-slate-800 mt-1">0</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Establishments inspected</div>
     </div>
-    <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-sm">
-      <div class="text-[10px] uppercase font-semibold text-emerald-600">Rate</div>
-      <div id="statCompliantRate" class="text-base md:text-lg font-bold text-emerald-600 mt-0.5">0%</div>
+
+    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 hover:shadow-md transition">
+      <div class="text-[11px] text-emerald-600 font-bold uppercase tracking-wider">Compliance Rate</div>
+      <div id="statCompliantRate" class="text-2xl md:text-3xl font-black text-emerald-600 mt-1">0%</div>
+      <div class="w-full bg-slate-100 h-2 rounded-full mt-1.5 overflow-hidden">
+        <div id="statCompliantBar" class="bg-emerald-500 h-full w-0 transition-all duration-500 rounded-full"></div>
+      </div>
     </div>
-    <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-sm">
-      <div class="text-[10px] uppercase font-semibold text-rose-500">No Permit</div>
-      <div id="statNonCompliant" class="text-base md:text-lg font-bold text-rose-600 mt-0.5">0</div>
+
+    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 hover:shadow-md transition">
+      <div class="text-[11px] text-rose-600 font-bold uppercase tracking-wider">No Permit / Expired</div>
+      <div id="statNonCompliant" class="text-2xl md:text-3xl font-black text-rose-600 mt-1">0</div>
+      <div class="text-[10px] text-rose-500 font-medium mt-0.5">Require Action Notices</div>
     </div>
-    <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-sm">
-      <div class="text-[10px] uppercase font-semibold text-slate-400">Top Inspector</div>
-      <div id="statTopInspector" class="text-xs md:text-sm font-semibold text-slate-700 truncate mt-1">-</div>
+
+    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 hover:shadow-md transition">
+      <div class="text-[11px] text-blue-600 font-bold uppercase tracking-wider">Top Officer</div>
+      <div id="statTopInspector" class="text-sm md:text-base font-bold text-blue-900 truncate mt-1">None</div>
+      <div id="statInspectorDetail" class="text-[10px] text-slate-500 truncate mt-0.5">Submissions: 0</div>
     </div>
   </section>
 
-  <!-- Main Grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-    
-    <!-- Directory Card -->
-    <div class="lg:col-span-6 space-y-3">
-      <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm space-y-3">
-        <div class="flex items-center justify-between gap-2">
-          <input type="text" id="searchInput" placeholder="Search establishment or ID..." class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
-          <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="admin-only hidden shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">+ Add</button>
-        </div>
+  <!-- Main Workspace Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
 
-        <select id="businessSelect" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-slate-700 font-medium"></select>
-
-        <!-- Compact Record Display -->
-        <div class="pt-2 border-t border-slate-100 flex gap-3 items-start">
-          <img id="cardImage" src="" onclick="openLightbox()" class="w-20 h-20 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100 cursor-pointer" alt="Building">
-          <div class="flex-1 space-y-1 text-xs">
-            <div class="flex items-center justify-between">
-              <span id="cardName" class="font-bold text-slate-900 text-sm truncate">-</span>
-              <span id="cardStatus" class="px-2 py-0.5 rounded text-[10px] font-semibold text-white bg-slate-400">-</span>
-            </div>
-            <div class="text-slate-500">ID: <span id="cardId" class="font-mono text-slate-700 font-semibold">-</span> • Owner: <span id="cardOwner" class="text-slate-700 font-medium">-</span></div>
-            <div class="text-slate-500">Loc: <span id="cardAddress" class="text-slate-700">-</span></div>
-            <div class="text-slate-400 text-[11px]"><a id="cardPhone" href="#" class="text-blue-600 hover:underline">-</a> • <a id="cardSocial" href="#" target="_blank" class="text-blue-600 hover:underline">-</a></div>
+    <!-- Left Directory & Details Column -->
+    <div class="lg:col-span-7 space-y-4">
+      <section class="bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-3.5">
+        <div class="flex justify-between items-center">
+          <h2 class="text-sm md:text-base font-bold text-slate-800 flex items-center gap-1.5">
+            <span>🏢</span> Establishments Directory
+          </h2>
+          <div class="flex gap-2">
+            <button id="exportExcelBtn" onclick="exportToExcel()" class="admin-only hidden bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-lg font-bold transition border border-emerald-200 shadow-xs cursor-pointer flex items-center gap-1">
+              📊 Excel
+            </button>
+            <button id="openAddModalBtn" onclick="toggleModal('addBusinessModal', true)" class="admin-only hidden bg-blue-600 hover:bg-blue-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1 shadow cursor-pointer">
+              <span>➕</span> Add New
+            </button>
           </div>
         </div>
-
-        <!-- Actions -->
-        <div class="pt-2 border-t border-slate-100 grid grid-cols-3 gap-1.5 text-xs font-semibold">
-          <button type="button" onclick="sendNoticeSMS()" class="p-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-center transition">SMS Notice</button>
-          <button type="button" onclick="sendNoticeMessenger()" class="p-2 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition">Messenger</button>
-          <a id="getDirectionsBtn" href="#" target="_blank" class="p-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg text-center transition">Directions</a>
+        
+        <!-- Search Bar -->
+        <div class="relative">
+          <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, social, barangay..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition">
+          <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
         </div>
 
-        <div class="flex gap-2 pt-1 admin-only hidden">
-          <button type="button" onclick="openEditModal()" class="w-1/2 p-2 text-xs font-semibold text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-lg transition">Edit Details</button>
-          <button type="button" onclick="triggerDeleteSecurity()" class="w-1/2 p-2 text-xs font-semibold text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg transition">Delete</button>
+        <!-- Dropdown Selector -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Select Active Business</label>
+          <select id="businessSelect" class="w-full text-xs md:text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-700">
+            <!-- Populated dynamically -->
+          </select>
         </div>
-      </div>
+
+        <!-- Business Card -->
+        <div id="businessDetailCard" class="bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 rounded-xl border border-slate-200 text-xs md:text-sm space-y-3.5 shadow-inner">
+          <div class="flex gap-4 items-center">
+            <img id="cardImage" 
+                 src="" 
+                 onerror="this.src=FALLBACK_IMAGE"
+                 onclick="openLightbox()" 
+                 class="w-24 h-24 md:w-28 md:h-28 rounded-xl object-cover border-2 border-slate-300 bg-slate-200 shadow-md cursor-pointer hover:opacity-90 transition shrink-0" 
+                 alt="Storefront">
+            <div class="space-y-1 flex-1 min-w-0">
+              <div class="text-sm md:text-base font-black text-slate-900 truncate" id="cardName">-</div>
+              <div><span class="font-semibold text-slate-500">Business ID:</span> <span id="cardId" class="text-blue-700 font-mono font-bold">-</span></div>
+              <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
+              <div><span class="font-semibold text-slate-500">Contact:</span> <a id="cardPhone" href="#" class="text-blue-600 font-semibold hover:underline">-</a></div>
+              <div><span class="font-semibold text-slate-500">Messenger:</span> <a id="cardSocial" href="#" target="_blank" class="text-blue-600 font-semibold hover:underline">-</a></div>
+              <div class="truncate"><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
+              <div><span class="font-semibold text-slate-500">Inspector:</span> <span id="cardInspector" class="text-blue-700 font-bold">-</span></div>
+              <div><span class="font-semibold text-slate-500">Permit Status:</span> <span id="cardStatus" class="font-bold text-white px-2.5 py-0.5 rounded-full text-[11px] md:text-xs inline-block mt-0.5 shadow-xs">-</span></div>
+            </div>
+          </div>
+
+          <!-- NOTICE DISPATCH BUTTONS -->
+          <div class="pt-2 border-t border-slate-200">
+            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Dispatch Compliance Notice</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" onclick="sendNoticeSMS()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition text-xs shadow-sm cursor-pointer">
+                <span>💬</span> Send SMS Notice
+              </button>
+              <button type="button" onclick="sendNoticeMessenger()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition text-xs shadow-sm cursor-pointer">
+                <span>⚡</span> Messenger Notice
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200">
+            <a id="getDirectionsBtn" href="#" target="_blank" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-2 rounded-xl border border-slate-300 flex items-center justify-center gap-1.5 transition text-xs">
+              <span>🧭</span> Directions
+            </a>
+            <button type="button" id="openEditModalBtn" onclick="openEditModal()" class="admin-only hidden bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition text-xs shadow-sm cursor-pointer">
+              <span>✏️</span> Edit Details
+            </button>
+          </div>
+
+          <button type="button" id="deleteCurrentBizBtn" onclick="triggerDeleteSecurity()" class="admin-only hidden w-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-2 px-2 rounded-xl border border-rose-200 flex items-center justify-center gap-1 transition text-xs cursor-pointer">
+            <span>🗑️</span> Delete Entry (Passcode Required)
+          </button>
+        </div>
+      </section>
     </div>
 
-    <!-- Map View -->
-    <div class="lg:col-span-6">
-      <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-sm">
-        <div id="map"></div>
-      </div>
+    <!-- Right Map Column -->
+    <div class="lg:col-span-5">
+      <section class="bg-white p-3.5 md:p-4 rounded-2xl shadow-sm border border-slate-200/80 sticky top-4 space-y-2.5">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xs md:text-sm font-bold text-slate-800 flex items-center gap-1">
+            <span>📍</span> Isabel Municipal Map
+          </h2>
+          <div class="flex gap-2 text-[10px] md:text-xs font-semibold">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> No Permit</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Expired</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Active</span>
+          </div>
+        </div>
+        <div id="map" class="shadow-inner border border-slate-200"></div>
+      </section>
     </div>
 
   </div>
 
-  <!-- Add Modal -->
-  <div id="addBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">New Establishment</h3>
-        <button type="button" onclick="toggleModal('addBusinessModal', false)" class="text-slate-400 hover:text-slate-600">✕</button>
+  <!-- PHOTO LIGHTBOX MODAL -->
+  <div id="imageLightboxModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-md items-center justify-center p-4 z-50 cursor-pointer" onclick="closeLightbox()">
+    <div class="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center space-y-3" onclick="event.stopPropagation()">
+      <button type="button" onclick="closeLightbox()" class="absolute -top-10 right-0 text-white font-bold text-xs md:text-sm bg-slate-800 px-3 py-1 rounded-full border border-slate-600 hover:bg-slate-700">✕ Close</button>
+      <img id="lightboxImage" src="" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl border-2 border-white/20 object-contain" alt="Enlarged Storefront">
+      <div id="lightboxCaption" class="text-white text-xs md:text-sm font-bold bg-slate-900/90 px-4 py-1.5 rounded-full border border-slate-700"></div>
+    </div>
+  </div>
+
+  <!-- Inspector Authentication Modal -->
+  <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4 border border-slate-200">
+      <div class="flex justify-between items-center border-b pb-2.5">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">🔑 Inspector Authentication</h3>
+        <button type="button" onclick="toggleModal('adminModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <form id="adminLoginForm" class="space-y-3 text-xs">
+        <p class="text-slate-500 leading-relaxed">Enter your personal officer passcode to authenticate your portal session:</p>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Inspector Passcode *</label>
+          <input type="password" id="adminPassInput" required placeholder="Enter Personal Passcode" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-center font-mono outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition shadow cursor-pointer">Authenticate Session</button>
+      </form>
+
+      <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t text-xs">
+        <div class="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-center font-bold">Inspector Session Active</div>
+        <button type="button" onclick="triggerWipeSecurity()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl transition cursor-pointer shadow-xs">
+          🗑️ Wipe All Cloud Entries (Master Required)
+        </button>
+        <button type="button" onclick="lockAdmin()" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 rounded-xl transition cursor-pointer shadow-xs">
+          🔒 Lock & Exit Session
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRMATION MODAL -->
+  <div id="deleteConfirmModal" style="display: none;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-3.5 border-2 border-rose-500">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-bold text-rose-700 flex items-center gap-1">⚠️ Security Passcode Prompt</h3>
+        <button type="button" onclick="toggleModal('deleteConfirmModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <form id="deleteSecurityForm" class="space-y-3 text-xs">
+        <p id="deleteModalTargetLabel" class="text-slate-700 font-medium">Re-enter Passcode to authorize action:</p>
+        <input type="password" id="deleteSecurityPassInput" required placeholder="Enter Passcode" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-center font-mono outline-none focus:ring-2 focus:ring-rose-500">
+        
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" onclick="toggleModal('deleteConfirmModal', false)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl transition">Cancel</button>
+          <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl transition shadow">Confirm Action</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD BUSINESS MODAL -->
+  <div id="addBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-3.5 my-auto max-h-[90vh] overflow-y-auto border border-slate-200">
+      <div class="flex justify-between items-center border-b pb-2.5">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">➕ Add New Establishment</h3>
+        <button type="button" onclick="toggleModal('addBusinessModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
       
-      <form id="addBusinessForm" class="space-y-2.5 text-xs">
-        <div class="p-2 bg-blue-50/60 rounded-lg border border-blue-100 space-y-1">
-          <label class="block font-semibold text-blue-900">Plate Photo (Auto-Reads ID)</label>
-          <input type="file" id="newBizPlatePhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'new')" class="w-full text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-blue-600 file:text-white">
-          <div id="newBizOcrStatus" class="hidden text-[10px] font-semibold text-blue-700">Reading Plate...</div>
-        </div>
-
-        <input type="text" id="newBizId" required placeholder="Business ID *" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono">
-        <input type="text" id="newBizName" required placeholder="Business Name *" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        <input type="text" id="newBizOwner" required placeholder="Owner Name *" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        <input type="text" id="newBizPhone" placeholder="Phone Number" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        <input type="text" id="newBizSocial" placeholder="Messenger / Social Profile" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        <input type="text" id="newBizAddress" required placeholder="Barangay / Street Address *" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-        
-        <select id="newBizStatus" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-          <option value="Compliant" selected>Compliant</option>
-          <option value="No Permit">No Permit</option>
-          <option value="Expired">Expired</option>
-          <option value="Pending Follow-Up">Pending Follow-Up</option>
-        </select>
-
-        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
-          <label class="block font-semibold text-slate-600 text-[11px]">Building / Storefront Photo *</label>
-          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-slate-700 file:text-white">
-        </div>
-
-        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
-          <div class="flex justify-between items-center text-[11px]">
-            <span class="font-semibold text-slate-600">Coordinates (Auto from GMaps)</span>
-            <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-blue-600 hover:underline">Maps ↗</a>
+      <form id="addBusinessForm" class="space-y-3 text-xs">
+        <!-- 1. Plate Scanner (Auto-Extracts ID) -->
+        <div class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 space-y-1.5">
+          <label class="block font-bold text-blue-900 flex items-center gap-1">
+            <span>📸</span> Snap Business Plate (Auto-Extracts ID)
+          </label>
+          <input type="file" id="newBizPlatePhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'new')" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+          <div id="newBizOcrStatus" class="hidden text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1">
+            <span>🔍</span> <span>Isolating Plate Number...</span>
           </div>
-          <input type="text" id="gmapsCoordInput" placeholder="Coordinates auto-paste on return" class="w-full p-1.5 bg-white border border-slate-200 rounded text-slate-600 font-mono text-[11px]">
-          <div id="newCoordStatus" class="text-[10px] text-slate-400">10.928000, 124.438500</div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Business ID / Permit Number *</label>
+          <input type="text" id="newBizId" required placeholder="Auto-fills from plate or type e.g. 1026" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- 2. Storefront / Building Photo -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+          <label class="block font-bold text-slate-800 flex items-center gap-1">
+            <span>🏢</span> Building / Storefront Photo (Main Photo) *
+          </label>
+          <input type="file" id="newBizPhoto" accept="image/*" capture="environment" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-800 cursor-pointer">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Business Name *</label>
+          <input type="text" id="newBizName" required placeholder="e.g. Isabel General Store" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Owner Name *</label>
+          <input type="text" id="newBizOwner" required placeholder="e.g. Maria Santos" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+          <input type="text" id="newBizPhone" placeholder="e.g. 09171234567" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Social Media / Messenger Profile</label>
+          <input type="text" id="newBizSocial" placeholder="e.g. maria.santos or fb.com/mariasantos" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Barangay / Address *</label>
+          <input type="text" id="newBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Permit Status</label>
+          <select id="newBizStatus" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold">
+            <option value="Compliant" selected>🟢 Active Permit</option>
+            <option value="No Permit">🔴 No Permit</option>
+            <option value="Expired">🟡 Expired</option>
+            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
+          </select>
+        </div>
+
+        <!-- Google Maps Offline Auto-Paste Card -->
+        <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <label class="block font-bold text-blue-950">📍 Google Maps Coordinates</label>
+            <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-blue-700 underline font-bold">Open Maps ↗</a>
+          </div>
+          <div class="flex gap-1.5">
+            <input type="text" id="gmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-blue-300 rounded-lg outline-none font-mono text-xs">
+            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
+              Apply
+            </button>
+          </div>
+          <div id="newCoordStatus" class="text-[10px] text-blue-800 font-mono font-medium">✨ Auto-pastes when switching back from Google Maps</div>
         </div>
 
         <input type="hidden" id="newBizLat" value="10.928000">
         <input type="hidden" id="newBizLon" value="124.438500">
         <input type="hidden" id="newBizResolution" value="3840">
 
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition mt-2">Save Establishment</button>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-md mt-2 cursor-pointer text-sm">Save Establishment</button>
       </form>
     </div>
   </div>
 
-  <!-- Edit Modal -->
-  <div id="editBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-4 space-y-3 my-auto max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Edit Establishment</h3>
-        <button type="button" onclick="toggleModal('editBusinessModal', false)" class="text-slate-400 hover:text-slate-600">✕</button>
+  <!-- EDIT BUSINESS MODAL -->
+  <div id="editBusinessModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-3.5 my-auto max-h-[90vh] overflow-y-auto border border-slate-200">
+      <div class="flex justify-between items-center border-b pb-2.5">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">✏️ Edit Establishment Details</h3>
+        <button type="button" onclick="toggleModal('editBusinessModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
       
-      <form id="editBusinessForm" class="space-y-2.5 text-xs">
+      <form id="editBusinessForm" class="space-y-3 text-xs">
         <input type="hidden" id="editOriginalId">
         
-        <div class="p-2 bg-amber-50/60 rounded-lg border border-amber-100 space-y-1">
-          <label class="block font-semibold text-amber-900">Update Plate (Auto-Reads ID)</label>
-          <input type="file" id="editBizPlatePhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-amber-600 file:text-white">
-          <div id="editBizOcrStatus" class="hidden text-[10px] font-semibold text-amber-700">Reading Plate...</div>
-        </div>
-
-        <input type="text" id="editBizId" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono">
-        <input type="text" id="editBizName" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg">
-        <input type="text" id="editBizOwner" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg">
-        <input type="text" id="editBizPhone" placeholder="Phone Number" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg">
-        <input type="text" id="editBizSocial" placeholder="Social Media" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg">
-        <input type="text" id="editBizAddress" required class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg">
-        
-        <select id="editBizStatus" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg">
-          <option value="Compliant">Compliant</option>
-          <option value="No Permit">No Permit</option>
-          <option value="Expired">Expired</option>
-          <option value="Pending Follow-Up">Pending Follow-Up</option>
-        </select>
-
-        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
-          <label class="block font-semibold text-slate-600 text-[11px]">Replace Storefront Photo</label>
-          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" class="w-full text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-slate-700 file:text-white">
-        </div>
-
-        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
-          <div class="flex justify-between items-center text-[11px]">
-            <span class="font-semibold text-slate-600">Coordinates</span>
-            <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-blue-600 hover:underline">Maps ↗</a>
+        <!-- Plate Scanner (Edit Mode) -->
+        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
+          <label class="block font-bold text-amber-950 flex items-center gap-1">
+            <span>📸</span> Snap Plate to Update ID
+          </label>
+          <input type="file" id="editBizPlatePhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer">
+          <div id="editBizOcrStatus" class="hidden text-[11px] font-bold text-amber-700 mt-1 flex items-center gap-1">
+            <span>🔍</span> <span>Isolating Plate Number...</span>
           </div>
-          <input type="text" id="editGmapsCoordInput" placeholder="Coordinates auto-paste on return" class="w-full p-1.5 bg-white border border-slate-200 rounded text-slate-600 font-mono text-[11px]">
-          <div id="editCoordStatus" class="text-[10px] text-slate-400">10.928000, 124.438500</div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Business ID / Permit Number *</label>
+          <input type="text" id="editBizId" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-amber-700 focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <!-- Replace Storefront / Building Photo -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+          <label class="block font-bold text-slate-800 flex items-center gap-1">
+            <span>🏢</span> Replace Storefront / Building Photo
+          </label>
+          <input type="file" id="editBizPhoto" accept="image/*" capture="environment" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-800 cursor-pointer">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Business Name *</label>
+          <input type="text" id="editBizName" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Owner Name *</label>
+          <input type="text" id="editBizOwner" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+          <input type="text" id="editBizPhone" placeholder="e.g. 09171234567" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Social Media / Messenger Profile</label>
+          <input type="text" id="editBizSocial" placeholder="e.g. maria.santos or fb.com/mariasantos" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Barangay / Address *</label>
+          <input type="text" id="editBizAddress" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Permit Status</label>
+          <select id="editBizStatus" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold">
+            <option value="Compliant">🟢 Active Permit</option>
+            <option value="No Permit">🔴 No Permit</option>
+            <option value="Expired">🟡 Expired</option>
+            <option value="Pending Follow-Up">🔵 Pending Compliance</option>
+          </select>
+        </div>
+
+        <!-- Google Maps Offline Auto-Paste Card (Edit) -->
+        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <label class="block font-bold text-amber-950">📍 Update Google Maps Coordinates</label>
+            <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-amber-800 underline font-bold">Open Maps ↗</a>
+          </div>
+          <div class="flex gap-1.5">
+            <input type="text" id="editGmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none font-mono text-xs">
+            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
+              Apply
+            </button>
+          </div>
+          <div id="editCoordStatus" class="text-[10px] text-amber-900 font-mono font-medium">✨ Auto-pastes when switching back from Google Maps</div>
         </div>
 
         <input type="hidden" id="editBizLat">
         <input type="hidden" id="editBizLon">
         <input type="hidden" id="editBizResolution" value="3840">
 
-        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 rounded-lg transition mt-2">Update Record</button>
+        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl transition shadow-md mt-2 cursor-pointer text-sm">Update Establishment Details</button>
       </form>
     </div>
-  </div>
-
-  <!-- Admin Login Modal -->
-  <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Officer Auth</h3>
-        <button type="button" onclick="toggleModal('adminModal', false)" class="text-slate-400 hover:text-slate-600">✕</button>
-      </div>
-
-      <form id="adminLoginForm" class="space-y-2.5 text-xs">
-        <input type="password" id="adminPassInput" required placeholder="Officer Passcode" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono">
-        <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2 rounded-lg transition">Login</button>
-      </form>
-
-      <div id="adminPanelControls" class="hidden space-y-2 pt-2 border-t border-slate-100 text-xs">
-        <button type="button" onclick="lockAdmin()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-1.5 rounded-lg transition">Logout</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Delete Modal -->
-  <div id="deleteConfirmModal" style="display: none;" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-xs p-4 space-y-3">
-      <h3 class="text-xs font-bold text-rose-600 uppercase tracking-wider">Confirm Delete</h3>
-      <form id="deleteSecurityForm" class="space-y-2.5 text-xs">
-        <p id="deleteModalTargetLabel" class="text-slate-600">Enter passcode to confirm delete:</p>
-        <input type="password" id="deleteSecurityPassInput" required placeholder="Passcode" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono">
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" onclick="toggleModal('deleteConfirmModal', false)" class="p-2 bg-slate-100 text-slate-700 font-semibold rounded-lg">Cancel</button>
-          <button type="submit" class="p-2 bg-rose-600 text-white font-semibold rounded-lg">Delete</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Lightbox -->
-  <div id="imageLightboxModal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-xs items-center justify-center p-4 z-50 cursor-pointer" onclick="closeLightbox()">
-    <img id="lightboxImage" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain" alt="Enlarged">
   </div>
 
   <script>
@@ -251,7 +443,7 @@
     const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
     const ISABEL_CENTER = [10.9280, 124.4385];
     const MASTER_PASSCODE = "IsabelLeyte";
-    const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23e2e8f0'%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='10' fill='%2394a3b8'%3ENo Photo%3C/text%3E%3C/svg%3E";
+    const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
     const INSPECTOR_ACCOUNTS = {
       "Ashbel2026": "Officer Ashbel Espenido",
@@ -275,8 +467,7 @@
       "Compliant": "#10b981"
     };
 
-    const map = L.map('map', { zoomControl: false }).setView(ISABEL_CENTER, 15);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    const map = L.map('map').setView(ISABEL_CENTER, 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
     const selectElem = document.getElementById('businessSelect');
@@ -288,69 +479,106 @@
     }
 
     function generateNoticeText(biz) {
-      let statusMsg = biz.status === "Compliant" 
-        ? "Your Business Permit status is COMPLIANT. Thank you!" 
-        : `Your Business Permit status is ${biz.status.toUpperCase()}. Please settle compliance at Isabel BPLO.`;
-      return `[ISABEL BPLO NOTICE]\nOwner: ${biz.owner}\nBusiness: ${biz.name} (${biz.id})\nStatus: ${biz.status}\n\n${statusMsg}\nInspector: ${biz.inspector || activeInspector}`;
+      let statusMsg = "";
+      if (biz.status === "No Permit") {
+        statusMsg = "You are currently operating with NO VALID BUSINESS PERMIT on record. Please settle your compliance at the Isabel BPLO immediately to avoid penalties.";
+      } else if (biz.status === "Expired") {
+        statusMsg = "Your Business Permit is EXPIRED. Please process your annual renewal at the Isabel BPLO as soon as possible.";
+      } else if (biz.status === "Pending Follow-Up") {
+        statusMsg = "Your Business Permit status is PENDING COMPLIANCE. Please submit the necessary documents to the Isabel BPLO.";
+      } else {
+        statusMsg = "Your Business Permit status is COMPLIANT (Active). Thank you for keeping your establishment updated!";
+      }
+
+      return `[ISABEL BPLO OFFICIAL NOTICE]\n\nDear ${biz.owner},\n\nEstablishment: ${biz.name}\nBusiness ID: ${biz.id}\nAddress: ${biz.address}\nCurrent Status: ${biz.status.toUpperCase()}\n\n${statusMsg}\n\nInspected by: ${biz.inspector || activeInspector}\nDate: ${biz.timestamp || getFormattedTimestamp()}`;
     }
 
     window.sendNoticeSMS = function() {
       const biz = getSelectedBusiness();
-      if (!biz) return alert("Select a business first.");
+      if (!biz) return alert("Please select a business first.");
+
       const rawPhone = (biz.phone || "").replace(/[^0-9+]/g, '');
+      const message = generateNoticeText(biz);
+
       const separator = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? '&' : '?';
-      window.location.href = rawPhone && rawPhone !== "N/A" 
-        ? `sms:${rawPhone}${separator}body=${encodeURIComponent(generateNoticeText(biz))}`
-        : `sms:${separator}body=${encodeURIComponent(generateNoticeText(biz))}`;
+      const smsUrl = rawPhone && rawPhone !== "N/A" 
+        ? `sms:${rawPhone}${separator}body=${encodeURIComponent(message)}`
+        : `sms:${separator}body=${encodeURIComponent(message)}`;
+
+      window.location.href = smsUrl;
     };
 
     function sanitizeMessengerUsername(val) {
       if (!val || val === "N/A") return "";
-      return val.trim().replace(/^(https?:\/\/)?(www\.)?(facebook\.com|fb\.com|m\.me)\//i, '').replace(/^\/|\/$/g, '');
+      let clean = val.trim();
+      clean = clean.replace(/^(https?:\/\/)?(www\.)?(facebook\.com|fb\.com|m\.me)\//i, '');
+      clean = clean.replace(/^\/|\/$/g, '');
+      return clean;
     }
 
     window.sendNoticeMessenger = function() {
       const biz = getSelectedBusiness();
-      if (!biz) return alert("Select a business first.");
-      const msg = generateNoticeText(biz);
-      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(msg).catch(() => {});
-      const cleanUser = sanitizeMessengerUsername(biz.social);
+      if (!biz) return alert("Please select a business first.");
+
+      const message = generateNoticeText(biz);
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(message).catch(() => {});
+      }
+
+      const rawSocial = biz.social || "";
+      const cleanUser = sanitizeMessengerUsername(rawSocial);
+
       if (cleanUser) {
         window.open(`https://m.me/${cleanUser}`, '_blank');
+        alert("📋 Notice copied to clipboard!\nOpening direct chat with " + cleanUser + " — just paste your message.");
       } else {
-        window.open(`https://www.messenger.com/t/?text=${encodeURIComponent(msg)}`, '_blank');
+        const encodedMsg = encodeURIComponent(message);
+        window.open(`https://www.messenger.com/t/?text=${encodedMsg}`, '_blank');
+        alert("📋 Notice copied to clipboard!\nSelect a recipient and paste the notice.");
       }
     };
 
     window.parseGmapsCoords = function(mode = 'new') {
       const inputElem = mode === 'new' ? document.getElementById('gmapsCoordInput') : document.getElementById('editGmapsCoordInput');
       const val = (inputElem ? inputElem.value : '').trim();
+      
       const match = val.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
       if (match) {
         const lat = parseFloat(match[1]).toFixed(6);
         const lon = parseFloat(match[2]).toFixed(6);
+        
         if (mode === 'new') {
           document.getElementById('newBizLat').value = lat;
           document.getElementById('newBizLon').value = lon;
-          document.getElementById('newCoordStatus').textContent = `${lat}, ${lon}`;
+          document.getElementById('newCoordStatus').textContent = `Applied: ${lat}, ${lon}`;
         } else {
           document.getElementById('editBizLat').value = lat;
           document.getElementById('editBizLon').value = lon;
-          document.getElementById('editCoordStatus').textContent = `${lat}, ${lon}`;
+          document.getElementById('editCoordStatus').textContent = `Applied: ${lat}, ${lon}`;
         }
+        alert(`✅ Coordinates Applied:\nLat: ${lat}\nLon: ${lon}`);
+      } else {
+        alert("❌ Invalid format! Please paste coordinates like: 10.928123, 124.438541");
       }
     };
 
+    // TARGETED PLATE OCR: CROPS OUT YEAR & SIGNATURE, AUTO-FILLS ID FIELD
     window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
       const file = inputElement.files[0];
       if (!file) return;
 
-      const statusLabel = mode === 'new' ? document.getElementById('newBizOcrStatus') : document.getElementById('editBizOcrStatus');
-      const targetIdInput = mode === 'new' ? document.getElementById('newBizId') : document.getElementById('editBizId');
+      const statusLabel = mode === 'new' 
+        ? document.getElementById('newBizOcrStatus') 
+        : document.getElementById('editBizOcrStatus');
+      const targetIdInput = mode === 'new' 
+        ? document.getElementById('newBizId') 
+        : document.getElementById('editBizId');
 
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
-        statusLabel.textContent = "Scanning plate...";
+        statusLabel.className = "text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 animate-pulse";
+        statusLabel.innerHTML = "<span>🔍</span> <span>Isolating Plate Number...</span>";
       }
 
       try {
@@ -362,16 +590,21 @@
             const cropY = img.height * 0.15;
             const cropW = img.width * 0.60;
             const cropH = img.height * 0.65;
+
             canvas.width = cropW;
             canvas.height = cropH;
+
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
             const imgData = ctx.getImageData(0, 0, cropW, cropH);
             const d = imgData.data;
             for (let i = 0; i < d.length; i += 4) {
               const avg = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
               const val = avg > 130 ? 255 : 0;
-              d[i] = val; d[i + 1] = val; d[i + 2] = val;
+              d[i] = val;
+              d[i + 1] = val;
+              d[i + 2] = val;
             }
             ctx.putImageData(imgData, 0, 0);
             canvas.toBlob(resolve, 'image/jpeg', 0.95);
@@ -379,15 +612,23 @@
           img.src = URL.createObjectURL(file);
         });
 
-        const { data } = await Tesseract.recognize(croppedBlob || file, 'eng');
+        const { data } = await Tesseract.recognize(croppedBlob || file, 'eng', {
+          logger: m => {
+            if (m.status === 'recognizing text' && statusLabel) {
+              statusLabel.innerHTML = `<span>🔍</span> <span>Reading plate digits: ${Math.round(m.progress * 100)}%</span>`;
+            }
+          }
+        });
+
         let detectedId = "";
 
         if (data.words && data.words.length > 0) {
           const candidates = data.words
-            .map(w => ({
-              text: w.text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1').replace(/[^0-9]/g, ''),
-              height: (w.bbox.y1 - w.bbox.y0) || 0
-            }))
+            .map(w => {
+              const cleaned = w.text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1').replace(/[^0-9]/g, '');
+              const height = (w.bbox.y1 - w.bbox.y0) || 0;
+              return { text: cleaned, height: height };
+            })
             .filter(w => w.text.length >= 2 && w.text.length <= 6 && !/^(2024|2025|2026|2027|2028)$/.test(w.text));
 
           candidates.sort((a, b) => b.height - a.height);
@@ -395,44 +636,66 @@
         }
 
         if (!detectedId) {
-          const matches = (data.text || "").replace(/[Oo]/g, '0').replace(/[lI]/g, '1').match(/\b\d{2,6}\b/g) || [];
-          const valid = matches.filter(n => !/^(2024|2025|2026|2027|2028)$/.test(n));
-          if (valid.length > 0) detectedId = valid[0];
+          const rawMatches = (data.text || "")
+            .replace(/[Oo]/g, '0')
+            .replace(/[lI]/g, '1')
+            .match(/\b\d{2,6}\b/g) || [];
+
+          const validMatches = rawMatches.filter(n => !/^(2024|2025|2026|2027|2028)$/.test(n));
+          if (validMatches.length > 0) detectedId = validMatches[0];
         }
 
         if (detectedId) {
           targetIdInput.value = detectedId;
-          if (statusLabel) statusLabel.textContent = `Auto ID: ${detectedId}`;
+          if (statusLabel) {
+            statusLabel.classList.remove('animate-pulse');
+            statusLabel.className = "text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1";
+            statusLabel.innerHTML = `<span>✅</span> <span>Auto-Extracted Plate ID: <b>${detectedId}</b></span>`;
+          }
         } else {
-          if (statusLabel) statusLabel.textContent = "ID unclear. Type manually.";
+          if (statusLabel) {
+            statusLabel.classList.remove('animate-pulse');
+            statusLabel.className = "text-[11px] font-semibold text-slate-500 mt-1";
+            statusLabel.textContent = "ℹ️ Plate ID unclear. You can type it manually.";
+          }
         }
       } catch (err) {
         if (statusLabel) statusLabel.classList.add('hidden');
       }
     };
 
+    // AUTO-DETECT CLIPBOARD COORDS WHEN RETURNING FROM GOOGLE MAPS
     async function autoDetectClipboardCoords() {
       const isAddOpen = document.getElementById('addBusinessModal').style.display === 'flex';
       const isEditOpen = document.getElementById('editBusinessModal').style.display === 'flex';
+
       if (!isAddOpen && !isEditOpen) return;
 
       try {
         if (navigator.clipboard && navigator.clipboard.readText) {
           const clipText = await navigator.clipboard.readText();
           const match = clipText.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+
           if (match) {
             const lat = parseFloat(match[1]).toFixed(6);
             const lon = parseFloat(match[2]).toFixed(6);
+
             if (isAddOpen) {
-              document.getElementById('newBizLat').value = lat;
-              document.getElementById('newBizLon').value = lon;
-              document.getElementById('gmapsCoordInput').value = `${lat}, ${lon}`;
-              document.getElementById('newCoordStatus').textContent = `${lat}, ${lon}`;
+              const currentLat = document.getElementById('newBizLat').value;
+              if (currentLat !== lat) {
+                document.getElementById('newBizLat').value = lat;
+                document.getElementById('newBizLon').value = lon;
+                document.getElementById('gmapsCoordInput').value = `${lat}, ${lon}`;
+                document.getElementById('newCoordStatus').textContent = `✨ Auto-Applied from GMaps: ${lat}, ${lon}`;
+              }
             } else if (isEditOpen) {
-              document.getElementById('editBizLat').value = lat;
-              document.getElementById('editBizLon').value = lon;
-              document.getElementById('editGmapsCoordInput').value = `${lat}, ${lon}`;
-              document.getElementById('editCoordStatus').textContent = `${lat}, ${lon}`;
+              const currentLat = document.getElementById('editBizLat').value;
+              if (currentLat !== lat) {
+                document.getElementById('editBizLat').value = lat;
+                document.getElementById('editBizLon').value = lon;
+                document.getElementById('editGmapsCoordInput').value = `${lat}, ${lon}`;
+                document.getElementById('editCoordStatus').textContent = `✨ Auto-Applied from GMaps: ${lat}, ${lon}`;
+              }
             }
           }
         }
@@ -452,8 +715,11 @@
 
     window.openLightbox = function() {
       const imgElem = document.getElementById('cardImage');
+      const nameElem = document.getElementById('cardName');
       if (!imgElem || !imgElem.src) return;
+
       document.getElementById('lightboxImage').src = imgElem.src;
+      document.getElementById('lightboxCaption').textContent = nameElem ? nameElem.textContent : 'Storefront Image';
       toggleModal('imageLightboxModal', true);
     };
 
@@ -462,22 +728,32 @@
     };
 
     window.openEditModal = function() {
-      if (!isAdminUnlocked) return alert("Officer login required.");
+      if (!isAdminUnlocked) return alert("Inspector session required.");
       const target = getSelectedBusiness();
-      if (!target) return alert("Select a business to edit.");
+      if (!target) return alert("Please select a business to edit.");
 
       document.getElementById('editOriginalId').value = String(target.id).trim();
       document.getElementById('editBizId').value = String(target.id).trim();
       document.getElementById('editBizName').value = target.name || '';
       document.getElementById('editBizOwner').value = target.owner || '';
-      document.getElementById('editBizPhone').value = target.phone === 'N/A' ? '' : target.phone;
-      document.getElementById('editBizSocial').value = target.social === 'N/A' ? '' : target.social;
+      
+      const cleanPhone = String(target.phone || '').trim();
+      document.getElementById('editBizPhone').value = (cleanPhone === 'N/A' || cleanPhone === 'undefined') ? '' : cleanPhone;
+      
+      const cleanSocial = String(target.social || '').trim();
+      document.getElementById('editBizSocial').value = (cleanSocial === 'N/A' || cleanSocial === 'undefined') ? '' : cleanSocial;
+
       document.getElementById('editBizAddress').value = target.address || '';
       document.getElementById('editBizStatus').value = target.status || 'No Permit';
       document.getElementById('editBizLat').value = target.lat;
       document.getElementById('editBizLon').value = target.lon;
-      document.getElementById('editGmapsCoordInput').value = `${target.lat}, ${target.lon}`;
-      document.getElementById('editCoordStatus').textContent = `${target.lat}, ${target.lon}`;
+      
+      const editCoordInput = document.getElementById('editGmapsCoordInput');
+      if (editCoordInput) editCoordInput.value = `${target.lat}, ${target.lon}`;
+      document.getElementById('editCoordStatus').textContent = `Current: ${target.lat}, ${target.lon}`;
+
+      const ocrStatus = document.getElementById('editBizOcrStatus');
+      if (ocrStatus) ocrStatus.classList.add('hidden');
 
       toggleModal('editBusinessModal', true);
     };
@@ -485,40 +761,55 @@
     function updateDashboardStats(list) {
       const total = list.length;
       document.getElementById('statTotal').textContent = total;
+
       if (total === 0) {
         document.getElementById('statCompliantRate').textContent = "0%";
+        document.getElementById('statCompliantBar').style.width = "0%";
         document.getElementById('statNonCompliant').textContent = "0";
-        document.getElementById('statTopInspector').textContent = "-";
+        document.getElementById('statTopInspector').textContent = "None";
+        document.getElementById('statInspectorDetail').textContent = "Submissions: 0";
         return;
       }
+
       const compliantCount = list.filter(b => b.status === "Compliant").length;
       const nonCompliantCount = list.filter(b => b.status === "No Permit" || b.status === "Expired").length;
-      document.getElementById('statCompliantRate').textContent = Math.round((compliantCount / total) * 100) + "%";
+      const rate = Math.round((compliantCount / total) * 100);
+
+      document.getElementById('statCompliantRate').textContent = rate + "%";
+      document.getElementById('statCompliantBar').style.width = rate + "%";
       document.getElementById('statNonCompliant').textContent = nonCompliantCount;
 
-      const counts = {};
+      const inspectorCounts = {};
       list.forEach(b => {
-        const name = b.inspector || "Ashbel Espenido";
-        counts[name] = (counts[name] || 0) + 1;
+        const name = b.inspector || "Officer Ashbel Espenido";
+        inspectorCounts[name] = (inspectorCounts[name] || 0) + 1;
       });
-      document.getElementById('statTopInspector').textContent = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+
+      const topOfficer = Object.keys(inspectorCounts).reduce((a, b) => inspectorCounts[a] > inspectorCounts[b] ? a : b);
+      document.getElementById('statTopInspector').textContent = topOfficer;
+      document.getElementById('statInspectorDetail').textContent = `Submissions: ${inspectorCounts[topOfficer]}`;
     }
 
     function updateAdminUI() {
       const adminElements = document.querySelectorAll('.admin-only');
       const adminBtn = document.getElementById('openAdminModalBtn');
       const viewModeLabel = document.getElementById('viewModeLabel');
+      const inspectorBadge = document.getElementById('activeInspectorBadge');
+
+      inspectorBadge.textContent = "Inspector: " + activeInspector;
 
       if (isAdminUnlocked) {
         adminElements.forEach(el => el.classList.remove('hidden'));
-        adminBtn.textContent = activeInspector.split(' ')[1] || "Officer";
-        viewModeLabel.textContent = `Active: ${activeInspector}`;
+        adminBtn.textContent = "🔓 Session Active";
+        adminBtn.classList.replace('bg-amber-500', 'bg-emerald-600');
+        viewModeLabel.textContent = "Portal Active (" + activeInspector + ")";
         document.getElementById('adminLoginForm').classList.add('hidden');
         document.getElementById('adminPanelControls').classList.remove('hidden');
       } else {
         adminElements.forEach(el => el.classList.add('hidden'));
-        adminBtn.textContent = "Officer Login";
-        viewModeLabel.textContent = "Public View";
+        adminBtn.textContent = "👑 Inspector Login";
+        adminBtn.classList.replace('bg-emerald-600', 'bg-amber-500');
+        viewModeLabel.textContent = "Public View-Only Mode";
         document.getElementById('adminLoginForm').classList.remove('hidden');
         document.getElementById('adminPanelControls').classList.add('hidden');
       }
@@ -529,11 +820,13 @@
       localStorage.removeItem('isabel_admin_unlocked');
       updateAdminUI();
       toggleModal('adminModal', false);
+      alert("Session logged out.");
     };
 
     function getFormattedTimestamp() {
       const now = new Date();
-      return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
+             ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     }
 
     function updateOfflineBadge() {
@@ -541,7 +834,7 @@
       let badge = document.getElementById('offlineQueueBadge');
       if (badge) {
         if (queue.length > 0) {
-          badge.textContent = `${queue.length} Offline`;
+          badge.textContent = `⚠️ ${queue.length} Offline Saved`;
           badge.classList.remove('hidden');
         } else {
           badge.classList.add('hidden');
@@ -556,6 +849,7 @@
           form.method = 'POST';
           form.action = GOOGLE_SCRIPT_URL;
           form.target = 'hidden_iframe';
+
           const input = document.createElement('input');
           input.type = 'hidden';
           input.name = 'postData';
@@ -570,10 +864,17 @@
             iframe.style.display = 'none';
             document.body.appendChild(iframe);
           }
+
           document.body.appendChild(form);
           form.submit();
-          setTimeout(() => { document.body.removeChild(form); resolve(true); }, 3500);
-        } catch (err) { resolve(false); }
+
+          setTimeout(() => {
+            document.body.removeChild(form);
+            resolve(true);
+          }, 3500);
+        } catch (err) {
+          resolve(false);
+        }
       });
     }
 
@@ -592,9 +893,14 @@
     async function syncOfflineQueue() {
       let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
       if (queue.length === 0 || !navigator.onLine) return;
-      for (let i = 0; i < queue.length; i++) await submitViaHiddenForm(queue[i]);
+
+      for (let i = 0; i < queue.length; i++) {
+        await submitViaHiddenForm(queue[i]);
+      }
+
       localStorage.removeItem(OFFLINE_QUEUE_KEY);
       updateOfflineBadge();
+      alert("📡 Offline field logs auto-synced to Google Drive Subfolders & Sheets!");
       setTimeout(async () => { await loadBusinesses(); }, 1500);
     }
 
@@ -614,39 +920,73 @@
         try {
           const res = await fetch(GOOGLE_SCRIPT_URL);
           const data = await res.json();
+
           if (Array.isArray(data) && data.length > 0) {
-            const remoteData = data.map((b, index) => ({
-              id: String(b.id || "BIZ-" + index).trim(),
-              name: String(b.name || "").trim(),
-              owner: String(b.owner || "").trim(),
-              phone: (b.phone && b.phone !== '' && b.phone !== 'undefined') ? String(b.phone) : "N/A",
-              social: (b.social && b.social !== '' && b.social !== 'undefined') ? String(b.social) : "N/A",
-              address: String(b.address || "").trim(),
-              status: String(b.status || "No Permit").trim(),
-              timestamp: String(b.timestamp || getFormattedTimestamp()).trim(),
-              lat: parseFloat(b.lat) || ISABEL_CENTER[0],
-              lon: parseFloat(b.lon) || ISABEL_CENTER[1],
-              image: String(b.image || FALLBACK_IMAGE),
-              inspector: String(b.inspector || activeInspector),
-              uniqueKey: "REMOTE_" + b.id + "_" + index
-            }));
+            const remoteData = data.map((b, index) => {
+              const rawPhone = String(b.phone || b["Phone Number"] || b["Phone"] || "").trim();
+              const rawSocial = String(b.social || b["Social Media"] || b["Messenger"] || "").trim();
+              const rawAddress = String(b.address || b["Barangay Address"] || b["Address"] || b["Barangay / Address"] || "").trim();
+              const rawId = String(b.id || b["Business ID"] || "BIZ-" + index).trim();
+              const rawName = String(b.name || b["Business Name"] || "").trim();
+              
+              return {
+                id: rawId,
+                name: rawName,
+                owner: String(b.owner || b["Owner Name"] || "").trim(),
+                phone: (rawPhone !== '' && rawPhone !== 'undefined') ? rawPhone : "N/A",
+                social: (rawSocial !== '' && rawSocial !== 'undefined') ? rawSocial : "N/A",
+                address: rawAddress,
+                status: String(b.status || b["Permit Status"] || "No Permit").trim(),
+                timestamp: String(b.timestamp || b["Timestamp"] || getFormattedTimestamp()).trim(),
+                lat: parseFloat(b.lat || b["Latitude"]) || ISABEL_CENTER[0],
+                lon: parseFloat(b.lon || b["Longitude"]) || ISABEL_CENTER[1],
+                image: String(b.image || b["Photo URL"] || FALLBACK_IMAGE),
+                inspector: String(b.inspector || b["Inspector Name"] || b["Inspector"] || activeInspector),
+                uniqueKey: "REMOTE_" + rawId + "_" + rawName + "_" + index
+              };
+            });
 
             if (preventOverwriteId) {
               const localProtected = businesses.find(b => String(b.id).trim().toLowerCase() === String(preventOverwriteId).trim().toLowerCase());
               if (localProtected) {
                 const remoteIdx = remoteData.findIndex(b => String(b.id).trim().toLowerCase() === String(preventOverwriteId).trim().toLowerCase());
-                if (remoteIdx !== -1) remoteData[remoteIdx] = { ...remoteData[remoteIdx], ...localProtected };
+                if (remoteIdx !== -1) {
+                  remoteData[remoteIdx] = { ...remoteData[remoteIdx], ...localProtected };
+                }
               }
             }
 
-            businesses = remoteData;
+            let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+            let pendingItems = offlineQueue
+              .filter(item => item.action === "addBusiness")
+              .map((b, idx) => ({
+                id: b.id,
+                name: b.name + " (Pending Sync)",
+                owner: b.owner,
+                phone: b.phone,
+                social: b.social,
+                address: b.address,
+                status: b.status,
+                timestamp: b.timestamp,
+                lat: b.lat,
+                lon: b.lon,
+                image: b.image || FALLBACK_IMAGE,
+                inspector: b.inspector || activeInspector,
+                uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
+              }));
+
+            const allMap = new Map();
+            [...pendingItems, ...remoteData].forEach(item => allMap.set(item.uniqueKey, item));
+            businesses = Array.from(allMap.values());
             displayedList = [...businesses];
+
             localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
             renderBusinessList(displayedList, currentSelectedKey);
             updateDashboardStats(businesses);
           }
         } catch (err) {}
       }
+
       updateOfflineBadge();
     }
 
@@ -656,31 +996,43 @@
       Object.values(markers).forEach(m => map.removeLayer(m));
 
       if (list.length === 0) {
-        selectElem.appendChild(new Option("No establishments found", ""));
+        selectElem.appendChild(new Option("No business found", ""));
         updateDetailCard(null);
         return;
       }
 
       list.forEach((biz) => {
-        selectElem.appendChild(new Option(`[${biz.id}] ${biz.name}`, biz.uniqueKey));
-        const marker = L.circleMarker([biz.lat, biz.lon], {
-          radius: 7,
-          fillColor: colorMap[biz.status] || '#94a3b8',
-          color: '#ffffff',
-          weight: 2,
-          fillOpacity: 0.95
-        }).addTo(map);
-
-        marker.on('click', () => {
-          selectElem.value = biz.uniqueKey;
-          updateDetailCard(biz);
-        });
-        markers[biz.uniqueKey] = marker;
+        selectElem.appendChild(new Option("[" + biz.id + "] " + biz.name + " (" + biz.status + ")", biz.uniqueKey));
+        addMarker(biz);
       });
 
-      let selectKey = (preferredSelectedKey && list.some(b => b.uniqueKey === preferredSelectedKey)) ? preferredSelectedKey : list[0].uniqueKey;
+      let selectKey = list[0].uniqueKey;
+      if (preferredSelectedKey && list.some(b => b.uniqueKey === preferredSelectedKey)) {
+        selectKey = preferredSelectedKey;
+      }
+
       selectElem.value = selectKey;
-      updateDetailCard(list.find(b => b.uniqueKey === selectKey) || list[0]);
+      const activeBiz = list.find(b => b.uniqueKey === selectKey) || list[0];
+      updateDetailCard(activeBiz);
+    }
+
+    function addMarker(biz) {
+      const marker = L.circleMarker([biz.lat, biz.lon], {
+        radius: 8,
+        fillColor: colorMap[biz.status] || '#6b7280',
+        color: '#ffffff',
+        weight: 2,
+        fillOpacity: 0.95
+      }).addTo(map);
+
+      marker.on('click', () => {
+        selectElem.value = biz.uniqueKey;
+        updateDetailCard(biz);
+        marker.openPopup();
+      });
+
+      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Owner: " + biz.owner + "<br>Inspector: " + biz.inspector);
+      markers[biz.uniqueKey] = marker;
     }
 
     function updateDetailCard(biz) {
@@ -689,8 +1041,11 @@
         document.getElementById('cardId').textContent = '-';
         document.getElementById('cardOwner').textContent = '-';
         document.getElementById('cardPhone').textContent = '-';
+        document.getElementById('cardPhone').href = '#';
         document.getElementById('cardSocial').textContent = '-';
+        document.getElementById('cardSocial').href = '#';
         document.getElementById('cardAddress').textContent = '-';
+        document.getElementById('cardInspector').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
         document.getElementById('cardImage').src = FALLBACK_IMAGE;
         return;
@@ -698,87 +1053,181 @@
       document.getElementById('cardName').textContent = biz.name;
       document.getElementById('cardId').textContent = biz.id;
       document.getElementById('cardOwner').textContent = biz.owner;
-      document.getElementById('cardPhone').textContent = biz.phone || 'N/A';
-      document.getElementById('cardPhone').href = (biz.phone && biz.phone !== 'N/A') ? `tel:${biz.phone}` : '#';
-      document.getElementById('cardSocial').textContent = biz.social || 'N/A';
-      document.getElementById('cardSocial').href = (biz.social && biz.social !== 'N/A') ? `https://m.me/${sanitizeMessengerUsername(biz.social)}` : '#';
+      
+      const phoneElem = document.getElementById('cardPhone');
+      phoneElem.textContent = biz.phone || 'N/A';
+      phoneElem.href = biz.phone && biz.phone !== 'N/A' ? "tel:" + String(biz.phone).replace(/[^0-9+]/g, '') : '#';
+
+      const socialElem = document.getElementById('cardSocial');
+      const cleanUser = sanitizeMessengerUsername(biz.social);
+      socialElem.textContent = biz.social || 'N/A';
+      socialElem.href = cleanUser ? `https://m.me/${cleanUser}` : '#';
+
       document.getElementById('cardAddress').textContent = biz.address;
+      document.getElementById('cardInspector').textContent = biz.inspector || "Officer Ashbel Espenido";
       
       const statusBadge = document.getElementById('cardStatus');
       statusBadge.textContent = biz.status;
-      statusBadge.style.backgroundColor = colorMap[biz.status] || '#94a3b8';
-      document.getElementById('cardImage').src = biz.image || FALLBACK_IMAGE;
-      document.getElementById('getDirectionsBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}`;
+      statusBadge.style.backgroundColor = colorMap[biz.status] || '#6b7280';
+
+      const imgElem = document.getElementById('cardImage');
+      imgElem.src = biz.image && biz.image.trim() !== '' && !biz.image.includes('placehold.co') ? biz.image : FALLBACK_IMAGE;
+
+      document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
     }
 
     selectElem.addEventListener('change', (e) => {
-      const target = businesses.find(b => String(b.uniqueKey) === String(e.target.value));
+      const selectedKey = e.target.value;
+      const target = businesses.find(b => String(b.uniqueKey) === String(selectedKey));
       if (target) {
         updateDetailCard(target);
-        map.panTo([target.lat, target.lon]);
+        if (markers[target.uniqueKey]) {
+          map.panTo([target.lat, target.lon]);
+          markers[target.uniqueKey].openPopup();
+        }
       }
     });
 
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase().trim();
-      if (!q) return renderBusinessList(businesses, selectElem.value);
-      renderBusinessList(businesses.filter(b => 
-        b.id.toLowerCase().includes(q) || b.name.toLowerCase().includes(q) || b.owner.toLowerCase().includes(q)
-      ));
+      
+      if (!q) {
+        renderBusinessList(businesses, selectElem.value);
+        return;
+      }
+
+      const filtered = businesses.filter(b => 
+        String(b.id || '').toLowerCase().includes(q) ||
+        String(b.name || '').toLowerCase().includes(q) || 
+        String(b.owner || '').toLowerCase().includes(q) || 
+        String(b.phone || '').toLowerCase().includes(q) ||
+        String(b.social || '').toLowerCase().includes(q) ||
+        String(b.address || '').toLowerCase().includes(q) ||
+        String(b.inspector || '').toLowerCase().includes(q)
+      );
+
+      renderBusinessList(filtered);
     });
 
     window.triggerDeleteSecurity = function() {
-      if (!isAdminUnlocked) return alert("Officer login required.");
+      if (!isAdminUnlocked) return alert("Inspector session required.");
       const target = getSelectedBusiness();
       if (!target) return alert("No business selected.");
-      document.getElementById('deleteModalTargetLabel').textContent = `Delete "${target.name}" (${target.id})?`;
+
+      pendingDeleteMode = 'single';
+      document.getElementById('deleteModalTargetLabel').textContent = `Re-enter Passcode to delete "${target.name}" (${target.id}):`;
       document.getElementById('deleteSecurityPassInput').value = '';
+      toggleModal('deleteConfirmModal', true);
+    };
+
+    window.triggerWipeSecurity = function() {
+      if (!isAdminUnlocked) return alert("Inspector session required.");
+      pendingDeleteMode = 'all';
+      document.getElementById('deleteModalTargetLabel').textContent = `🚨 DANGER: Re-enter Master Passcode (${MASTER_PASSCODE}) to WIPE ALL database entries:`;
+      document.getElementById('deleteSecurityPassInput').value = '';
+      toggleModal('adminModal', false);
       toggleModal('deleteConfirmModal', true);
     };
 
     document.getElementById('deleteSecurityForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const enteredPass = document.getElementById('deleteSecurityPassInput').value;
-      if (!INSPECTOR_ACCOUNTS[enteredPass]) return alert("Incorrect Passcode!");
+
+      if (!INSPECTOR_ACCOUNTS[enteredPass]) {
+        alert("❌ Incorrect Passcode! Action aborted.");
+        return;
+      }
 
       toggleModal('deleteConfirmModal', false);
-      const selectedVal = selectElem.value;
-      const targetIndex = businesses.findIndex(b => String(b.uniqueKey || b.id) === String(selectedVal));
-      if (targetIndex !== -1) {
-        const removed = businesses.splice(targetIndex, 1)[0];
-        renderBusinessList(businesses);
-        updateDashboardStats(businesses);
-        localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
-        await sendCloudAction({ action: "deleteBusiness", id: removed.id });
+
+      if (pendingDeleteMode === 'single') {
+        const selectedVal = selectElem.value;
+        const targetIndex = businesses.findIndex(b => String(b.uniqueKey || b.id) === String(selectedVal));
+        if (targetIndex !== -1) {
+          const removed = businesses.splice(targetIndex, 1)[0];
+          renderBusinessList(businesses);
+          updateDashboardStats(businesses);
+          localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
+          await sendCloudAction({ action: "deleteBusiness", id: removed.id });
+          alert("🗑️ Successfully deleted " + removed.name + "!");
+        }
+      } else if (pendingDeleteMode === 'all') {
+        if (enteredPass !== MASTER_PASSCODE) {
+          alert("❌ Master Admin Passcode required for full database wipe!");
+          return;
+        }
+        businesses = [];
+        displayedList = [];
+        localStorage.removeItem(OFFLINE_QUEUE_KEY);
+        localStorage.removeItem(CACHED_BUSINESSES_KEY);
+        renderBusinessList([]);
+        updateDashboardStats([]);
+        
+        await sendCloudAction({ action: "clearAll" });
+        alert("🗑️ Cloud Database Wiped! All entries cleared.");
+        await loadBusinesses();
       }
+
+      pendingDeleteMode = null;
     });
 
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const enteredPass = document.getElementById('adminPassInput').value.trim();
+
       if (INSPECTOR_ACCOUNTS[enteredPass]) {
         isAdminUnlocked = true;
         activeInspector = INSPECTOR_ACCOUNTS[enteredPass];
+
         localStorage.setItem('isabel_admin_unlocked', 'true');
         localStorage.setItem('isabel_inspector_name', activeInspector);
+
         updateAdminUI();
         toggleModal('adminModal', false);
+        document.getElementById('adminPassInput').value = '';
+
+        alert(`Welcome, ${activeInspector}!\nInspector Portal Authenticated.`);
       } else {
-        alert("Invalid Passcode.");
+        alert("❌ Invalid Inspector Passcode! Access Denied.");
       }
     });
 
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!isAdminUnlocked) return alert("Officer login required.");
+      if (!isAdminUnlocked) return alert("Inspector login required.");
 
       const inputId = document.getElementById('newBizId').value.trim();
+
+      const isDuplicate = businesses.some(b => String(b.id || '').trim().toLowerCase() === inputId.toLowerCase());
+      if (isDuplicate) {
+        alert(`❌ ERROR: Business Permit ID "${inputId}" already exists in the system!\n\nPlease use a unique Permit Number.`);
+        return;
+      }
+
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Saving...";
+      submitBtn.textContent = "Stamping Photo & Submitting...";
 
       try {
-        const chosenFile = document.getElementById('newBizPhoto').files[0] || document.getElementById('newBizPlatePhoto').files[0];
+        const buildingFile = document.getElementById('newBizPhoto').files[0];
+        const plateFile = document.getElementById('newBizPlatePhoto').files[0];
+        const chosenFile = buildingFile || plateFile;
+
+        const targetRes = 3840;
+        const phoneInput = document.getElementById('newBizPhone').value.trim();
+        const socialInput = document.getElementById('newBizSocial').value.trim();
+        
+        const rawPastedCoords = document.getElementById('gmapsCoordInput').value.trim();
+        const coordMatch = rawPastedCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+        
+        let finalLat = parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0];
+        let finalLon = parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1];
+
+        if (coordMatch) {
+          finalLat = parseFloat(coordMatch[1]);
+          finalLon = parseFloat(coordMatch[2]);
+        }
+
         const bizData = {
           id: inputId,
           name: document.getElementById('newBizName').value.trim(),
@@ -787,29 +1236,37 @@
           timestamp: getFormattedTimestamp()
         };
 
-        const stampedImage = await processHighMbPhoto(chosenFile, bizData, 3840) || FALLBACK_IMAGE;
+        const stampedImage = await processHighMbPhoto(chosenFile, bizData, targetRes) || FALLBACK_IMAGE;
+
         const newBiz = {
           action: "addBusiness",
           id: bizData.id,
           name: bizData.name,
           owner: bizData.owner,
-          phone: document.getElementById('newBizPhone').value.trim() || "N/A",
-          social: document.getElementById('newBizSocial').value.trim() || "N/A",
+          phone: phoneInput !== '' ? phoneInput : "N/A",
+          social: socialInput !== '' ? socialInput : "N/A",
           address: bizData.address,
           status: document.getElementById('newBizStatus').value,
           timestamp: bizData.timestamp,
-          lat: parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0],
-          lon: parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1],
+          lat: finalLat,
+          lon: finalLon,
           image: stampedImage,
           inspector: activeInspector
         };
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
-        await sendCloudAction(newBiz);
+        document.getElementById('newCoordStatus').textContent = "✨ Auto-pastes when switching back from Google Maps";
+        const ocrStatus = document.getElementById('newBizOcrStatus');
+        if (ocrStatus) ocrStatus.classList.add('hidden');
+
+        const synced = await sendCloudAction(newBiz);
+        if (synced) alert("Successfully submitted " + newBiz.name + "!");
+        else alert("⚠️ Offline: Saved locally to phone. Will auto-sync when signal returns.");
+        
         await loadBusinesses();
       } catch (err) {
-        alert("Error saving.");
+        alert("An error occurred while saving.");
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Save Establishment";
@@ -818,7 +1275,7 @@
 
     document.getElementById('editBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!isAdminUnlocked) return alert("Officer login required.");
+      if (!isAdminUnlocked) return alert("Inspector session required.");
 
       const origId = String(document.getElementById('editOriginalId').value).trim();
       const targetIndex = businesses.findIndex(b => String(b.id).trim().toLowerCase() === origId.toLowerCase());
@@ -826,10 +1283,32 @@
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Updating...";
+      submitBtn.textContent = "Updating Record...";
 
       try {
-        const chosenFile = document.getElementById('editBizPhoto').files[0] || document.getElementById('editBizPlatePhoto').files[0];
+        const buildingFile = document.getElementById('editBizPhoto').files[0];
+        const plateFile = document.getElementById('editBizPlatePhoto').files[0];
+        const chosenFile = buildingFile || plateFile;
+
+        const targetRes = 3840;
+        const phoneInputVal = document.getElementById('editBizPhone').value.trim();
+        const socialInputVal = document.getElementById('editBizSocial').value.trim();
+        const addressInputVal = document.getElementById('editBizAddress').value.trim();
+
+        const rawPastedCoords = document.getElementById('editGmapsCoordInput').value.trim();
+        const coordMatch = rawPastedCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+        
+        let finalLat = businesses[targetIndex].lat;
+        let finalLon = businesses[targetIndex].lon;
+
+        if (coordMatch) {
+          finalLat = parseFloat(coordMatch[1]);
+          finalLon = parseFloat(coordMatch[2]);
+        } else if (document.getElementById('editBizLat').value) {
+          finalLat = parseFloat(document.getElementById('editBizLat').value);
+          finalLon = parseFloat(document.getElementById('editBizLon').value);
+        }
+
         const newId = document.getElementById('editBizId').value.trim();
 
         const updatedData = {
@@ -838,39 +1317,54 @@
           id: newId,
           name: document.getElementById('editBizName').value.trim(),
           owner: document.getElementById('editBizOwner').value.trim(),
-          phone: document.getElementById('editBizPhone').value.trim() || "N/A",
-          social: document.getElementById('editBizSocial').value.trim() || "N/A",
-          address: document.getElementById('editBizAddress').value.trim() || businesses[targetIndex].address,
+          phone: phoneInputVal !== '' ? String(phoneInputVal) : "N/A",
+          social: socialInputVal !== '' ? String(socialInputVal) : "N/A",
+          address: addressInputVal !== '' ? addressInputVal : businesses[targetIndex].address,
           status: document.getElementById('editBizStatus').value,
           timestamp: getFormattedTimestamp(),
-          lat: parseFloat(document.getElementById('editBizLat').value) || businesses[targetIndex].lat,
-          lon: parseFloat(document.getElementById('editBizLon').value) || businesses[targetIndex].lon,
+          lat: finalLat,
+          lon: finalLon,
           inspector: activeInspector
         };
 
         let photoUrl = businesses[targetIndex].image;
-        if (chosenFile) photoUrl = await processHighMbPhoto(chosenFile, updatedData, 3840) || photoUrl;
+        if (chosenFile) {
+          photoUrl = await processHighMbPhoto(chosenFile, updatedData, targetRes) || photoUrl;
+        }
         updatedData.image = photoUrl;
 
-        businesses[targetIndex] = { ...businesses[targetIndex], ...updatedData };
+        businesses[targetIndex] = {
+          ...businesses[targetIndex],
+          ...updatedData
+        };
+        
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
         renderBusinessList(businesses, businesses[targetIndex].uniqueKey);
-        map.panTo([updatedData.lat, updatedData.lon]);
+
+        if (markers[businesses[targetIndex].uniqueKey]) {
+          map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
+        }
+        addMarker(businesses[targetIndex]);
+        map.panTo([finalLat, finalLon]);
 
         toggleModal('editBusinessModal', false);
         await sendCloudAction(updatedData);
         await loadBusinesses(newId);
+        
+        alert("✏️ Record & Coordinates updated successfully!");
+
       } catch (err) {
-        alert("Error updating.");
+        alert("An error occurred while updating.");
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = "Update Record";
+        submitBtn.textContent = "Update Establishment Details";
       }
     });
 
     function processHighMbPhoto(file, metadata, maxTargetDim = 3840) {
       return new Promise((resolve) => {
         if (!file) return resolve(null);
+
         const reader = new FileReader();
         reader.onload = (e) => {
           const img = new Image();
@@ -905,6 +1399,13 @@
               ctx.fillStyle = "#0F172A"; 
               ctx.fillRect(photoWidth, 0, panelWidth, photoHeight);
 
+              ctx.strokeStyle = "#38BDF8";
+              ctx.lineWidth = Math.max(3, Math.round(photoWidth / 250));
+              ctx.beginPath();
+              ctx.moveTo(photoWidth, 0);
+              ctx.lineTo(photoWidth, photoHeight);
+              ctx.stroke();
+
               const baseFontSize = Math.max(12, Math.round(photoWidth / 45));
               const startX = photoWidth + Math.round(panelWidth * 0.08);
               let currentY = Math.round(photoHeight * 0.08);
@@ -912,17 +1413,17 @@
 
               ctx.fillStyle = "#38BDF8"; 
               ctx.font = `bold ${Math.round(baseFontSize * 1.2)}px sans-serif`;
-              ctx.fillText("ISABEL BPLO", startX, currentY);
+              ctx.fillText("ISABEL BPLO LOG", startX, currentY);
 
               currentY += lineSpacing;
               ctx.fillStyle = "#94A3B8";
               ctx.font = `${Math.round(baseFontSize * 0.85)}px sans-serif`;
-              ctx.fillText("FIELD LOG", startX, currentY);
+              ctx.fillText("INSPECTION STAMP", startX, currentY);
 
               currentY += lineSpacing;
               ctx.fillStyle = "#CBD5E1";
               ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("ID:", startX, currentY);
+              ctx.fillText("BUSINESS ID:", startX, currentY);
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#FFFFFF";
               ctx.font = `${baseFontSize}px font-mono`;
@@ -931,20 +1432,47 @@
               currentY += lineSpacing;
               ctx.fillStyle = "#CBD5E1";
               ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
-              ctx.fillText("ESTABLISHMENT:", startX, currentY);
+              ctx.fillText("BUSINESS NAME:", startX, currentY);
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#FFFFFF";
               ctx.font = `${baseFontSize}px sans-serif`;
               ctx.fillText(metadata.name || 'N/A', startX, currentY);
 
+              currentY += lineSpacing;
+              ctx.fillStyle = "#CBD5E1";
+              ctx.font = `bold ${Math.round(baseFontSize * 0.8)}px sans-serif`;
+              ctx.fillText("INSPECTOR:", startX, currentY);
+              currentY += Math.round(lineSpacing * 0.8);
+              ctx.fillStyle = "#38BDF8";
+              ctx.font = `${baseFontSize}px sans-serif`;
+              ctx.fillText(activeInspector, startX, currentY);
+
               resolve(canvas.toDataURL('image/jpeg', 0.65));
-            } catch (err) { resolve(null); }
+            } catch (err) {
+              resolve(null);
+            }
           };
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
       });
     }
+
+    window.exportToExcel = function() {
+      if (businesses.length === 0) return alert("No business data available to export.");
+      let csv = "Business ID,Business Name,Owner Name,Phone Number,Social Media,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
+      businesses.forEach(b => {
+        const cleanTimestamp = (b.timestamp || '').replace(/,/g, '');
+        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.social || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "Isabel_BPLO_Businesses.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
 
     window.addEventListener('online', syncOfflineQueue);
     window.addEventListener('offline', updateOfflineBadge);
