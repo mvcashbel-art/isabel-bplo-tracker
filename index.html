@@ -123,7 +123,7 @@
         
         <!-- Search Bar -->
         <div class="relative">
-          <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, social, barangay..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition">
+          <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, barangay..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition">
           <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
         </div>
 
@@ -149,24 +149,17 @@
               <div><span class="font-semibold text-slate-500">Business ID:</span> <span id="cardId" class="text-blue-700 font-mono font-bold">-</span></div>
               <div><span class="font-semibold text-slate-500">Owner:</span> <span id="cardOwner" class="text-slate-800 font-medium">-</span></div>
               <div><span class="font-semibold text-slate-500">Contact:</span> <a id="cardPhone" href="#" class="text-blue-600 font-semibold hover:underline">-</a></div>
-              <div><span class="font-semibold text-slate-500">Messenger:</span> <a id="cardSocial" href="#" target="_blank" class="text-blue-600 font-semibold hover:underline">-</a></div>
               <div class="truncate"><span class="font-semibold text-slate-500">Address:</span> <span id="cardAddress" class="text-slate-800 font-medium">-</span></div>
               <div><span class="font-semibold text-slate-500">Inspector:</span> <span id="cardInspector" class="text-blue-700 font-bold">-</span></div>
               <div><span class="font-semibold text-slate-500">Permit Status:</span> <span id="cardStatus" class="font-bold text-white px-2.5 py-0.5 rounded-full text-[11px] md:text-xs inline-block mt-0.5 shadow-xs">-</span></div>
             </div>
           </div>
 
-          <!-- NOTICE DISPATCH BUTTONS -->
+          <!-- NOTICE DISPATCH BUTTON -->
           <div class="pt-2 border-t border-slate-200">
-            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Dispatch Compliance Notice</div>
-            <div class="grid grid-cols-2 gap-2">
-              <button type="button" onclick="sendNoticeSMS()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition text-xs shadow-sm cursor-pointer">
-                <span>💬</span> Send SMS Notice
-              </button>
-              <button type="button" onclick="sendNoticeMessenger()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition text-xs shadow-sm cursor-pointer">
-                <span>⚡</span> Messenger Notice
-              </button>
-            </div>
+            <button type="button" onclick="sendNoticeSMS()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition text-xs shadow-sm cursor-pointer">
+              <span>💬</span> Send SMS Notice
+            </button>
           </div>
 
           <!-- Controls -->
@@ -272,7 +265,6 @@
       </div>
       
       <form id="addBusinessForm" class="space-y-3 text-xs">
-        <!-- 1. Plate Scanner (Auto-Extracts ID) -->
         <div class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 space-y-1.5">
           <label class="block font-bold text-blue-900 flex items-center gap-1">
             <span>📸</span> Snap Business Plate (Auto-Extracts ID)
@@ -288,7 +280,6 @@
           <input type="text" id="newBizId" required placeholder="Auto-fills from plate or type e.g. 1026" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
         </div>
 
-        <!-- 2. Storefront / Building Photo -->
         <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
           <label class="block font-bold text-slate-800 flex items-center gap-1">
             <span>🏢</span> Building / Storefront Photo (Main Photo) *
@@ -312,11 +303,6 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Social Media / Messenger Profile</label>
-          <input type="text" id="newBizSocial" placeholder="e.g. maria.santos or fb.com/mariasantos" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-
-        <div>
           <label class="block font-bold text-slate-700 mb-1">Barangay / Address *</label>
           <input type="text" id="newBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
         </div>
@@ -331,7 +317,7 @@
           </select>
         </div>
 
-        <!-- Google Maps Coordinates Card -->
+        <!-- Coordinates Card -->
         <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-1.5">
           <div class="flex justify-between items-center">
             <label class="block font-bold text-blue-950">📍 Google Maps Coordinates</label>
@@ -366,7 +352,6 @@
       <form id="editBusinessForm" class="space-y-3 text-xs">
         <input type="hidden" id="editOriginalId">
         
-        <!-- Plate Scanner (Edit Mode) -->
         <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
           <label class="block font-bold text-amber-950 flex items-center gap-1">
             <span>📸</span> Snap Plate to Update ID
@@ -382,7 +367,6 @@
           <input type="text" id="editBizId" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-amber-700 focus:ring-2 focus:ring-amber-500">
         </div>
 
-        <!-- Replace Storefront / Building Photo -->
         <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
           <label class="block font-bold text-slate-800 flex items-center gap-1">
             <span>🏢</span> Replace Storefront / Building Photo
@@ -406,11 +390,6 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Social Media / Messenger Profile</label>
-          <input type="text" id="editBizSocial" placeholder="e.g. maria.santos or fb.com/mariasantos" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
-        </div>
-
-        <div>
           <label class="block font-bold text-slate-700 mb-1">Barangay / Address *</label>
           <input type="text" id="editBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
         </div>
@@ -425,7 +404,7 @@
           </select>
         </div>
 
-        <!-- Google Maps Coordinates Card (Edit) -->
+        <!-- Coordinates Card (Edit) -->
         <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
           <div class="flex justify-between items-center">
             <label class="block font-bold text-amber-950">📍 Update Google Maps Coordinates</label>
@@ -496,7 +475,6 @@
         return { lat: ISABEL_CENTER[0], lon: ISABEL_CENTER[1] };
       }
 
-      // Auto-swap if Latitude was input as ~124 and Longitude as ~10
       if (lat > 90 && lon < 90) {
         const temp = lat;
         lat = lon;
@@ -534,7 +512,6 @@
       }
 
       const noticeDispatchTime = getFormattedTimestamp();
-
       return `[ISABEL BPLO OFFICIAL NOTICE]\n\nDear ${biz.owner},\n\nEstablishment: ${biz.name}\nBusiness ID: ${biz.id}\nAddress: ${biz.address}\nCurrent Status: ${norm.toUpperCase()}\n\n${statusMsg}\n\nInspected On: ${biz.timestamp || 'N/A'}\nNotice Sent: ${noticeDispatchTime}\nOfficer: ${activeInspector}`;
     }
 
@@ -551,37 +528,6 @@
         : `sms:${separator}body=${encodeURIComponent(message)}`;
 
       window.location.href = smsUrl;
-    };
-
-    function sanitizeMessengerUsername(val) {
-      if (!val || val === "N/A") return "";
-      let clean = val.trim();
-      clean = clean.replace(/^(https?:\/\/)?(www\.)?(facebook\.com|fb\.com|m\.me)\//i, '');
-      clean = clean.replace(/^\/|\/$/g, '');
-      return clean;
-    }
-
-    window.sendNoticeMessenger = function() {
-      const biz = getSelectedBusiness();
-      if (!biz) return alert("Please select a business first.");
-
-      const message = generateNoticeText(biz);
-
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(message).catch(() => {});
-      }
-
-      const rawSocial = biz.social || "";
-      const cleanUser = sanitizeMessengerUsername(rawSocial);
-
-      if (cleanUser) {
-        window.open(`https://m.me/${cleanUser}`, '_blank');
-        alert("📋 Notice copied to clipboard!\nOpening direct chat with " + cleanUser + " — just paste your message.");
-      } else {
-        const encodedMsg = encodeURIComponent(message);
-        window.open(`https://www.messenger.com/t/?text=${encodedMsg}`, '_blank');
-        alert("📋 Notice copied to clipboard!\nSelect a recipient and paste the notice.");
-      }
     };
 
     window.parseGmapsCoords = function(mode = 'new') {
@@ -609,17 +555,12 @@
       }
     };
 
-    // TARGETED PLATE OCR: CROPS OUT YEAR & SIGNATURE, AUTO-FILLS ID FIELD
     window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
       const file = inputElement.files[0];
       if (!file) return;
 
-      const statusLabel = mode === 'new' 
-        ? document.getElementById('newBizOcrStatus') 
-        : document.getElementById('editBizOcrStatus');
-      const targetIdInput = mode === 'new' 
-        ? document.getElementById('newBizId') 
-        : document.getElementById('editBizId');
+      const statusLabel = mode === 'new' ? document.getElementById('newBizOcrStatus') : document.getElementById('editBizOcrStatus');
+      const targetIdInput = mode === 'new' ? document.getElementById('newBizId') : document.getElementById('editBizId');
 
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
@@ -647,10 +588,9 @@
             const d = imgData.data;
             for (let i = 0; i < d.length; i += 4) {
               const avg = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-              const val = avg > 130 ? 255 : 0;
-              d[i] = val;
-              d[i + 1] = val;
-              d[i + 2] = val;
+              d[i] = avg > 130 ? 255 : 0;
+              d[i + 1] = d[i];
+              d[i + 2] = d[i];
             }
             ctx.putImageData(imgData, 0, 0);
             canvas.toBlob(resolve, 'image/jpeg', 0.95);
@@ -667,14 +607,12 @@
         });
 
         let detectedId = "";
-
         if (data.words && data.words.length > 0) {
           const candidates = data.words
-            .map(w => {
-              const cleaned = w.text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1').replace(/[^0-9]/g, '');
-              const height = (w.bbox.y1 - w.bbox.y0) || 0;
-              return { text: cleaned, height: height };
-            })
+            .map(w => ({
+              text: w.text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1').replace(/[^0-9]/g, ''),
+              height: (w.bbox.y1 - w.bbox.y0) || 0
+            }))
             .filter(w => w.text.length >= 2 && w.text.length <= 6 && !/^(2024|2025|2026|2027|2028)$/.test(w.text));
 
           candidates.sort((a, b) => b.height - a.height);
@@ -682,11 +620,7 @@
         }
 
         if (!detectedId) {
-          const rawMatches = (data.text || "")
-            .replace(/[Oo]/g, '0')
-            .replace(/[lI]/g, '1')
-            .match(/\b\d{2,6}\b/g) || [];
-
+          const rawMatches = (data.text || "").replace(/[Oo]/g, '0').replace(/[lI]/g, '1').match(/\b\d{2,6}\b/g) || [];
           const validMatches = rawMatches.filter(n => !/^(2024|2025|2026|2027|2028)$/.test(n));
           if (validMatches.length > 0) detectedId = validMatches[0];
         }
@@ -698,23 +632,19 @@
             statusLabel.className = "text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1";
             statusLabel.innerHTML = `<span>✅</span> <span>Auto-Extracted Plate ID: <b>${detectedId}</b></span>`;
           }
-        } else {
-          if (statusLabel) {
-            statusLabel.classList.remove('animate-pulse');
-            statusLabel.className = "text-[11px] font-semibold text-slate-500 mt-1";
-            statusLabel.textContent = "ℹ️ Plate ID unclear. You can type it manually.";
-          }
+        } else if (statusLabel) {
+          statusLabel.classList.remove('animate-pulse');
+          statusLabel.className = "text-[11px] font-semibold text-slate-500 mt-1";
+          statusLabel.textContent = "ℹ️ Plate ID unclear. You can type it manually.";
         }
       } catch (err) {
         if (statusLabel) statusLabel.classList.add('hidden');
       }
     };
 
-    // AUTO-DETECT CLIPBOARD COORDS WHEN RETURNING FROM GOOGLE MAPS
     async function autoDetectClipboardCoords() {
       const isAddOpen = document.getElementById('addBusinessModal').style.display === 'flex';
       const isEditOpen = document.getElementById('editBusinessModal').style.display === 'flex';
-
       if (!isAddOpen && !isEditOpen) return;
 
       try {
@@ -724,7 +654,6 @@
 
           if (match) {
             const clean = sanitizeCoordinates(match[1], match[2]);
-
             if (isAddOpen) {
               const currentLat = parseFloat(document.getElementById('newBizLat').value);
               if (currentLat !== clean.lat) {
@@ -762,7 +691,6 @@
       const imgElem = document.getElementById('cardImage');
       const nameElem = document.getElementById('cardName');
       if (!imgElem || !imgElem.src) return;
-
       document.getElementById('lightboxImage').src = imgElem.src;
       document.getElementById('lightboxCaption').textContent = nameElem ? nameElem.textContent : 'Storefront Image';
       toggleModal('imageLightboxModal', true);
@@ -786,9 +714,6 @@
       
       const cleanPhone = String(target.phone || '').trim();
       document.getElementById('editBizPhone').value = (cleanPhone === 'N/A' || cleanPhone === 'undefined') ? '' : cleanPhone;
-      
-      const cleanSocial = String(target.social || '').trim();
-      document.getElementById('editBizSocial').value = (cleanSocial === 'N/A' || cleanSocial === 'undefined') ? '' : cleanSocial;
 
       document.getElementById('editBizAddress').value = target.address || '';
       document.getElementById('editBizStatus').value = normalizeStatus(target.status);
@@ -951,7 +876,7 @@
 
       localStorage.removeItem(OFFLINE_QUEUE_KEY);
       updateOfflineBadge();
-      alert("📡 Offline field logs auto-synced to Google Drive Subfolders & Sheets!");
+      alert("📡 Offline field logs auto-synced to Google Sheets!");
       setTimeout(async () => { await loadBusinesses(); }, 1500);
     }
 
@@ -975,7 +900,6 @@
           if (Array.isArray(data) && data.length > 0) {
             const remoteData = data.map((b, index) => {
               const rawPhone = String(b.phone || b["Phone Number"] || b["Phone"] || "").trim();
-              const rawSocial = String(b.social || b["Social Media"] || b["Messenger"] || "").trim();
               const rawAddress = String(b.address || b["Barangay Address"] || b["Address"] || b["Barangay / Address"] || "").trim();
               const rawId = String(b.id || b["Business ID"] || "BIZ-" + index).trim();
               const rawName = String(b.name || b["Business Name"] || "").trim();
@@ -987,7 +911,6 @@
                 name: rawName,
                 owner: String(b.owner || b["Owner Name"] || "").trim(),
                 phone: (rawPhone !== '' && rawPhone !== 'undefined') ? rawPhone : "N/A",
-                social: (rawSocial !== '' && rawSocial !== 'undefined') ? rawSocial : "N/A",
                 address: rawAddress,
                 status: normalizeStatus(b.status || b["Permit Status"]),
                 timestamp: String(b.timestamp || b["Timestamp"] || getFormattedTimestamp()).trim(),
@@ -1009,7 +932,6 @@
                   name: b.name + " (Pending Sync)",
                   owner: b.owner,
                   phone: b.phone,
-                  social: b.social,
                   address: b.address,
                   status: normalizeStatus(b.status),
                   timestamp: b.timestamp,
@@ -1090,8 +1012,6 @@
         document.getElementById('cardOwner').textContent = '-';
         document.getElementById('cardPhone').textContent = '-';
         document.getElementById('cardPhone').href = '#';
-        document.getElementById('cardSocial').textContent = '-';
-        document.getElementById('cardSocial').href = '#';
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardInspector').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
@@ -1108,11 +1028,6 @@
       const phoneElem = document.getElementById('cardPhone');
       phoneElem.textContent = biz.phone || 'N/A';
       phoneElem.href = biz.phone && biz.phone !== 'N/A' ? "tel:" + String(biz.phone).replace(/[^0-9+]/g, '') : '#';
-
-      const socialElem = document.getElementById('cardSocial');
-      const cleanUser = sanitizeMessengerUsername(biz.social);
-      socialElem.textContent = biz.social || 'N/A';
-      socialElem.href = cleanUser ? `https://m.me/${cleanUser}` : '#';
 
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardInspector').textContent = biz.inspector || "Officer Ashbel Espenido";
@@ -1143,7 +1058,6 @@
 
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase().trim();
-      
       if (!q) {
         renderBusinessList(businesses, selectElem.value);
         return;
@@ -1154,7 +1068,6 @@
         String(b.name || '').toLowerCase().includes(q) || 
         String(b.owner || '').toLowerCase().includes(q) || 
         String(b.phone || '').toLowerCase().includes(q) || 
-        String(b.social || '').toLowerCase().includes(q) || 
         String(b.address || '').toLowerCase().includes(q) || 
         String(b.inspector || '').toLowerCase().includes(q)
       );
@@ -1245,7 +1158,7 @@
       }
     });
 
-    // 1. ADD BUSINESS: Full 12-field mapping matching Columns A to L
+    // 1. ADD BUSINESS (No Social Media)
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector login required.");
@@ -1269,7 +1182,6 @@
 
         const targetRes = 3840;
         const phoneInput = document.getElementById('newBizPhone').value.trim();
-        const socialInput = document.getElementById('newBizSocial').value.trim();
         
         const rawCoords = document.getElementById('gmapsCoordInput').value.trim();
         const coordMatch = rawCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
@@ -1294,14 +1206,12 @@
 
         const stampedImage = await processHighMbPhoto(chosenFile, bizData, targetRes) || FALLBACK_IMAGE;
 
-        // Correctly mapped fields (Social Media is Column E, Barangay is Column F)
         const newBiz = {
           action: "addBusiness",
           id: bizData.id,
           name: bizData.name,
           owner: bizData.owner,
           phone: phoneInput !== '' ? phoneInput : "N/A",
-          social: socialInput !== '' ? socialInput : "N/A",
           address: bizData.address,
           status: normalizeStatus(document.getElementById('newBizStatus').value),
           timestamp: bizData.timestamp,
@@ -1312,7 +1222,6 @@
           uniqueKey: "LOCAL_" + bizData.id + "_" + Date.now()
         };
 
-        // Render immediately in frontend
         businesses.unshift(newBiz);
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
         renderBusinessList(businesses, newBiz.uniqueKey);
@@ -1336,7 +1245,7 @@
       }
     });
 
-    // 2. EDIT BUSINESS: Direct coordinate reading without un-synced cloud overwrite
+    // 2. EDIT BUSINESS (No Social Media)
     document.getElementById('editBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector session required.");
@@ -1356,10 +1265,8 @@
 
         const targetRes = 3840;
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
-        const socialInputVal = document.getElementById('editBizSocial').value.trim();
         const addressInputVal = document.getElementById('editBizAddress').value.trim();
 
-        // Always read the visible coordinate text input box directly
         const rawCoords = document.getElementById('editGmapsCoordInput').value.trim();
         const coordMatch = rawCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
         
@@ -1384,7 +1291,6 @@
           name: document.getElementById('editBizName').value.trim(),
           owner: document.getElementById('editBizOwner').value.trim(),
           phone: phoneInputVal !== '' ? String(phoneInputVal) : "N/A",
-          social: socialInputVal !== '' ? String(socialInputVal) : "N/A",
           address: addressInputVal !== '' ? addressInputVal : businesses[targetIndex].address,
           status: normalizeStatus(document.getElementById('editBizStatus').value),
           timestamp: getFormattedTimestamp(),
@@ -1399,7 +1305,6 @@
         }
         updatedData.image = photoUrl;
 
-        // Apply to local memory immediately
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
@@ -1415,8 +1320,6 @@
         map.setView([cleanCoords.lat, cleanCoords.lon], 16);
 
         toggleModal('editBusinessModal', false);
-        
-        // Sync to cloud in the background without reloading and overriding
         sendCloudAction(updatedData);
         alert(`✏️ Record updated!\nLatitude: ${cleanCoords.lat}\nLongitude: ${cleanCoords.lon}`);
 
@@ -1527,11 +1430,11 @@
 
     window.exportToExcel = function() {
       if (businesses.length === 0) return alert("No business data available to export.");
-      let csv = "Business ID,Business Name,Owner Name,Phone Number,Social Media,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
+      let csv = "Business ID,Business Name,Owner Name,Phone Number,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
       businesses.forEach(b => {
         const cleanTimestamp = (b.timestamp || '').replace(/,/g, '');
         const cleanCoords = sanitizeCoordinates(b.lat, b.lon);
-        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.social || 'N/A'}","${b.address}","${normalizeStatus(b.status)}","${cleanTimestamp}","${cleanCoords.lat}","${cleanCoords.lon}","${b.inspector || 'Admin'}"\n`;
+        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${normalizeStatus(b.status)}","${cleanTimestamp}","${cleanCoords.lat}","${cleanCoords.lon}","${b.inspector || 'Admin'}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
@@ -1549,7 +1452,6 @@
     loadBusinesses();
     syncOfflineQueue();
 
-    // Register Service Worker for PWA Installation
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
