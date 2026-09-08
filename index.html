@@ -322,8 +322,8 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Permit Status</label>
-          <select id="newBizStatus" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold">
+          <label class="block font-bold text-slate-700 mb-1">Permit Status *</label>
+          <select id="newBizStatus" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl outline-none font-semibold text-slate-800">
             <option value="Compliant" selected>🟢 Active Permit</option>
             <option value="No Permit">🔴 No Permit</option>
             <option value="Expired">🟡 Expired</option>
@@ -331,15 +331,15 @@
           </select>
         </div>
 
-        <!-- Google Maps Offline Auto-Paste Card -->
+        <!-- Google Maps Coordinates Card -->
         <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-1.5">
           <div class="flex justify-between items-center">
             <label class="block font-bold text-blue-950">📍 Google Maps Coordinates</label>
             <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-blue-700 underline font-bold">Open Maps ↗</a>
           </div>
           <div class="flex gap-1.5">
-            <input type="text" id="gmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-blue-300 rounded-lg outline-none font-mono text-xs">
-            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
+            <input type="text" id="gmapsCoordInput" placeholder="10.928000, 124.438500" class="w-full p-2 bg-white border border-blue-300 rounded-lg outline-none font-mono text-xs">
+            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
               Apply
             </button>
           </div>
@@ -412,12 +412,12 @@
 
         <div>
           <label class="block font-bold text-slate-700 mb-1">Barangay / Address *</label>
-          <input type="text" id="editBizAddress" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+          <input type="text" id="editBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Permit Status</label>
-          <select id="editBizStatus" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold">
+          <label class="block font-bold text-slate-700 mb-1">Permit Status *</label>
+          <select id="editBizStatus" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl outline-none font-semibold text-slate-800">
             <option value="Compliant">🟢 Active Permit</option>
             <option value="No Permit">🔴 No Permit</option>
             <option value="Expired">🟡 Expired</option>
@@ -425,15 +425,15 @@
           </select>
         </div>
 
-        <!-- Google Maps Offline Auto-Paste Card (Edit) -->
+        <!-- Google Maps Coordinates Card (Edit) -->
         <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
           <div class="flex justify-between items-center">
             <label class="block font-bold text-amber-950">📍 Update Google Maps Coordinates</label>
             <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-amber-800 underline font-bold">Open Maps ↗</a>
           </div>
           <div class="flex gap-1.5">
-            <input type="text" id="editGmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none font-mono text-xs">
-            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
+            <input type="text" id="editGmapsCoordInput" placeholder="10.928000, 124.438500" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none font-mono text-xs">
+            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
               Apply
             </button>
           </div>
@@ -453,7 +453,7 @@
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYx8fkc7Mt8if8co0gcIA3UZ4XgjGo4js1aiU2Y7Ao8h9xwwfG4xrRyFTO2koWnHPd/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
     const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
-    const ISABEL_CENTER = [10.9280, 124.4385];
+    const ISABEL_CENTER = [10.928000, 124.438500];
     const MASTER_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
@@ -479,6 +479,36 @@
       "Compliant": "#10b981"
     };
 
+    function normalizeStatus(raw) {
+      if (!raw) return "No Permit";
+      const s = String(raw).trim().toLowerCase();
+      if (s === "compliant" || s === "active" || s.includes("active")) return "Compliant";
+      if (s === "expired") return "Expired";
+      if (s.includes("pending") || s.includes("follow")) return "Pending Follow-Up";
+      return "No Permit";
+    }
+
+    function sanitizeCoordinates(latVal, lonVal) {
+      let lat = parseFloat(latVal);
+      let lon = parseFloat(lonVal);
+
+      if (isNaN(lat) || isNaN(lon)) {
+        return { lat: ISABEL_CENTER[0], lon: ISABEL_CENTER[1] };
+      }
+
+      // Auto-swap if Latitude was input as ~124 and Longitude as ~10
+      if (lat > 90 && lon < 90) {
+        const temp = lat;
+        lat = lon;
+        lon = temp;
+      }
+
+      if (lat < -90 || lat > 90) lat = ISABEL_CENTER[0];
+      if (lon < -180 || lon > 180) lon = ISABEL_CENTER[1];
+
+      return { lat: parseFloat(lat.toFixed(6)), lon: parseFloat(lon.toFixed(6)) };
+    }
+
     const map = L.map('map').setView(ISABEL_CENTER, 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
@@ -492,11 +522,12 @@
 
     function generateNoticeText(biz) {
       let statusMsg = "";
-      if (biz.status === "No Permit") {
+      const norm = normalizeStatus(biz.status);
+      if (norm === "No Permit") {
         statusMsg = "You are currently operating with NO VALID BUSINESS PERMIT on record. Please settle your compliance at the Isabel BPLO immediately to avoid penalties.";
-      } else if (biz.status === "Expired") {
+      } else if (norm === "Expired") {
         statusMsg = "Your Business Permit is EXPIRED. Please process your annual renewal at the Isabel BPLO as soon as possible.";
-      } else if (biz.status === "Pending Follow-Up") {
+      } else if (norm === "Pending Follow-Up") {
         statusMsg = "Your Business Permit status is PENDING COMPLIANCE. Please submit the necessary documents to the Isabel BPLO.";
       } else {
         statusMsg = "Your Business Permit status is COMPLIANT (Active). Thank you for keeping your establishment updated!";
@@ -504,7 +535,7 @@
 
       const noticeDispatchTime = getFormattedTimestamp();
 
-      return `[ISABEL BPLO OFFICIAL NOTICE]\n\nDear ${biz.owner},\n\nEstablishment: ${biz.name}\nBusiness ID: ${biz.id}\nAddress: ${biz.address}\nCurrent Status: ${biz.status.toUpperCase()}\n\n${statusMsg}\n\nInspected On: ${biz.timestamp || 'N/A'}\nNotice Sent: ${noticeDispatchTime}\nOfficer: ${activeInspector}`;
+      return `[ISABEL BPLO OFFICIAL NOTICE]\n\nDear ${biz.owner},\n\nEstablishment: ${biz.name}\nBusiness ID: ${biz.id}\nAddress: ${biz.address}\nCurrent Status: ${norm.toUpperCase()}\n\n${statusMsg}\n\nInspected On: ${biz.timestamp || 'N/A'}\nNotice Sent: ${noticeDispatchTime}\nOfficer: ${activeInspector}`;
     }
 
     window.sendNoticeSMS = function() {
@@ -559,19 +590,20 @@
       
       const match = val.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
       if (match) {
-        const lat = parseFloat(match[1]).toFixed(6);
-        const lon = parseFloat(match[2]).toFixed(6);
+        const clean = sanitizeCoordinates(match[1], match[2]);
         
         if (mode === 'new') {
-          document.getElementById('newBizLat').value = lat;
-          document.getElementById('newBizLon').value = lon;
-          document.getElementById('newCoordStatus').textContent = `Applied: ${lat}, ${lon}`;
+          document.getElementById('newBizLat').value = clean.lat;
+          document.getElementById('newBizLon').value = clean.lon;
+          document.getElementById('gmapsCoordInput').value = `${clean.lat}, ${clean.lon}`;
+          document.getElementById('newCoordStatus').textContent = `Applied: ${clean.lat}, ${clean.lon}`;
         } else {
-          document.getElementById('editBizLat').value = lat;
-          document.getElementById('editBizLon').value = lon;
-          document.getElementById('editCoordStatus').textContent = `Applied: ${lat}, ${lon}`;
+          document.getElementById('editBizLat').value = clean.lat;
+          document.getElementById('editBizLon').value = clean.lon;
+          document.getElementById('editGmapsCoordInput').value = `${clean.lat}, ${clean.lon}`;
+          document.getElementById('editCoordStatus').textContent = `Applied: ${clean.lat}, ${clean.lon}`;
         }
-        alert(`✅ Coordinates Applied:\nLat: ${lat}\nLon: ${lon}`);
+        alert(`✅ Coordinates Applied:\nLatitude: ${clean.lat}\nLongitude: ${clean.lon}`);
       } else {
         alert("❌ Invalid format! Please paste coordinates like: 10.928123, 124.438541");
       }
@@ -691,24 +723,23 @@
           const match = clipText.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
 
           if (match) {
-            const lat = parseFloat(match[1]).toFixed(6);
-            const lon = parseFloat(match[2]).toFixed(6);
+            const clean = sanitizeCoordinates(match[1], match[2]);
 
             if (isAddOpen) {
-              const currentLat = document.getElementById('newBizLat').value;
-              if (currentLat !== lat) {
-                document.getElementById('newBizLat').value = lat;
-                document.getElementById('newBizLon').value = lon;
-                document.getElementById('gmapsCoordInput').value = `${lat}, ${lon}`;
-                document.getElementById('newCoordStatus').textContent = `✨ Auto-Applied from GMaps: ${lat}, ${lon}`;
+              const currentLat = parseFloat(document.getElementById('newBizLat').value);
+              if (currentLat !== clean.lat) {
+                document.getElementById('newBizLat').value = clean.lat;
+                document.getElementById('newBizLon').value = clean.lon;
+                document.getElementById('gmapsCoordInput').value = `${clean.lat}, ${clean.lon}`;
+                document.getElementById('newCoordStatus').textContent = `✨ Auto-Applied from GMaps: ${clean.lat}, ${clean.lon}`;
               }
             } else if (isEditOpen) {
-              const currentLat = document.getElementById('editBizLat').value;
-              if (currentLat !== lat) {
-                document.getElementById('editBizLat').value = lat;
-                document.getElementById('editBizLon').value = lon;
-                document.getElementById('editGmapsCoordInput').value = `${lat}, ${lon}`;
-                document.getElementById('editCoordStatus').textContent = `✨ Auto-Applied from GMaps: ${lat}, ${lon}`;
+              const currentLat = parseFloat(document.getElementById('editBizLat').value);
+              if (currentLat !== clean.lat) {
+                document.getElementById('editBizLat').value = clean.lat;
+                document.getElementById('editBizLon').value = clean.lon;
+                document.getElementById('editGmapsCoordInput').value = `${clean.lat}, ${clean.lon}`;
+                document.getElementById('editCoordStatus').textContent = `✨ Auto-Applied from GMaps: ${clean.lat}, ${clean.lon}`;
               }
             }
           }
@@ -746,6 +777,8 @@
       const target = getSelectedBusiness();
       if (!target) return alert("Please select a business to edit.");
 
+      const cleanCoords = sanitizeCoordinates(target.lat, target.lon);
+
       document.getElementById('editOriginalId').value = String(target.id).trim();
       document.getElementById('editBizId').value = String(target.id).trim();
       document.getElementById('editBizName').value = target.name || '';
@@ -758,13 +791,14 @@
       document.getElementById('editBizSocial').value = (cleanSocial === 'N/A' || cleanSocial === 'undefined') ? '' : cleanSocial;
 
       document.getElementById('editBizAddress').value = target.address || '';
-      document.getElementById('editBizStatus').value = target.status || 'No Permit';
-      document.getElementById('editBizLat').value = target.lat;
-      document.getElementById('editBizLon').value = target.lon;
+      document.getElementById('editBizStatus').value = normalizeStatus(target.status);
+      
+      document.getElementById('editBizLat').value = cleanCoords.lat;
+      document.getElementById('editBizLon').value = cleanCoords.lon;
       
       const editCoordInput = document.getElementById('editGmapsCoordInput');
-      if (editCoordInput) editCoordInput.value = `${target.lat}, ${target.lon}`;
-      document.getElementById('editCoordStatus').textContent = `Current: ${target.lat}, ${target.lon}`;
+      if (editCoordInput) editCoordInput.value = `${cleanCoords.lat}, ${cleanCoords.lon}`;
+      document.getElementById('editCoordStatus').textContent = `Current: ${cleanCoords.lat}, ${cleanCoords.lon}`;
 
       const ocrStatus = document.getElementById('editBizOcrStatus');
       if (ocrStatus) ocrStatus.classList.add('hidden');
@@ -785,8 +819,11 @@
         return;
       }
 
-      const compliantCount = list.filter(b => b.status === "Compliant").length;
-      const nonCompliantCount = list.filter(b => b.status === "No Permit" || b.status === "Expired").length;
+      const compliantCount = list.filter(b => normalizeStatus(b.status) === "Compliant").length;
+      const nonCompliantCount = list.filter(b => {
+        const s = normalizeStatus(b.status);
+        return s === "No Permit" || s === "Expired";
+      }).length;
       const rate = Math.round((compliantCount / total) * 100);
 
       document.getElementById('statCompliantRate').textContent = rate + "%";
@@ -918,7 +955,7 @@
       setTimeout(async () => { await loadBusinesses(); }, 1500);
     }
 
-    async function loadBusinesses(preventOverwriteId = null) {
+    async function loadBusinesses() {
       const currentSelectedKey = selectElem.value;
       const cached = localStorage.getItem(CACHED_BUSINESSES_KEY);
       if (cached) {
@@ -943,6 +980,8 @@
               const rawId = String(b.id || b["Business ID"] || "BIZ-" + index).trim();
               const rawName = String(b.name || b["Business Name"] || "").trim();
               
+              const cleanCoords = sanitizeCoordinates(b.lat || b["Latitude"], b.lon || b["Longitude"]);
+
               return {
                 id: rawId,
                 name: rawName,
@@ -950,44 +989,37 @@
                 phone: (rawPhone !== '' && rawPhone !== 'undefined') ? rawPhone : "N/A",
                 social: (rawSocial !== '' && rawSocial !== 'undefined') ? rawSocial : "N/A",
                 address: rawAddress,
-                status: String(b.status || b["Permit Status"] || "No Permit").trim(),
+                status: normalizeStatus(b.status || b["Permit Status"]),
                 timestamp: String(b.timestamp || b["Timestamp"] || getFormattedTimestamp()).trim(),
-                lat: parseFloat(b.lat || b["Latitude"]) || ISABEL_CENTER[0],
-                lon: parseFloat(b.lon || b["Longitude"]) || ISABEL_CENTER[1],
+                lat: cleanCoords.lat,
+                lon: cleanCoords.lon,
                 image: String(b.image || b["Photo URL"] || FALLBACK_IMAGE),
                 inspector: String(b.inspector || b["Inspector Name"] || b["Inspector"] || activeInspector),
                 uniqueKey: "REMOTE_" + rawId + "_" + rawName + "_" + index
               };
             });
 
-            if (preventOverwriteId) {
-              const localProtected = businesses.find(b => String(b.id).trim().toLowerCase() === String(preventOverwriteId).trim().toLowerCase());
-              if (localProtected) {
-                const remoteIdx = remoteData.findIndex(b => String(b.id).trim().toLowerCase() === String(preventOverwriteId).trim().toLowerCase());
-                if (remoteIdx !== -1) {
-                  remoteData[remoteIdx] = { ...remoteData[remoteIdx], ...localProtected };
-                }
-              }
-            }
-
             let offlineQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
             let pendingItems = offlineQueue
               .filter(item => item.action === "addBusiness")
-              .map((b, idx) => ({
-                id: b.id,
-                name: b.name + " (Pending Sync)",
-                owner: b.owner,
-                phone: b.phone,
-                social: b.social,
-                address: b.address,
-                status: b.status,
-                timestamp: b.timestamp,
-                lat: b.lat,
-                lon: b.lon,
-                image: b.image || FALLBACK_IMAGE,
-                inspector: b.inspector || activeInspector,
-                uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
-              }));
+              .map((b, idx) => {
+                const cleanCoords = sanitizeCoordinates(b.lat, b.lon);
+                return {
+                  id: b.id,
+                  name: b.name + " (Pending Sync)",
+                  owner: b.owner,
+                  phone: b.phone,
+                  social: b.social,
+                  address: b.address,
+                  status: normalizeStatus(b.status),
+                  timestamp: b.timestamp,
+                  lat: cleanCoords.lat,
+                  lon: cleanCoords.lon,
+                  image: b.image || FALLBACK_IMAGE,
+                  inspector: b.inspector || activeInspector,
+                  uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
+                };
+              });
 
             const allMap = new Map();
             [...pendingItems, ...remoteData].forEach(item => allMap.set(item.uniqueKey, item));
@@ -1031,7 +1063,9 @@
     }
 
     function addMarker(biz) {
-      const marker = L.circleMarker([biz.lat, biz.lon], {
+      const cleanCoords = sanitizeCoordinates(biz.lat, biz.lon);
+
+      const marker = L.circleMarker([cleanCoords.lat, cleanCoords.lon], {
         radius: 8,
         fillColor: colorMap[biz.status] || '#6b7280',
         color: '#ffffff',
@@ -1064,6 +1098,9 @@
         document.getElementById('cardImage').src = FALLBACK_IMAGE;
         return;
       }
+
+      const cleanCoords = sanitizeCoordinates(biz.lat, biz.lon);
+
       document.getElementById('cardName').textContent = biz.name;
       document.getElementById('cardId').textContent = biz.id;
       document.getElementById('cardOwner').textContent = biz.owner;
@@ -1080,14 +1117,15 @@
       document.getElementById('cardAddress').textContent = biz.address;
       document.getElementById('cardInspector').textContent = biz.inspector || "Officer Ashbel Espenido";
       
+      const normStatus = normalizeStatus(biz.status);
       const statusBadge = document.getElementById('cardStatus');
-      statusBadge.textContent = biz.status;
-      statusBadge.style.backgroundColor = colorMap[biz.status] || '#6b7280';
+      statusBadge.textContent = normStatus;
+      statusBadge.style.backgroundColor = colorMap[normStatus] || '#6b7280';
 
       const imgElem = document.getElementById('cardImage');
       imgElem.src = biz.image && biz.image.trim() !== '' && !biz.image.includes('placehold.co') ? biz.image : FALLBACK_IMAGE;
 
-      document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + biz.lat + "," + biz.lon;
+      document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + cleanCoords.lat + "," + cleanCoords.lon;
     }
 
     selectElem.addEventListener('change', (e) => {
@@ -1095,8 +1133,9 @@
       const target = businesses.find(b => String(b.uniqueKey) === String(selectedKey));
       if (target) {
         updateDetailCard(target);
+        const cleanCoords = sanitizeCoordinates(target.lat, target.lon);
         if (markers[target.uniqueKey]) {
-          map.panTo([target.lat, target.lon]);
+          map.panTo([cleanCoords.lat, cleanCoords.lon]);
           markers[target.uniqueKey].openPopup();
         }
       }
@@ -1206,6 +1245,7 @@
       }
     });
 
+    // 1. ADD BUSINESS: Full 12-field mapping matching Columns A to L
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector login required.");
@@ -1231,16 +1271,18 @@
         const phoneInput = document.getElementById('newBizPhone').value.trim();
         const socialInput = document.getElementById('newBizSocial').value.trim();
         
-        const rawPastedCoords = document.getElementById('gmapsCoordInput').value.trim();
-        const coordMatch = rawPastedCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+        const rawCoords = document.getElementById('gmapsCoordInput').value.trim();
+        const coordMatch = rawCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
         
-        let finalLat = parseFloat(document.getElementById('newBizLat').value) || ISABEL_CENTER[0];
-        let finalLon = parseFloat(document.getElementById('newBizLon').value) || ISABEL_CENTER[1];
+        let initialLat = document.getElementById('newBizLat').value;
+        let initialLon = document.getElementById('newBizLon').value;
 
         if (coordMatch) {
-          finalLat = parseFloat(coordMatch[1]);
-          finalLon = parseFloat(coordMatch[2]);
+          initialLat = coordMatch[1];
+          initialLon = coordMatch[2];
         }
+
+        const cleanCoords = sanitizeCoordinates(initialLat, initialLon);
 
         const bizData = {
           id: inputId,
@@ -1252,6 +1294,7 @@
 
         const stampedImage = await processHighMbPhoto(chosenFile, bizData, targetRes) || FALLBACK_IMAGE;
 
+        // Correctly mapped fields (Social Media is Column E, Barangay is Column F)
         const newBiz = {
           action: "addBusiness",
           id: bizData.id,
@@ -1260,13 +1303,21 @@
           phone: phoneInput !== '' ? phoneInput : "N/A",
           social: socialInput !== '' ? socialInput : "N/A",
           address: bizData.address,
-          status: document.getElementById('newBizStatus').value,
+          status: normalizeStatus(document.getElementById('newBizStatus').value),
           timestamp: bizData.timestamp,
-          lat: finalLat,
-          lon: finalLon,
+          lat: cleanCoords.lat,
+          lon: cleanCoords.lon,
           image: stampedImage,
-          inspector: activeInspector
+          inspector: activeInspector,
+          uniqueKey: "LOCAL_" + bizData.id + "_" + Date.now()
         };
+
+        // Render immediately in frontend
+        businesses.unshift(newBiz);
+        localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
+        renderBusinessList(businesses, newBiz.uniqueKey);
+        updateDashboardStats(businesses);
+        map.setView([cleanCoords.lat, cleanCoords.lon], 16);
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
@@ -1274,11 +1325,9 @@
         const ocrStatus = document.getElementById('newBizOcrStatus');
         if (ocrStatus) ocrStatus.classList.add('hidden');
 
-        const synced = await sendCloudAction(newBiz);
-        if (synced) alert("Successfully submitted " + newBiz.name + "!");
-        else alert("⚠️ Offline: Saved locally to phone. Will auto-sync when signal returns.");
-        
-        await loadBusinesses();
+        sendCloudAction(newBiz);
+        alert("✅ Establishment saved successfully!");
+
       } catch (err) {
         alert("An error occurred while saving.");
       } finally {
@@ -1287,6 +1336,7 @@
       }
     });
 
+    // 2. EDIT BUSINESS: Direct coordinate reading without un-synced cloud overwrite
     document.getElementById('editBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector session required.");
@@ -1309,20 +1359,22 @@
         const socialInputVal = document.getElementById('editBizSocial').value.trim();
         const addressInputVal = document.getElementById('editBizAddress').value.trim();
 
-        const rawPastedCoords = document.getElementById('editGmapsCoordInput').value.trim();
-        const coordMatch = rawPastedCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+        // Always read the visible coordinate text input box directly
+        const rawCoords = document.getElementById('editGmapsCoordInput').value.trim();
+        const coordMatch = rawCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
         
-        let finalLat = businesses[targetIndex].lat;
-        let finalLon = businesses[targetIndex].lon;
+        let initialLat = businesses[targetIndex].lat;
+        let initialLon = businesses[targetIndex].lon;
 
         if (coordMatch) {
-          finalLat = parseFloat(coordMatch[1]);
-          finalLon = parseFloat(coordMatch[2]);
+          initialLat = coordMatch[1];
+          initialLon = coordMatch[2];
         } else if (document.getElementById('editBizLat').value) {
-          finalLat = parseFloat(document.getElementById('editBizLat').value);
-          finalLon = parseFloat(document.getElementById('editBizLon').value);
+          initialLat = document.getElementById('editBizLat').value;
+          initialLon = document.getElementById('editBizLon').value;
         }
 
+        const cleanCoords = sanitizeCoordinates(initialLat, initialLon);
         const newId = document.getElementById('editBizId').value.trim();
 
         const updatedData = {
@@ -1334,10 +1386,10 @@
           phone: phoneInputVal !== '' ? String(phoneInputVal) : "N/A",
           social: socialInputVal !== '' ? String(socialInputVal) : "N/A",
           address: addressInputVal !== '' ? addressInputVal : businesses[targetIndex].address,
-          status: document.getElementById('editBizStatus').value,
+          status: normalizeStatus(document.getElementById('editBizStatus').value),
           timestamp: getFormattedTimestamp(),
-          lat: finalLat,
-          lon: finalLon,
+          lat: cleanCoords.lat,
+          lon: cleanCoords.lon,
           inspector: activeInspector
         };
 
@@ -1347,6 +1399,7 @@
         }
         updatedData.image = photoUrl;
 
+        // Apply to local memory immediately
         businesses[targetIndex] = {
           ...businesses[targetIndex],
           ...updatedData
@@ -1359,13 +1412,13 @@
           map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
         }
         addMarker(businesses[targetIndex]);
-        map.panTo([finalLat, finalLon]);
+        map.setView([cleanCoords.lat, cleanCoords.lon], 16);
 
         toggleModal('editBusinessModal', false);
-        await sendCloudAction(updatedData);
-        await loadBusinesses(newId);
         
-        alert("✏️ Record & Coordinates updated successfully!");
+        // Sync to cloud in the background without reloading and overriding
+        sendCloudAction(updatedData);
+        alert(`✏️ Record updated!\nLatitude: ${cleanCoords.lat}\nLongitude: ${cleanCoords.lon}`);
 
       } catch (err) {
         alert("An error occurred while updating.");
@@ -1477,7 +1530,8 @@
       let csv = "Business ID,Business Name,Owner Name,Phone Number,Social Media,Address,Status,Timestamp,Latitude,Longitude,Inspector\n";
       businesses.forEach(b => {
         const cleanTimestamp = (b.timestamp || '').replace(/,/g, '');
-        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.social || 'N/A'}","${b.address}","${b.status}","${cleanTimestamp}","${b.lat}","${b.lon}","${b.inspector || 'Admin'}"\n`;
+        const cleanCoords = sanitizeCoordinates(b.lat, b.lon);
+        csv += `"${b.id}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.social || 'N/A'}","${b.address}","${normalizeStatus(b.status)}","${cleanTimestamp}","${cleanCoords.lat}","${cleanCoords.lon}","${b.inspector || 'Admin'}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
