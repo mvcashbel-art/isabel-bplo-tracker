@@ -331,21 +331,15 @@
           </select>
         </div>
 
-        <!-- Google Maps Coordinates Card with Integrated Locate Me Button -->
-        <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-2">
+        <!-- Google Maps Offline Auto-Paste Card -->
+        <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-1.5">
           <div class="flex justify-between items-center">
-            <label class="block font-bold text-blue-950 flex items-center gap-1">
-              <span>📍</span> Google Maps Coordinates
-            </label>
+            <label class="block font-bold text-blue-950">📍 Google Maps Coordinates</label>
             <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-blue-700 underline font-bold">Open Maps ↗</a>
           </div>
-
           <div class="flex gap-1.5">
-            <button type="button" onclick="getCurrentDeviceLocation('new')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1 shrink-0 shadow-sm cursor-pointer transition">
-              <span id="newGpsIcon">🎯</span> Locate Me
-            </button>
             <input type="text" id="gmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-blue-300 rounded-lg outline-none font-mono text-xs">
-            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg font-bold text-xs shrink-0 shadow-sm cursor-pointer transition">
+            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
               Apply
             </button>
           </div>
@@ -418,7 +412,7 @@
 
         <div>
           <label class="block font-bold text-slate-700 mb-1">Barangay / Address *</label>
-          <input type="text" id="editBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+          <input type="text" id="editBizAddress" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
         </div>
 
         <div>
@@ -431,21 +425,15 @@
           </select>
         </div>
 
-        <!-- Google Maps Offline Auto-Paste Card (Edit) with Integrated Locate Me Button -->
-        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-2">
+        <!-- Google Maps Offline Auto-Paste Card (Edit) -->
+        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
           <div class="flex justify-between items-center">
-            <label class="block font-bold text-amber-950 flex items-center gap-1">
-              <span>📍</span> Update Google Maps Coordinates
-            </label>
+            <label class="block font-bold text-amber-950">📍 Update Google Maps Coordinates</label>
             <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-amber-800 underline font-bold">Open Maps ↗</a>
           </div>
-
           <div class="flex gap-1.5">
-            <button type="button" onclick="getCurrentDeviceLocation('edit')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1 shrink-0 shadow-sm cursor-pointer transition">
-              <span id="editGpsIcon">🎯</span> Locate Me
-            </button>
             <input type="text" id="editGmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none font-mono text-xs">
-            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-800 hover:bg-amber-900 text-white px-3.5 py-2 rounded-lg font-bold text-xs shrink-0 shadow-sm cursor-pointer transition">
+            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
               Apply
             </button>
           </div>
@@ -563,63 +551,6 @@
         window.open(`https://www.messenger.com/t/?text=${encodedMsg}`, '_blank');
         alert("📋 Notice copied to clipboard!\nSelect a recipient and paste the notice.");
       }
-    };
-
-    // Live Geolocation Trigger for Coordinates Input
-    window.getCurrentDeviceLocation = function(mode = 'new') {
-      if (!navigator.geolocation) {
-        alert("❌ GPS is not supported on this browser or device.");
-        return;
-      }
-
-      const iconId = mode === 'new' ? 'newGpsIcon' : 'editGpsIcon';
-      const iconElem = document.getElementById(iconId);
-      const statusElem = document.getElementById(mode === 'new' ? 'newCoordStatus' : 'editCoordStatus');
-      const inputElem = document.getElementById(mode === 'new' ? 'gmapsCoordInput' : 'editGmapsCoordInput');
-
-      if (iconElem) iconElem.textContent = '⏳';
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude.toFixed(6);
-          const lon = position.coords.longitude.toFixed(6);
-          const accuracy = Math.round(position.coords.accuracy);
-
-          if (mode === 'new') {
-            document.getElementById('newBizLat').value = lat;
-            document.getElementById('newBizLon').value = lon;
-          } else {
-            document.getElementById('editBizLat').value = lat;
-            document.getElementById('editBizLon').value = lon;
-          }
-
-          if (inputElem) inputElem.value = `${lat}, ${lon}`;
-          if (statusElem) statusElem.textContent = `🎯 Live GPS: ${lat}, ${lon} (±${accuracy}m)`;
-
-          if (iconElem) iconElem.textContent = '🎯';
-        },
-        (error) => {
-          if (iconElem) iconElem.textContent = '🎯';
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              alert("❌ Location permission denied. Please allow location access in your device settings.");
-              break;
-            case error.POSITION_UNAVAILABLE:
-              alert("❌ Location unavailable. Ensure Device GPS is turned on.");
-              break;
-            case error.TIMEOUT:
-              alert("❌ GPS timed out. Please try again outdoors.");
-              break;
-            default:
-              alert("❌ Unable to fetch current location.");
-          }
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 12000,
-          maximumAge: 0
-        }
-      );
     };
 
     window.parseGmapsCoords = function(mode = 'new') {
