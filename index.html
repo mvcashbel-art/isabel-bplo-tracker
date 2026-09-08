@@ -331,19 +331,24 @@
           </select>
         </div>
 
-        <!-- Google Maps Offline Auto-Paste Card -->
-        <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-1.5">
+        <!-- GPS Coordinates Card with Live Locate Me -->
+        <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-200 space-y-2">
           <div class="flex justify-between items-center">
-            <label class="block font-bold text-blue-950">📍 Google Maps Coordinates</label>
-            <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-blue-700 underline font-bold">Open Maps ↗</a>
+            <label class="block font-bold text-blue-950">📍 GPS Coordinates</label>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="getCurrentDeviceLocation('new')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1 cursor-pointer transition">
+                <span id="newGpsIcon">🎯</span> Locate Me
+              </button>
+              <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-blue-700 underline font-bold">Maps ↗</a>
+            </div>
           </div>
           <div class="flex gap-1.5">
-            <input type="text" id="gmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-blue-300 rounded-lg outline-none font-mono text-xs">
-            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
+            <input type="text" id="gmapsCoordInput" placeholder="Tap 'Locate Me' or paste coordinates" class="w-full p-2 bg-white border border-blue-300 rounded-lg outline-none font-mono text-xs">
+            <button type="button" onclick="parseGmapsCoords('new')" class="bg-blue-800 hover:bg-blue-900 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
               Apply
             </button>
           </div>
-          <div id="newCoordStatus" class="text-[10px] text-blue-800 font-mono font-medium">✨ Auto-pastes when switching back from Google Maps</div>
+          <div id="newCoordStatus" class="text-[10px] text-blue-800 font-mono font-medium">Default: 10.928000, 124.438500</div>
         </div>
 
         <input type="hidden" id="newBizLat" value="10.928000">
@@ -425,19 +430,24 @@
           </select>
         </div>
 
-        <!-- Google Maps Offline Auto-Paste Card (Edit) -->
-        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
+        <!-- GPS Coordinates Card with Live Locate Me (Edit) -->
+        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-2">
           <div class="flex justify-between items-center">
-            <label class="block font-bold text-amber-950">📍 Update Google Maps Coordinates</label>
-            <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-amber-800 underline font-bold">Open Maps ↗</a>
+            <label class="block font-bold text-amber-950">📍 Update GPS Coordinates</label>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="getCurrentDeviceLocation('edit')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1 cursor-pointer transition">
+                <span id="editGpsIcon">🎯</span> Locate Me
+              </button>
+              <a href="https://www.google.com/maps/@10.9280,124.4385,15z" target="_blank" class="text-[11px] text-amber-800 underline font-bold">Open Maps ↗</a>
+            </div>
           </div>
           <div class="flex gap-1.5">
-            <input type="text" id="editGmapsCoordInput" placeholder="Long-press in GMaps & copy coordinates" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none font-mono text-xs">
-            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
+            <input type="text" id="editGmapsCoordInput" placeholder="Tap 'Locate Me' or paste coordinates" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none font-mono text-xs">
+            <button type="button" onclick="parseGmapsCoords('edit')" class="bg-amber-800 hover:bg-amber-900 text-white px-3 py-1.5 rounded-lg font-bold shrink-0 shadow-xs cursor-pointer">
               Apply
             </button>
           </div>
-          <div id="editCoordStatus" class="text-[10px] text-amber-900 font-mono font-medium">✨ Auto-pastes when switching back from Google Maps</div>
+          <div id="editCoordStatus" class="text-[10px] text-amber-900 font-mono font-medium">Default: 10.928000, 124.438500</div>
         </div>
 
         <input type="hidden" id="editBizLat">
@@ -551,6 +561,62 @@
         window.open(`https://www.messenger.com/t/?text=${encodedMsg}`, '_blank');
         alert("📋 Notice copied to clipboard!\nSelect a recipient and paste the notice.");
       }
+    };
+
+    // Live Device Geolocation Trigger
+    window.getCurrentDeviceLocation = function(mode = 'new') {
+      if (!navigator.geolocation) {
+        alert("❌ GPS Geolocation is not supported on this browser or device.");
+        return;
+      }
+
+      const iconId = mode === 'new' ? 'newGpsIcon' : 'editGpsIcon';
+      const iconElem = document.getElementById(iconId);
+      if (iconElem) iconElem.textContent = '⏳';
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lon = position.coords.longitude.toFixed(6);
+          const accuracy = Math.round(position.coords.accuracy);
+
+          if (mode === 'new') {
+            document.getElementById('newBizLat').value = lat;
+            document.getElementById('newBizLon').value = lon;
+            document.getElementById('gmapsCoordInput').value = `${lat}, ${lon}`;
+            document.getElementById('newCoordStatus').textContent = `🎯 Live GPS: ${lat}, ${lon} (±${accuracy}m)`;
+          } else {
+            document.getElementById('editBizLat').value = lat;
+            document.getElementById('editBizLon').value = lon;
+            document.getElementById('editGmapsCoordInput').value = `${lat}, ${lon}`;
+            document.getElementById('editCoordStatus').textContent = `🎯 Live GPS: ${lat}, ${lon} (±${accuracy}m)`;
+          }
+
+          if (iconElem) iconElem.textContent = '🎯';
+          alert(`✅ GPS Locked!\nLatitude: ${lat}\nLongitude: ${lon}\nAccuracy: ±${accuracy} meters`);
+        },
+        (error) => {
+          if (iconElem) iconElem.textContent = '🎯';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              alert("❌ Location permission denied. Please allow location access in your browser settings.");
+              break;
+            case error.POSITION_UNAVAILABLE:
+              alert("❌ GPS signal unavailable. Please ensure Device Location is turned on.");
+              break;
+            case error.TIMEOUT:
+              alert("❌ GPS request timed out. Please try again outdoors.");
+              break;
+            default:
+              alert("❌ Unable to retrieve GPS coordinates.");
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 0
+        }
+      );
     };
 
     window.parseGmapsCoords = function(mode = 'new') {
@@ -1270,7 +1336,7 @@
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
-        document.getElementById('newCoordStatus').textContent = "✨ Auto-pastes when switching back from Google Maps";
+        document.getElementById('newCoordStatus').textContent = "Default: 10.928000, 124.438500";
         const ocrStatus = document.getElementById('newBizOcrStatus');
         if (ocrStatus) ocrStatus.classList.add('hidden');
 
