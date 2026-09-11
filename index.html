@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Tesseract.js (Kept for compatibility, though manual entry ensures 100% accuracy) -->
+  <!-- Tesseract.js -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
@@ -275,11 +275,11 @@
       <form id="addBusinessForm" class="space-y-3 text-xs">
         <div class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 space-y-1.5">
           <label class="block font-bold text-blue-900 flex items-center gap-1">
-            <span>📸</span> Snap Business Plate (Mirrors to Main Photo)
+            <span>📸</span> Snap Business Plate (For Reference)
           </label>
           <input type="file" id="newBizPlatePhoto" accept="image/*" capture="environment" onchange="handlePlatePhotoCapture(this)" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
           <div id="newBizOcrStatus" class="hidden text-[11px] font-semibold text-slate-600 mt-1">
-            <span>📸 Plate photo attached. Please type the ID shown on the plate.</span>
+            <span>📸 Plate attached. Please type the exact ID below.</span>
           </div>
         </div>
 
@@ -362,12 +362,9 @@
         
         <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
           <label class="block font-bold text-amber-950 flex items-center gap-1">
-            <span>📸</span> Snap Plate to Update ID
+            <span>📸</span> Snap Plate Reference Photo
           </label>
-          <input type="file" id="editBizPlatePhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'edit')" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer">
-          <div id="editBizOcrStatus" class="hidden text-[11px] font-bold text-amber-700 mt-1 flex items-center gap-1">
-            <span>🔍</span> <span>Isolating Plate Number...</span>
-          </div>
+          <input type="file" id="editBizPlatePhoto" accept="image/*" capture="environment" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer">
         </div>
 
         <div>
@@ -568,18 +565,8 @@
       const file = plateInput.files[0];
       if (!file) return;
 
-      // 1. Automatically mirror the plate photo into the main building photo field
-      const mainPhotoInput = document.getElementById('newBizPhoto');
-      if (mainPhotoInput) {
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        mainPhotoInput.files = dataTransfer.files;
-      }
-
-      // 2. Clear the Business ID field to ensure zero false automated readings, 
-      // leaving it ready for accurate manual entry (e.g. 1047).
       const idInput = document.getElementById('newBizId');
-      if (idInput) {
+      if (idInput && !idInput.value.trim()) {
         idInput.value = "";
         idInput.focus();
       }
@@ -588,14 +575,8 @@
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
         statusLabel.className = "text-[11px] font-semibold text-slate-600 mt-1";
-        statusLabel.textContent = "📸 Plate attached & mirrored. Please type the exact ID.";
+        statusLabel.textContent = "📸 Plate photo attached. Please type the exact ID below.";
       }
-    };
-
-    window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
-      // Kept for backward compatibility if called elsewhere, but primary handling uses clean manual entry
-      const file = inputElement.files[0];
-      if (!file) return;
     };
 
     function autoCaptureDeviceGPS() {
@@ -1198,9 +1179,6 @@
 
       try {
         const buildingFile = document.getElementById('newBizPhoto').files[0];
-        const plateFile = document.getElementById('newBizPlatePhoto').files[0];
-        const chosenFile = buildingFile || plateFile;
-
         const targetRes = 3840;
         const phoneInput = document.getElementById('newBizPhone').value.trim();
         
@@ -1225,7 +1203,7 @@
           timestamp: getFormattedTimestamp()
         };
 
-        const stampedImage = await processHighMbPhoto(chosenFile, bizData, targetRes) || FALLBACK_IMAGE;
+        const stampedImage = await processHighMbPhoto(buildingFile, bizData, targetRes) || FALLBACK_IMAGE;
 
         const newBiz = {
           action: "addBusiness",
@@ -1283,9 +1261,6 @@
 
       try {
         const buildingFile = document.getElementById('editBizPhoto').files[0];
-        const plateFile = document.getElementById('editBizPlatePhoto').files[0];
-        const chosenFile = buildingFile || plateFile;
-
         const targetRes = 3840;
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
         const addressInputVal = document.getElementById('editBizAddress').value.trim();
@@ -1323,8 +1298,8 @@
         };
 
         let photoUrl = businesses[targetIndex].image;
-        if (chosenFile) {
-          photoUrl = await processHighMbPhoto(chosenFile, updatedData, targetRes) || photoUrl;
+        if (buildingFile) {
+          photoUrl = await processHighMbPhoto(buildingFile, updatedData, targetRes) || photoUrl;
         }
         updatedData.image = photoUrl;
 
