@@ -120,6 +120,14 @@
             </button>
           </div>
         </div>
+
+        <!-- Barangay Quick Filter Chips -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <button type="button" onclick="filterByBarangay('ALL')" class="bg-blue-600 text-white px-3 py-1 rounded-full font-bold shrink-0 shadow-xs cursor-pointer filter-chip" data-barangay="ALL">All Barangays</button>
+          <button type="button" onclick="filterByBarangay('Marvel')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full font-semibold shrink-0 border border-slate-200 cursor-pointer filter-chip" data-barangay="Marvel">Brgy. Marvel</button>
+          <button type="button" onclick="filterByBarangay('Mahayag')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full font-semibold shrink-0 border border-slate-200 cursor-pointer filter-chip" data-barangay="Mahayag">Brgy. Mahayag</button>
+          <button type="button" onclick="filterByBarangay('Isabel')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full font-semibold shrink-0 border border-slate-200 cursor-pointer filter-chip" data-barangay="Isabel">Isabel Proper</button>
+        </div>
         
         <!-- Search Bar -->
         <div class="relative">
@@ -449,6 +457,7 @@
     let activeInspector = localStorage.getItem('isabel_inspector_name') || "Officer Ashbel Espenido";
     let isAdminUnlocked = localStorage.getItem('isabel_admin_unlocked') === 'true';
     let pendingDeleteMode = null;
+    let activeBarangayFilter = 'ALL';
     const markers = {};
 
     const colorMap = {
@@ -679,6 +688,39 @@
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
+    }
+
+    window.filterByBarangay = function(barangay) {
+      activeBarangayFilter = barangay;
+      
+      document.querySelectorAll('.filter-chip').forEach(btn => {
+        if (btn.getAttribute('data-barangay') === barangay) {
+          btn.className = "bg-blue-600 text-white px-3 py-1 rounded-full font-bold shrink-0 shadow-xs cursor-pointer filter-chip";
+        } else {
+          btn.className = "bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full font-semibold shrink-0 border border-slate-200 cursor-pointer filter-chip";
+        }
+      });
+
+      applySearchAndFilters();
+    };
+
+    function applySearchAndFilters() {
+      const q = (searchInput.value || '').toLowerCase().trim();
+      
+      let filtered = businesses.filter(b => {
+        const matchesBarangay = activeBarangayFilter === 'ALL' || String(b.address || '').toLowerCase().includes(activeBarangayFilter.toLowerCase());
+        const matchesSearch = !q || 
+          String(b.id || '').toLowerCase().includes(q) ||
+          String(b.name || '').toLowerCase().includes(q) || 
+          String(b.owner || '').toLowerCase().includes(q) || 
+          String(b.phone || '').toLowerCase().includes(q) || 
+          String(b.address || '').toLowerCase().includes(q) || 
+          String(b.inspector || '').toLowerCase().includes(q);
+
+        return matchesBarangay && matchesSearch;
+      });
+
+      renderBusinessList(filtered);
     }
 
     async function autoDetectClipboardCoords() {
@@ -934,7 +976,7 @@
         try {
           businesses = JSON.parse(cached);
           displayedList = [...businesses];
-          renderBusinessList(displayedList, currentSelectedKey);
+          applySearchAndFilters();
           updateDashboardStats(businesses);
         } catch (e) {}
       }
@@ -996,7 +1038,7 @@
             displayedList = [...businesses];
 
             localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
-            renderBusinessList(displayedList, currentSelectedKey);
+            applySearchAndFilters();
             updateDashboardStats(businesses);
           }
         } catch (err) {}
@@ -1103,23 +1145,8 @@
       }
     });
 
-    searchInput.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
-      if (!q) {
-        renderBusinessList(businesses, selectElem.value);
-        return;
-      }
-
-      const filtered = businesses.filter(b => 
-        String(b.id || '').toLowerCase().includes(q) ||
-        String(b.name || '').toLowerCase().includes(q) || 
-        String(b.owner || '').toLowerCase().includes(q) || 
-        String(b.phone || '').toLowerCase().includes(q) || 
-        String(b.address || '').toLowerCase().includes(q) || 
-        String(b.inspector || '').toLowerCase().includes(q)
-      );
-
-      renderBusinessList(filtered);
+    searchInput.addEventListener('input', () => {
+      applySearchAndFilters();
     });
 
     window.triggerDeleteSecurity = function() {
@@ -1158,7 +1185,7 @@
         const targetIndex = businesses.findIndex(b => String(b.uniqueKey || b.id) === String(selectedVal));
         if (targetIndex !== -1) {
           const removed = businesses.splice(targetIndex, 1)[0];
-          renderBusinessList(businesses);
+          applySearchAndFilters();
           updateDashboardStats(businesses);
           localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
           await sendCloudAction({ action: "deleteBusiness", id: removed.id });
@@ -1205,7 +1232,7 @@
       }
     });
 
-    // 1. ADD BUSINESS (No Social Media)
+    // 1. ADD BUSINESS
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector login required.");
@@ -1271,7 +1298,9 @@
 
         businesses.unshift(newBiz);
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
-        renderBusinessList(businesses, newBiz.uniqueKey);
+        applySearchAndFilters();
+        selectElem.value = newBiz.uniqueKey;
+        updateDetailCard(newBiz);
         updateDashboardStats(businesses);
         map.setView([cleanCoords.lat, cleanCoords.lon], 16);
 
@@ -1292,7 +1321,7 @@
       }
     });
 
-    // 2. EDIT BUSINESS (No Social Media)
+    // 2. EDIT BUSINESS
     document.getElementById('editBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       if (!isAdminUnlocked) return alert("Inspector session required.");
@@ -1358,7 +1387,9 @@
         };
         
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(businesses));
-        renderBusinessList(businesses, businesses[targetIndex].uniqueKey);
+        applySearchAndFilters();
+        selectElem.value = businesses[targetIndex].uniqueKey;
+        updateDetailCard(businesses[targetIndex]);
 
         if (markers[businesses[targetIndex].uniqueKey]) {
           map.removeLayer(markers[businesses[targetIndex].uniqueKey]);
