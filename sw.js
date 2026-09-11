@@ -1,4 +1,4 @@
-const CACHE_NAME = 'isabel-bplo-v3';
+const CACHE_NAME = 'isabel-bplo-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const ASSETS_TO_CACHE = [
   'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'
 ];
 
-// Install Event: Cache app assets
+// Install Event: Cache app core assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -20,13 +20,13 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate Event: Clear out old caches
+// Activate Event: Clean up outdated caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key !== CACHE_NAME && key !== 'isabel-map-tiles') {
             return caches.delete(key);
           }
         })
@@ -36,14 +36,35 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event: Serve from cache when offline, fallback to network
+// Fetch Event: Offline-first handling + dynamic map tile caching
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Cache OpenStreetMap/Leaflet map tiles dynamically for offline field use
+  if (url.hostname.includes('tile.openstreetmap.org')) {
+    event.respondWith(
+      caches.open('isabel-map-tiles').then(async (cache) => {
+        const cachedResponse = await cache.match(event.request);
+        if (cachedResponse) return cachedResponse;
+
+        try {
+          const networkResponse = await fetch(event.request);
+          cache.put(event.request, networkResponse.clone());
+          return networkResponse;
+        } catch (err) {
+          return cachedResponse;
+        }
+      })
+    );
+    return;
+  }
+
   if (event.request.method !== 'GET') return;
   
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch fresh version in background if online
+        // Fetch fresh copy in the background if online
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => {
