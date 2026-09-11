@@ -329,7 +329,7 @@
               Apply
             </button>
           </div>
-          <div id="newCoordStatus" class="text-[10px] text-blue-800 font-mono font-medium">✨ Auto-pastes when switching back from Google Maps</div>
+          <div id="newCoordStatus" class="text-[10px] text-blue-800 font-mono font-medium">🛰️ Acquiring satellite GPS lock...</div>
         </div>
 
         <input type="hidden" id="newBizLat" value="10.928000">
@@ -642,6 +642,45 @@
       }
     };
 
+    function autoCaptureDeviceGPS() {
+      const statusLabel = document.getElementById('newCoordStatus');
+      const coordInput = document.getElementById('gmapsCoordInput');
+      
+      if (!navigator.geolocation) {
+        if (statusLabel) statusLabel.textContent = "ℹ️ GPS not supported by browser.";
+        return;
+      }
+
+      if (statusLabel) {
+        statusLabel.className = "text-[10px] text-blue-700 font-mono font-bold animate-pulse";
+        statusLabel.textContent = "🛰️ Acquiring satellite GPS lock...";
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = parseFloat(position.coords.latitude.toFixed(6));
+          const lon = parseFloat(position.coords.longitude.toFixed(6));
+          const clean = sanitizeCoordinates(lat, lon);
+
+          document.getElementById('newBizLat').value = clean.lat;
+          document.getElementById('newBizLon').value = clean.lon;
+          if (coordInput) coordInput.value = `${clean.lat}, ${clean.lon}`;
+
+          if (statusLabel) {
+            statusLabel.className = "text-[10px] text-emerald-700 font-mono font-bold";
+            statusLabel.textContent = `✨ Auto-captured via GPS (${position.coords.accuracy ? Math.round(position.coords.accuracy) + 'm accuracy' : 'High Precision'})`;
+          }
+        },
+        (error) => {
+          if (statusLabel) {
+            statusLabel.className = "text-[10px] text-amber-700 font-mono font-medium";
+            statusLabel.textContent = "⚠️ GPS unavailable. Paste coordinates from Google Maps below.";
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
     async function autoDetectClipboardCoords() {
       const isAddOpen = document.getElementById('addBusinessModal').style.display === 'flex';
       const isEditOpen = document.getElementById('editBusinessModal').style.display === 'flex';
@@ -684,7 +723,14 @@
     window.toggleModal = function(modalId, show) {
       const el = document.getElementById(modalId);
       if (el) el.style.display = show ? 'flex' : 'none';
-      if (show) autoDetectClipboardCoords();
+      
+      if (show) {
+        if (modalId === 'addBusinessModal') {
+          autoCaptureDeviceGPS();
+        } else {
+          autoDetectClipboardCoords();
+        }
+      }
     };
 
     window.openLightbox = function() {
@@ -1231,7 +1277,7 @@
 
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
-        document.getElementById('newCoordStatus').textContent = "✨ Auto-pastes when switching back from Google Maps";
+        document.getElementById('newCoordStatus').textContent = "🛰️ Acquiring satellite GPS lock...";
         const ocrStatus = document.getElementById('newBizOcrStatus');
         if (ocrStatus) ocrStatus.classList.add('hidden');
 
