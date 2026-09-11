@@ -568,7 +568,7 @@
       const file = plateInput.files[0];
       if (!file) return;
 
-      // Automatically mirror the plate photo into the main building photo field
+      // 1. Automatically mirror the plate photo into the main building photo field
       const mainPhotoInput = document.getElementById('newBizPhoto');
       if (mainPhotoInput) {
         const dataTransfer = new DataTransfer();
@@ -576,6 +576,14 @@
         mainPhotoInput.files = dataTransfer.files;
       }
 
+      // 2. Auto-generate a fallback ID if empty so form submission isn't blocked offline
+      const idInput = document.getElementById('newBizId');
+      if (idInput && !idInput.value.trim()) {
+        const fallbackRandom = Math.floor(1000 + Math.random() * 9000);
+        idInput.value = "BIZ-" + fallbackRandom;
+      }
+
+      // 3. Attempt OCR scan
       scanImageForBusinessId(plateInput, 'new');
     };
 
@@ -665,7 +673,7 @@
         if (statusLabel) {
           statusLabel.classList.remove('animate-pulse');
           statusLabel.className = "text-[11px] font-semibold text-amber-600 mt-1";
-          statusLabel.textContent = "ℹ️ Auto-OCR unavailable. Please type Business ID manually.";
+          statusLabel.textContent = "ℹ️ Auto-OCR offline. Using temporary fallback ID (editable).";
         }
       }
     };
