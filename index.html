@@ -573,6 +573,18 @@
 
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
+      }
+
+      // Offline check: prevent Tesseract worker hang when there's no internet
+      if (!navigator.onLine) {
+        if (statusLabel) {
+          statusLabel.className = "text-[11px] font-semibold text-amber-600 mt-1";
+          statusLabel.textContent = "ℹ️ Offline Mode: Auto-OCR unavailable without internet. Please type Business ID manually.";
+        }
+        return;
+      }
+
+      if (statusLabel) {
         statusLabel.className = "text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 animate-pulse";
         statusLabel.innerHTML = "<span>🔍</span> <span>Isolating Plate Number...</span>";
       }
@@ -647,7 +659,10 @@
           statusLabel.textContent = "ℹ️ Plate ID unclear. You can type it manually.";
         }
       } catch (err) {
-        if (statusLabel) statusLabel.classList.add('hidden');
+        if (statusLabel) {
+          statusLabel.className = "text-[11px] font-semibold text-amber-600 mt-1";
+          statusLabel.textContent = "ℹ️ OCR unavailable offline. Please type Business ID manually.";
+        }
       }
     };
 
