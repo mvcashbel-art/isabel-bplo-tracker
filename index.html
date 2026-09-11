@@ -277,7 +277,7 @@
           <label class="block font-bold text-blue-900 flex items-center gap-1">
             <span>📸</span> Snap Business Plate (Auto-Extracts ID)
           </label>
-          <input type="file" id="newBizPlatePhoto" accept="image/*" capture="environment" onchange="scanImageForBusinessId(this, 'new')" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+          <input type="file" id="newBizPlatePhoto" accept="image/*" capture="environment" onchange="handlePlatePhotoCapture(this)" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
           <div id="newBizOcrStatus" class="hidden text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1">
             <span>🔍</span> <span>Isolating Plate Number...</span>
           </div>
@@ -564,6 +564,21 @@
       }
     };
 
+    window.handlePlatePhotoCapture = function(plateInput) {
+      const file = plateInput.files[0];
+      if (!file) return;
+
+      // Automatically mirror the plate photo into the main building photo field
+      const mainPhotoInput = document.getElementById('newBizPhoto');
+      if (mainPhotoInput) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        mainPhotoInput.files = dataTransfer.files;
+      }
+
+      scanImageForBusinessId(plateInput, 'new');
+    };
+
     window.scanImageForBusinessId = async function(inputElement, mode = 'new') {
       const file = inputElement.files[0];
       if (!file) return;
@@ -573,18 +588,6 @@
 
       if (statusLabel) {
         statusLabel.classList.remove('hidden');
-      }
-
-      // Offline check: prevent Tesseract worker hang when there's no internet
-      if (!navigator.onLine) {
-        if (statusLabel) {
-          statusLabel.className = "text-[11px] font-semibold text-amber-600 mt-1";
-          statusLabel.textContent = "ℹ️ Offline Mode: Auto-OCR unavailable without internet. Please type Business ID manually.";
-        }
-        return;
-      }
-
-      if (statusLabel) {
         statusLabel.className = "text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 animate-pulse";
         statusLabel.innerHTML = "<span>🔍</span> <span>Isolating Plate Number...</span>";
       }
@@ -660,8 +663,9 @@
         }
       } catch (err) {
         if (statusLabel) {
+          statusLabel.classList.remove('animate-pulse');
           statusLabel.className = "text-[11px] font-semibold text-amber-600 mt-1";
-          statusLabel.textContent = "ℹ️ OCR unavailable offline. Please type Business ID manually.";
+          statusLabel.textContent = "ℹ️ Auto-OCR unavailable. Please type Business ID manually.";
         }
       }
     };
