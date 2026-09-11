@@ -51,7 +51,10 @@
         </div>
         <p class="text-xs md:text-sm text-blue-200 mt-0.5 font-medium">Business Permit & Licensing Office — Isabel, Leyte</p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <button type="button" onclick="openProductivityModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition shadow cursor-pointer flex items-center gap-1">
+          📊 My Activity
+        </button>
         <span id="offlineQueueBadge" class="hidden bg-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold animate-pulse shadow-sm">⚠️ 0 Offline Saved</span>
         <span id="activeInspectorBadge" class="bg-blue-900/80 text-white text-xs px-3.5 py-1.5 rounded-full border border-blue-400/40 font-mono font-bold shadow-inner">Inspector: Guest</span>
       </div>
@@ -112,6 +115,9 @@
             <span>🏢</span> Establishments Directory
           </h2>
           <div class="flex gap-2">
+            <button id="exportReportBtn" onclick="exportNonCompliantReport()" class="admin-only hidden bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs px-3 py-1.5 rounded-lg font-bold transition border border-rose-200 shadow-xs cursor-pointer flex items-center gap-1">
+              🚨 Action Report
+            </button>
             <button id="exportExcelBtn" onclick="exportToExcel()" class="admin-only hidden bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-lg font-bold transition border border-emerald-200 shadow-xs cursor-pointer flex items-center gap-1">
               📊 Excel
             </button>
@@ -215,6 +221,43 @@
     </div>
   </div>
 
+  <!-- PRODUCTIVITY HISTORY MODAL -->
+  <div id="productivityModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-4 my-auto max-h-[90vh] overflow-y-auto border border-slate-200 text-xs">
+      <div class="flex justify-between items-center border-b pb-2.5">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">📊 Inspector Productivity & Activity</h3>
+        <button type="button" onclick="toggleModal('productivityModal', false)" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 flex justify-between items-center">
+          <div>
+            <div class="text-[11px] text-blue-700 font-bold uppercase">Active Officer</div>
+            <div id="prodOfficerName" class="text-sm font-black text-blue-950">-</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[11px] text-blue-700 font-bold uppercase">Total Logged</div>
+            <div id="prodTotalCount" class="text-lg font-black text-blue-950">0</div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-700 mb-1.5">📍 Breakdown by Barangay</h4>
+          <div id="prodBarangayBreakdown" class="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200 max-h-40 overflow-y-auto font-medium text-slate-700">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-700 mb-1.5">🕒 Recent Submissions</h4>
+          <div id="prodRecentList" class="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 max-h-44 overflow-y-auto font-medium text-slate-700">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Inspector Authentication Modal -->
   <div id="adminModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4 border border-slate-200">
@@ -273,19 +316,9 @@
       </div>
       
       <form id="addBusinessForm" class="space-y-3 text-xs">
-        <div class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 space-y-1.5">
-          <label class="block font-bold text-blue-900 flex items-center gap-1">
-            <span>📸</span> Snap Business Plate (For Reference)
-          </label>
-          <input type="file" id="newBizPlatePhoto" accept="image/*" capture="environment" onchange="handlePlatePhotoCapture(this)" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
-          <div id="newBizOcrStatus" class="hidden text-[11px] font-semibold text-slate-600 mt-1">
-            <span>📸 Plate attached. Please type the exact ID below.</span>
-          </div>
-        </div>
-
         <div>
           <label class="block font-bold text-slate-700 mb-1">Business ID / Permit Number *</label>
-          <input type="text" id="newBizId" required placeholder="Type exact plate number e.g. 1047" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
+          <input type="text" id="newBizId" required placeholder="e.g. 1047" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
@@ -360,13 +393,6 @@
       <form id="editBusinessForm" class="space-y-3 text-xs">
         <input type="hidden" id="editOriginalId">
         
-        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
-          <label class="block font-bold text-amber-950 flex items-center gap-1">
-            <span>📸</span> Snap Plate Reference Photo
-          </label>
-          <input type="file" id="editBizPlatePhoto" accept="image/*" capture="environment" class="w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer">
-        </div>
-
         <div>
           <label class="block font-bold text-slate-700 mb-1">Business ID / Permit Number *</label>
           <input type="text" id="editBizId" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-amber-700 focus:ring-2 focus:ring-amber-500">
@@ -561,22 +587,117 @@
       }
     };
 
-    window.handlePlatePhotoCapture = function(plateInput) {
-      const file = plateInput.files[0];
-      if (!file) return;
+    window.openProductivityModal = function() {
+      document.getElementById('prodOfficerName').textContent = activeInspector;
+      
+      const officerRecords = businesses.filter(b => (b.inspector || "").trim() === activeInspector.trim());
+      document.getElementById('prodTotalCount').textContent = officerRecords.length;
 
-      const idInput = document.getElementById('newBizId');
-      if (idInput && !idInput.value.trim()) {
-        idInput.value = "";
-        idInput.focus();
+      const brgyCounts = {};
+      officerRecords.forEach(b => {
+        const addr = b.address || "Unknown";
+        brgyCounts[addr] = (brgyCounts[addr] || 0) + 1;
+      });
+
+      const brgyContainer = document.getElementById('prodBarangayBreakdown');
+      brgyContainer.innerHTML = '';
+      if (Object.keys(brgyCounts).length === 0) {
+        brgyContainer.innerHTML = '<div class="text-slate-400 italic">No submissions recorded yet for this account.</div>';
+      } else {
+        for (const [brgy, count] of Object.entries(brgyCounts)) {
+          brgyContainer.innerHTML += `<div class="flex justify-between border-b border-slate-200/60 pb-1"><span>🏢 ${brgy}</span><span class="font-bold text-blue-700">${count} establishment(s)</span></div>`;
+        }
       }
 
-      const statusLabel = document.getElementById('newBizOcrStatus');
-      if (statusLabel) {
-        statusLabel.classList.remove('hidden');
-        statusLabel.className = "text-[11px] font-semibold text-slate-600 mt-1";
-        statusLabel.textContent = "📸 Plate photo attached. Please type the exact ID below.";
+      const recentContainer = document.getElementById('prodRecentList');
+      recentContainer.innerHTML = '';
+      if (officerRecords.length === 0) {
+        recentContainer.innerHTML = '<div class="text-slate-400 italic">No recent logs found.</div>';
+      } else {
+        officerRecords.slice(0, 10).forEach(b => {
+          recentContainer.innerHTML += `<div class="p-2 bg-white rounded-lg border border-slate-200 flex justify-between items-center"><div><div class="font-bold text-slate-800">[${b.id}] ${b.name}</div><div class="text-[10px] text-slate-500">${b.address} • ${b.timestamp || 'N/A'}</div></div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style="background-color: ${colorMap[normalizeStatus(b.status)]}">${normalizeStatus(b.status)}</span></div>`;
+        });
       }
+
+      toggleModal('productivityModal', true);
+    };
+
+    window.exportNonCompliantReport = function() {
+      const nonCompliantList = businesses.filter(b => {
+        const s = normalizeStatus(b.status);
+        return s === "No Permit" || s === "Expired";
+      });
+
+      if (nonCompliantList.length === 0) {
+        return alert("🎉 Great news! All recorded establishments are currently compliant or active.");
+      }
+
+      let printWindow = window.open('', '_blank');
+      let html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Isabel BPLO - Non-Compliance Enforcement Report</title>
+          <style>
+            body { font-family: sans-serif; padding: 20px; color: #1e293b; }
+            h2 { margin-bottom: 2px; color: #0f172a; }
+            .subtitle { font-size: 12px; color: #64748b; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+            th { background-color: #f1f5f9; color: #334155; }
+            .badge-red { color: #dc2626; font-weight: bold; }
+            .badge-amber { color: #d97706; font-weight: bold; }
+            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; }
+          </style>
+        </head>
+        <body>
+          <h2>Isabel Business Permit & Licensing Office</h2>
+          <div class="subtitle">Official Non-Compliance & Enforcement Report • Generated on ${getFormattedTimestamp()} by ${activeInspector}</div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Establishment Name</th>
+                <th>Owner</th>
+                <th>Contact</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Last Inspected</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      nonCompliantList.forEach(b => {
+        const statusClass = b.status === "Expired" ? "badge-amber" : "badge-red";
+        html += `
+          <tr>
+            <td><b>${b.id}</b></td>
+            <td>${b.name}</td>
+            <td>${b.owner}</td>
+            <td>${b.phone || 'N/A'}</td>
+            <td>${b.address}</td>
+            <td><span class="${statusClass}">${b.status.toUpperCase()}</span></td>
+            <td>${b.timestamp || 'N/A'}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+            </tbody>
+          </table>
+          <div class="footer">
+            <div>Total Action Notices Required: <b>${nonCompliantList.length} establishment(s)</b></div>
+            <div>Certified Correct: ______________________</div>
+          </div>
+          <script>window.print();</script>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(html);
+      printWindow.document.close();
     };
 
     function autoCaptureDeviceGPS() {
@@ -740,9 +861,6 @@
       const editCoordInput = document.getElementById('editGmapsCoordInput');
       if (editCoordInput) editCoordInput.value = `${cleanCoords.lat}, ${cleanCoords.lon}`;
       document.getElementById('editCoordStatus').textContent = `Current: ${cleanCoords.lat}, ${cleanCoords.lon}`;
-
-      const ocrStatus = document.getElementById('editBizOcrStatus');
-      if (ocrStatus) ocrStatus.classList.add('hidden');
 
       toggleModal('editBusinessModal', true);
     };
@@ -1232,8 +1350,6 @@
         toggleModal('addBusinessModal', false);
         document.getElementById('addBusinessForm').reset();
         document.getElementById('newCoordStatus').textContent = "🛰️ Acquiring satellite GPS lock...";
-        const ocrStatus = document.getElementById('newBizOcrStatus');
-        if (ocrStatus) ocrStatus.classList.add('hidden');
 
         sendCloudAction(newBiz);
         alert("✅ Establishment saved successfully!");
