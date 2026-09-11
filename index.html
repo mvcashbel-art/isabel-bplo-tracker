@@ -12,6 +12,7 @@
   <!-- Mobile & Progressive Web App (PWA) Settings -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1d4ed8">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Isabel BPLO">
@@ -871,11 +872,12 @@
 
       for (let i = 0; i < queue.length; i++) {
         await submitViaHiddenForm(queue[i]);
+        await new Promise(resolve => setTimeout(resolve, 800));
       }
 
       localStorage.removeItem(OFFLINE_QUEUE_KEY);
       updateOfflineBadge();
-      alert("📡 Offline field logs auto-synced to Google Sheets!");
+      alert("📡 All offline field logs have successfully auto-synced to Google Sheets!");
       setTimeout(async () => { await loadBusinesses(); }, 1500);
     }
 
