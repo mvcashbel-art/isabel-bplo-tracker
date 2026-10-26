@@ -1,15 +1,31 @@
 {
+  "id": "./index.html",
   "name": "Isabel BPLO Field Tracker",
   "short_name": "Isabel BPLO",
+  "description": "Business permit field inspection and monitoring for the Isabel BPLO.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#1d4ed8",
+  "background_color": "#d7eced",
   "theme_color": "#1d4ed8",
   "icons": [
     {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

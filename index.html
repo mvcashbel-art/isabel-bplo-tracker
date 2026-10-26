@@ -154,7 +154,7 @@
           <div class="flex gap-4 items-center">
             <img id="cardImage" 
                  src="" 
-                 onerror="this.src=window.FALLBACK_IMAGE"
+                 onerror="this.src=FALLBACK_IMAGE"
                  onclick="openLightbox()" 
                  class="w-24 h-24 md:w-28 md:h-28 rounded-xl object-cover border-2 border-slate-300 bg-slate-200 shadow-md cursor-pointer hover:opacity-90 transition shrink-0" 
                  alt="Storefront">
@@ -465,7 +465,7 @@
     const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
     const ISABEL_CENTER = [10.928000, 124.438500];
     const MASTER_PASSCODE = "IsabelLeyte";
-    window.FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
+    const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
 
     const INSPECTOR_ACCOUNTS = {
       "Ashbel2026": "Officer Ashbel Espenido",
@@ -566,7 +566,7 @@
       const inputElem = mode === 'new' ? document.getElementById('gmapsCoordInput') : document.getElementById('editGmapsCoordInput');
       const val = (inputElem ? inputElem.value : '').trim();
       
-      const match = val.match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
+      const match = val.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
       if (match) {
         const clean = sanitizeCoordinates(match[1], match[2]);
         
@@ -647,7 +647,7 @@
             th { background-color: #f1f5f9; color: #334155; }
             .badge-red { color: #dc2626; font-weight: bold; }
             .badge-amber { color: #d97706; font-weight: bold; }
-            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-between: space-between; }
+            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; }
           </style>
         </head>
         <body>
@@ -670,8 +670,7 @@
       `;
 
       nonCompliantList.forEach(b => {
-        const normStatus = normalizeStatus(b.status);
-        const statusClass = normStatus === "Expired" ? "badge-amber" : "badge-red";
+        const statusClass = b.status === "Expired" ? "badge-amber" : "badge-red";
         html += `
           <tr>
             <td><b>${b.id}</b></td>
@@ -679,7 +678,7 @@
             <td>${b.owner}</td>
             <td>${b.phone || 'N/A'}</td>
             <td>${b.address}</td>
-            <td><span class="${statusClass}">${normStatus.toUpperCase()}</span></td>
+            <td><span class="${statusClass}">${b.status.toUpperCase()}</span></td>
             <td>${b.timestamp || 'N/A'}</td>
           </tr>
         `;
@@ -692,7 +691,7 @@
             <div>Total Action Notices Required: <b>${nonCompliantList.length} establishment(s)</b></div>
             <div>Certified Correct: ______________________</div>
           </div>
-          <script>window.print();<\/script>
+          <script>window.print();</script>
         </body>
         </html>
       `;
@@ -781,7 +780,7 @@
       try {
         if (navigator.clipboard && navigator.clipboard.readText) {
           const clipText = await navigator.clipboard.readText();
-          const match = clipText.match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
+          const match = clipText.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
 
           if (match) {
             const clean = sanitizeCoordinates(match[1], match[2]);
@@ -1052,7 +1051,7 @@
                 timestamp: String(b.timestamp || b["Timestamp"] || getFormattedTimestamp()).trim(),
                 lat: cleanCoords.lat,
                 lon: cleanCoords.lon,
-                image: String(b.image || b["Photo URL"] || window.FALLBACK_IMAGE),
+                image: String(b.image || b["Photo URL"] || FALLBACK_IMAGE),
                 inspector: String(b.inspector || b["Inspector Name"] || b["Inspector"] || activeInspector),
                 uniqueKey: "REMOTE_" + rawId + "_" + rawName + "_" + index
               };
@@ -1073,7 +1072,7 @@
                   timestamp: b.timestamp,
                   lat: cleanCoords.lat,
                   lon: cleanCoords.lon,
-                  image: b.image || window.FALLBACK_IMAGE,
+                  image: b.image || FALLBACK_IMAGE,
                   inspector: b.inspector || activeInspector,
                   uniqueKey: "OFFLINE_" + b.id + "_" + b.name + "_" + idx
                 };
@@ -1106,7 +1105,7 @@
       }
 
       list.forEach((biz) => {
-        selectElem.appendChild(new Option("[" + biz.id + "] " + biz.name + " (" + normalizeStatus(biz.status) + ")", biz.uniqueKey));
+        selectElem.appendChild(new Option("[" + biz.id + "] " + biz.name + " (" + biz.status + ")", biz.uniqueKey));
         addMarker(biz);
       });
 
@@ -1122,11 +1121,10 @@
 
     function addMarker(biz) {
       const cleanCoords = sanitizeCoordinates(biz.lat, biz.lon);
-      const normStatus = normalizeStatus(biz.status);
 
       const marker = L.circleMarker([cleanCoords.lat, cleanCoords.lon], {
         radius: 8,
-        fillColor: colorMap[normStatus] || '#6b7280',
+        fillColor: colorMap[biz.status] || '#6b7280',
         color: '#ffffff',
         weight: 2,
         fillOpacity: 0.95
@@ -1152,7 +1150,7 @@
         document.getElementById('cardAddress').textContent = '-';
         document.getElementById('cardInspector').textContent = '-';
         document.getElementById('cardStatus').textContent = '-';
-        document.getElementById('cardImage').src = window.FALLBACK_IMAGE;
+        document.getElementById('cardImage').src = FALLBACK_IMAGE;
         return;
       }
 
@@ -1175,7 +1173,7 @@
       statusBadge.style.backgroundColor = colorMap[normStatus] || '#6b7280';
 
       const imgElem = document.getElementById('cardImage');
-      imgElem.src = biz.image && biz.image.trim() !== '' && !biz.image.includes('placehold.co') ? biz.image : window.FALLBACK_IMAGE;
+      imgElem.src = biz.image && biz.image.trim() !== '' && !biz.image.includes('placehold.co') ? biz.image : FALLBACK_IMAGE;
 
       document.getElementById('getDirectionsBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + cleanCoords.lat + "," + cleanCoords.lon;
     }
@@ -1280,25 +1278,6 @@
       }
     });
 
-    // Helper function to wrap text on Canvas sidebar
-    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
-      const words = text.split(' ');
-      let line = '';
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width > maxWidth && n > 0) {
-          ctx.fillText(line, x, y);
-          line = words[n] + ' ';
-          y += lineHeight;
-        } else {
-          line = testLine;
-        }
-      }
-      ctx.fillText(line, x, y);
-      return y;
-    }
-
     // 1. ADD BUSINESS
     document.getElementById('addBusinessForm').addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -1322,7 +1301,7 @@
         const phoneInput = document.getElementById('newBizPhone').value.trim();
         
         const rawCoords = document.getElementById('gmapsCoordInput').value.trim();
-        const coordMatch = rawCoords.match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
+        const coordMatch = rawCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
         
         let initialLat = document.getElementById('newBizLat').value;
         let initialLon = document.getElementById('newBizLon').value;
@@ -1342,7 +1321,7 @@
           timestamp: getFormattedTimestamp()
         };
 
-        const stampedImage = await processHighMbPhoto(buildingFile, bizData, targetRes) || window.FALLBACK_IMAGE;
+        const stampedImage = await processHighMbPhoto(buildingFile, bizData, targetRes) || FALLBACK_IMAGE;
 
         const newBiz = {
           action: "addBusiness",
@@ -1403,7 +1382,7 @@
         const addressInputVal = document.getElementById('editBizAddress').value.trim();
 
         const rawCoords = document.getElementById('editGmapsCoordInput').value.trim();
-        const coordMatch = rawCoords.match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
+        const coordMatch = rawCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
         
         let initialLat = businesses[targetIndex].lat;
         let initialLon = businesses[targetIndex].lon;
@@ -1517,7 +1496,6 @@
               const startX = photoWidth + Math.round(panelWidth * 0.08);
               let currentY = Math.round(photoHeight * 0.08);
               const lineSpacing = Math.round(baseFontSize * 1.6);
-              const maxTextWidth = panelWidth - Math.round(panelWidth * 0.16);
 
               ctx.fillStyle = "#38BDF8"; 
               ctx.font = `bold ${Math.round(baseFontSize * 1.2)}px sans-serif`;
@@ -1544,7 +1522,7 @@
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#FFFFFF";
               ctx.font = `${baseFontSize}px sans-serif`;
-              currentY = drawWrappedText(ctx, metadata.name || 'N/A', startX, currentY, maxTextWidth, Math.round(baseFontSize * 1.2));
+              ctx.fillText(metadata.name || 'N/A', startX, currentY);
 
               currentY += lineSpacing;
               ctx.fillStyle = "#CBD5E1";
