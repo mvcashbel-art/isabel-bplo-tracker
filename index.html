@@ -691,13 +691,14 @@
             <div>Total Action Notices Required: <b>${nonCompliantList.length} establishment(s)</b></div>
             <div>Certified Correct: ______________________</div>
           </div>
-          <script>window.print();<\/script>
         </body>
         </html>
       `;
 
       printWindow.document.write(html);
       printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 400);
     };
 
     function autoCaptureDeviceGPS() {
