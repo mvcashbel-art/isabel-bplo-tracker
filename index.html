@@ -336,8 +336,8 @@
             <input type="text" id="newBizId" required placeholder="e.g. 1047" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Plate Number</label>
-            <input type="text" id="newBizPlate" placeholder="e.g. ABC 1234" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
+            <label class="block font-bold text-slate-700 mb-1">Plate Number (4 Digits)</label>
+            <input type="text" id="newBizPlate" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" title="Please enter exactly 4 digits (e.g. 1234)" placeholder="e.g. 1234" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
           </div>
         </div>
 
@@ -436,8 +436,8 @@
             <input type="text" id="editBizId" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-amber-700 focus:ring-2 focus:ring-amber-500">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Plate Number</label>
-            <input type="text" id="editBizPlate" placeholder="e.g. ABC 1234" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
+            <label class="block font-bold text-slate-700 mb-1">Plate Number (4 Digits)</label>
+            <input type="text" id="editBizPlate" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" title="Please enter exactly 4 digits (e.g. 1234)" placeholder="e.g. 1234" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
           </div>
         </div>
 
@@ -1708,6 +1708,11 @@
       const inputId = document.getElementById('newBizId').value.trim();
       const inputPlate = document.getElementById('newBizPlate').value.trim();
 
+      if (inputPlate && !/^\d{4}$/.test(inputPlate)) {
+        alert("❌ Invalid Plate Number! Please enter exactly 4 digits (e.g. 1234).");
+        return;
+      }
+
       const isDuplicate = businesses.some(b => String(b.id || '').trim().toLowerCase() === inputId.toLowerCase());
       if (isDuplicate) {
         alert(`❌ ERROR: Business Permit ID "${inputId}" already exists in the system!\n\nPlease use a unique Permit Number.`);
@@ -1808,6 +1813,12 @@
       const targetIndex = businesses.findIndex(b => String(b.id).trim().toLowerCase() === origId.toLowerCase());
       if (targetIndex === -1) return alert("Original record not found.");
 
+      const newPlate = document.getElementById('editBizPlate').value.trim();
+      if (newPlate && !/^\d{4}$/.test(newPlate)) {
+        alert("❌ Invalid Plate Number! Please enter exactly 4 digits (e.g. 1234).");
+        return;
+      }
+
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
       submitBtn.textContent = "Updating Record...";
@@ -1834,7 +1845,6 @@
 
         const cleanCoords = sanitizeCoordinates(initialLat, initialLon);
         const newId = document.getElementById('editBizId').value.trim();
-        const newPlate = document.getElementById('editBizPlate').value.trim();
 
         const updatedData = {
           action: "updateBusiness",
