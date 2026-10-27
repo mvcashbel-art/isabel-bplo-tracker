@@ -489,7 +489,7 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYx8fkc7Mt8if8co0gcIA3UZ4XgjGo4js1aiU2Y7Ao8h9xwwfG4xrRyFTO2koWnHPd/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzqUORWWe73yojgVnDmKTgDsJPnIkFJZ2HnnYuV7hKbZ_5P1P2WC5_UPgHs1zapI-ht/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
     const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
     const PHOTO_MAX_DIM = 2048; // longest side of a saved photo, in pixels
@@ -771,7 +771,7 @@
             th { background-color: #f1f5f9; color: #334155; }
             .badge-red { color: #dc2626; font-weight: bold; }
             .badge-amber { color: #d97706; font-weight: bold; }
-            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; }
+            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-between; }
           </style>
         </head>
         <body>
@@ -1073,10 +1073,6 @@
 
     // ================================================================
     //  OFFLINE STORAGE + SYNC
-    //  Every change (add / edit / delete) is first written to a queue in
-    //  IndexedDB on the phone, then uploaded. It leaves the queue only after
-    //  Google Sheets replies that it received it. Photos are stored in
-    //  IndexedDB as files, so they no longer hit the 5 MB localStorage limit.
     // ================================================================
     const DB_NAME = "isabel_bplo_db";
     let dbPromise = null;
@@ -1092,7 +1088,7 @@
         req.onupgradeneeded = () => {
           const db = req.result;
           if (!db.objectStoreNames.contains('queue')) db.createObjectStore('queue', { keyPath: 'seq', autoIncrement: true });
-          if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos'); // key = opId, value = photo file
+          if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos');
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => { dbPromise = null; reject(req.error); };
@@ -1125,7 +1121,6 @@
 
     const sameId = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
 
-    // Saves a change on the phone. Resolves only once it is safely stored.
     async function enqueueOp(payload, photoBlob) {
       const opId = newOpId();
       if (photoBlob) await dbPut('photos', photoBlob, opId);
@@ -1194,8 +1189,6 @@
       return await res.json();
     }
 
-    // Decides whether Google's reply means "received". An HTML page is what
-    // Apps Script shows when the script crashed, so that counts as NOT received.
     function readScriptReply(res, text) {
       const trimmed = String(text || '').trim();
       try {
@@ -1205,7 +1198,7 @@
           return { ok: false, reason: String(j.error || j.message || 'Rejected by the Google script') };
         }
         return { ok: true };
-      } catch (_) { /* not JSON */ }
+      } catch (_) { }
       const type = (res.headers.get('content-type') || '').toLowerCase();
       if (type.includes('text/html') || /^<(!doctype|html)/i.test(trimmed)) {
         return { ok: false, reason: 'The Google script returned an error page' };
@@ -1213,7 +1206,6 @@
       return { ok: true };
     }
 
-    // Returns { status: 'done' | 'rejected' | 'network', reason? }
     async function sendOp(item) {
       const payload = { ...item.payload, opId: item.opId };
 
@@ -1222,8 +1214,6 @@
         payload.image = blob ? await blobToDataURL(blob) : (payload.image || FALLBACK_IMAGE);
       }
 
-      // An earlier try may have reached Google even though we never saw the reply.
-      // Check the sheet first so the same permit is not added twice.
       if (item.maybeSent && payload.action === 'addBusiness') {
         try {
           const list = await fetchRemoteList();
@@ -1305,7 +1295,6 @@
       }
     }
 
-    // Keeps the saved list small: local photos are not stored in localStorage.
     function persistBusinesses() {
       try {
         const slim = businesses.map(b => {
@@ -1316,10 +1305,9 @@
           return b;
         });
         localStorage.setItem(CACHED_BUSINESSES_KEY, JSON.stringify(slim));
-      } catch (err) { /* the queue in IndexedDB is the safe copy */ }
+      } catch (err) { }
     }
 
-    // Puts photos that are still on the phone back onto their records.
     async function hydrateLocalPhotos() {
       let changed = false;
       for (const b of businesses) {
@@ -1336,7 +1324,6 @@
       }
     }
 
-    // Moves anything left in the old localStorage queue into the new one.
     async function migrateOldQueue() {
       const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
       if (!raw) return;
@@ -1354,7 +1341,7 @@
           if (old.length) localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(old));
         }
         localStorage.removeItem(OFFLINE_QUEUE_KEY);
-      } catch (err) { /* try again next launch */ }
+      } catch (err) { }
     }
 
     function localBusinessFromOp(op) {
@@ -1378,7 +1365,6 @@
       };
     }
 
-    // Lays changes that have not reached Google yet on top of the list Google sent.
     async function applyPendingChanges(list) {
       let queue = [];
       try { queue = await dbGetAll('queue'); } catch (_) {}
@@ -1425,8 +1411,6 @@
         try {
           const data = await fetchRemoteList();
 
-          // A sync finished while we were waiting, so this list is already out of
-          // date. The sync reloads the list itself, so just stop here.
           if (generationAtStart !== syncGeneration) return;
 
           if (Array.isArray(data) && data.length > 0) {
@@ -1630,7 +1614,7 @@
           return;
         }
         try {
-          await dbClear('queue');   // anything unsent is wiped too
+          await dbClear('queue');
           await dbClear('photos');
           await enqueueOp({ action: "clearAll" });
         } catch (err) {
@@ -1735,7 +1719,6 @@
         };
         if (!photoBlob) payload.image = FALLBACK_IMAGE;
 
-        // Safe on the phone first. If this fails, nothing below runs.
         const opId = await enqueueOp(payload, photoBlob);
 
         const { action: _action, ...fields } = payload;
@@ -1828,7 +1811,6 @@
         if (buildingFile) {
           photoBlob = await processHighMbPhoto(buildingFile, updatedData, targetRes);
         } else if (existing.localPhotoKey) {
-          // The photo has not reached Google yet, so it travels with this edit too.
           photoBlob = (await dbGet('photos', existing.localPhotoKey)) || null;
         }
         if (!photoBlob) {
@@ -1991,12 +1973,32 @@
       document.body.removeChild(a);
     };
 
-    // Register Service Worker for offline capability
+    // Service Worker registration with auto-reload detection
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registered! Scope:', reg.scope))
-          .catch(err => console.log('Service Worker registration failed:', err));
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('Service Worker registered! Scope:', reg.scope);
+          reg.update(); // Check for updates on load
+
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  window.location.reload();
+                }
+              };
+            }
+          };
+        }).catch(err => console.log('Service Worker registration failed:', err));
+      });
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
       });
     }
 
@@ -2006,7 +2008,6 @@
     document.getElementById('offlineQueueBadge').addEventListener('click', () => syncOfflineQueue({ manual: true }));
     setInterval(() => { if (navigator.onLine) syncOfflineQueue(); }, 60000);
 
-    // Ask the browser not to clear saved photos and records when the phone runs low on space.
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
     fillBarangaySelects();
@@ -2014,8 +2015,8 @@
     updateAdminUI();
     (async function startApp() {
       await migrateOldQueue();
-      await loadBusinesses();      // shows saved data at once, then refreshes from Google
-      await syncOfflineQueue();    // uploads anything waiting
+      await loadBusinesses();
+      await syncOfflineQueue();
     })();
   </script>
 </body>
