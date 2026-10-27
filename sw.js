@@ -4,7 +4,7 @@
 // Changes to index.html do NOT need a bump: the page refreshes itself in the
 // background and the new version shows the next time the app is opened.
 
-const VERSION = 'v4';
+const VERSION = 'v5';
 const APP_CACHE = `isabel-bplo-app-${VERSION}`;
 const TILE_CACHE = 'isabel-bplo-tiles';   // kept across versions
 const MAX_TILES = 400;                    // oldest tiles are dropped beyond this
@@ -23,7 +23,8 @@ const LOCAL_ASSETS = [
 const CDN_ASSETS = [
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'
 ];
 
 // Try a normal CORS fetch first (real response, honest storage size);
