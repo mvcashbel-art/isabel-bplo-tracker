@@ -24,6 +24,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- OCR Library for Camera Scanning -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <style>
     #map { height: 320px; width: 100%; border-radius: 0.875rem; position: relative; z-index: 1; }
     @media (min-width: 1024px) { #map { height: 480px; } }
@@ -130,10 +133,15 @@
           <button type="button" onclick="filterByBarangay('ALL')" class="bg-blue-600 text-white px-3 py-1 rounded-full font-bold shrink-0 shadow-xs cursor-pointer filter-chip" data-barangay="ALL">All Barangays</button>
         </div>
         
-        <!-- Search Bar -->
-        <div class="relative">
-          <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, barangay..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition">
-          <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
+        <!-- Search Bar with OCR Scanner -->
+        <div class="relative flex gap-2">
+          <div class="relative flex-1">
+            <input type="text" id="searchInput" placeholder="Search ID, name, owner, phone, barangay..." class="w-full text-xs md:text-sm p-2.5 pl-8 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition">
+            <span class="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
+          </div>
+          <button type="button" onclick="openScannerModal('search')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1 shrink-0 shadow-xs cursor-pointer">
+            📷 Scan
+          </button>
         </div>
 
         <!-- Dropdown Selector -->
@@ -312,7 +320,12 @@
       
       <form id="addBusinessForm" class="space-y-3 text-xs">
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Business ID / Permit Number *</label>
+          <div class="flex justify-between items-center mb-1">
+            <label class="font-bold text-slate-700">Business ID / Permit Number *</label>
+            <button type="button" onclick="openScannerModal('newBizId')" class="text-indigo-600 hover:text-indigo-800 font-bold text-[11px] flex items-center gap-1 cursor-pointer">
+              📷 Scan Plate/ID
+            </button>
+          </div>
           <input type="text" id="newBizId" required placeholder="e.g. 1047" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
         </div>
 
@@ -406,7 +419,12 @@
         <input type="hidden" id="editOriginalId">
         
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Business ID / Permit Number *</label>
+          <div class="flex justify-between items-center mb-1">
+            <label class="font-bold text-slate-700">Business ID / Permit Number *</label>
+            <button type="button" onclick="openScannerModal('editBizId')" class="text-indigo-600 hover:text-indigo-800 font-bold text-[11px] flex items-center gap-1 cursor-pointer">
+              📷 Scan Plate/ID
+            </button>
+          </div>
           <input type="text" id="editBizId" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-amber-700 focus:ring-2 focus:ring-amber-500">
         </div>
 
@@ -488,6 +506,33 @@
     </div>
   </div>
 
+  <!-- CAMERA OCR SCANNER MODAL -->
+  <div id="ocrScannerModal" style="display: none;" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4 text-xs border border-slate-200 my-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">📷 Scan Permit ID / Plate Number</h3>
+        <button type="button" onclick="closeScannerModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-slate-700 shadow-inner">
+        <video id="ocrVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+        <canvas id="ocrCanvas" class="hidden"></canvas>
+        <div class="absolute inset-4 border-2 border-dashed border-amber-400/80 rounded-lg pointer-events-none flex items-center justify-center">
+          <span class="text-[10px] text-amber-300 font-bold bg-black/60 px-2 py-0.5 rounded">Align ID / Plate Here</span>
+        </div>
+      </div>
+
+      <div id="ocrStatus" class="text-center text-slate-600 font-mono text-[11px]">Position camera over digits...</div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="closeScannerModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl transition">Cancel</button>
+        <button type="button" onclick="captureAndScanOCR()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl transition shadow cursor-pointer flex items-center justify-center gap-1">
+          ⚡ Capture & Process
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzqUORWWe73yojgVnDmKTgDsJPnIkFJZ2HnnYuV7hKbZ_5P1P2WC5_UPgHs1zapI-ht/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
@@ -505,6 +550,84 @@
       { name: "Santo Rosario" }, { name: "Tabunok" }, { name: "Tolingon" }, { name: "Tubod" }
     ];
     const BARANGAY_ALIASES = { "benog": "Binog", "sto nino": "Santo Niño", "sto rosario": "Santo Rosario", "canandan": "Can-andan", "santa cruz": "Santa Cruz Relocation" };
+
+    // OCR State variables
+    let currentOcrTarget = 'search';
+    let ocrStream = null;
+
+    window.openScannerModal = async function(targetFieldId) {
+      currentOcrTarget = targetFieldId;
+      toggleModal('ocrScannerModal', true);
+      
+      const video = document.getElementById('ocrVideo');
+      const status = document.getElementById('ocrStatus');
+      status.textContent = "Requesting camera access...";
+
+      try {
+        ocrStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } }
+        });
+        video.srcObject = ocrStream;
+        status.textContent = "Align plate number or ID in box and tap Capture.";
+      } catch (err) {
+        status.textContent = "❌ Camera access denied or unavailable.";
+      }
+    };
+
+    window.closeScannerModal = function() {
+      if (ocrStream) {
+        ocrStream.getTracks().forEach(track => track.stop());
+        ocrStream = null;
+      }
+      toggleModal('ocrScannerModal', false);
+    };
+
+    window.captureAndScanOCR = async function() {
+      const video = document.getElementById('ocrVideo');
+      const canvas = document.getElementById('ocrCanvas');
+      const status = document.getElementById('ocrStatus');
+
+      if (!ocrStream || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        return alert("Camera is not ready yet.");
+      }
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      status.textContent = "🔍 Processing text OCR... Please wait.";
+
+      try {
+        const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
+        
+        const cleanText = text.replace(/[^a-zA-Z0-9-]/g, ' ').trim();
+        const match = cleanText.match(/[A-Z0-9-]{2,15}/i);
+
+        if (match) {
+          const scannedCode = match[0].toUpperCase();
+          status.textContent = `✨ Scanned: ${scannedCode}`;
+
+          if (currentOcrTarget === 'search') {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = scannedCode;
+            applySearchAndFilters();
+          } else {
+            const inputElem = document.getElementById(currentOcrTarget);
+            if (inputElem) inputElem.value = scannedCode;
+          }
+
+          setTimeout(() => {
+            closeScannerModal();
+            alert(`✅ Scanned Code Applied: ${scannedCode}`);
+          }, 500);
+        } else {
+          status.textContent = "⚠️ Could not read plate/ID clear enough. Retry.";
+        }
+      } catch (err) {
+        status.textContent = "❌ OCR Processing Error.";
+      }
+    };
 
     // lower-case, no accents or punctuation, "(notes)" removed
     function normText(t) {
@@ -1978,7 +2101,7 @@
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then(reg => {
           console.log('Service Worker registered! Scope:', reg.scope);
-          reg.update(); // Check for updates on load
+          reg.update();
 
           reg.onupdatefound = () => {
             const installingWorker = reg.installing;
