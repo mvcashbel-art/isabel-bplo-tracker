@@ -11,7 +11,7 @@
 
   <!-- Mobile & Progressive Web App (PWA) Settings -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1d4ed8">
+  <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,6 +25,18 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
+    /* Full-Screen Watermark Background with Isabel Seal */
+    body {
+      background-color: #0f172a;
+      background-image: 
+        radial-gradient(circle at center, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.98) 100%),
+        url('download-removebg-preview.jpg');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: 42rem;
+      background-attachment: fixed;
+    }
+
     #map { height: 320px; width: 100%; border-radius: 0.875rem; position: relative; z-index: 1; }
     @media (min-width: 1024px) { #map { height: 480px; } }
     .leaflet-pane, .leaflet-top, .leaflet-bottom { z-index: 10 !important; }
@@ -36,35 +48,41 @@
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-slate-100 via-blue-50/40 to-slate-100 text-slate-800 font-sans min-h-screen p-3 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6">
+<body class="text-slate-800 font-sans min-h-screen p-3 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6">
 
-  <!-- Header Banner -->
-  <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white p-4 lg:p-6 rounded-2xl shadow-lg border border-blue-600/30">
+  <!-- Header Banner with Integrated Seal Badge -->
+  <header class="bg-gradient-to-r from-slate-900/90 via-blue-950/90 to-slate-900/90 text-white p-4 lg:p-6 rounded-2xl shadow-2xl border border-slate-700/60 backdrop-blur-md">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-3">
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="text-xl md:text-2xl">🏛️</span>
-          <h1 class="text-lg md:text-2xl font-black tracking-tight">Isabel BPLO Field Tracker</h1>
+      <div class="flex items-center gap-3.5">
+        <!-- High-Res Emblem Icon -->
+        <div class="relative shrink-0">
+          <div class="absolute -inset-1 bg-emerald-500/30 rounded-full blur-xs"></div>
+          <img src="download-removebg-preview.jpg" alt="Municipality of Isabel Seal" class="relative w-12 h-12 md:w-14 md:h-14 object-contain rounded-full drop-shadow">
         </div>
-        <p class="text-xs md:text-sm text-blue-200 mt-0.5 font-medium">Business Permit & Licensing Office — Isabel, Leyte</p>
+        <div>
+          <h1 class="text-lg md:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            Isabel BPLO Field Tracker
+          </h1>
+          <p class="text-xs md:text-sm text-emerald-400 font-semibold tracking-wide">Business Permit & Licensing Office — Isabel, Leyte</p>
+        </div>
       </div>
       <div class="flex items-center gap-2 flex-wrap justify-end">
         <button type="button" onclick="openProductivityModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition shadow cursor-pointer flex items-center gap-1">
           📊 My Activity
         </button>
         <span id="offlineQueueBadge" class="hidden bg-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold animate-pulse shadow-sm">⚠️ 0 Offline Saved</span>
-        <span id="activeInspectorBadge" class="bg-blue-900/80 text-white text-xs px-3.5 py-1.5 rounded-full border border-blue-400/40 font-mono font-bold shadow-inner">Inspector: Guest</span>
+        <span id="activeInspectorBadge" class="bg-slate-800/90 text-white text-xs px-3.5 py-1.5 rounded-full border border-slate-600 font-mono font-bold shadow-inner">Inspector: Guest</span>
         <button id="headerLogoutBtn" onclick="lockAdmin()" type="button" class="admin-only hidden bg-slate-700 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition shadow cursor-pointer">🔒 Log out</button>
       </div>
     </div>
 
     <!-- Active Field Status Bar -->
-    <div class="flex items-center justify-between bg-blue-900/60 backdrop-blur-md p-2.5 rounded-xl border border-blue-400/30 text-xs md:text-sm">
+    <div class="flex items-center justify-between bg-slate-950/70 backdrop-blur-md p-2.5 rounded-xl border border-slate-700/50 text-xs md:text-sm">
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-blue-600 border border-white/40 flex items-center justify-center font-bold text-white text-sm shadow-sm">📋</div>
+        <div class="w-8 h-8 rounded-lg bg-emerald-600 border border-white/40 flex items-center justify-center font-bold text-white text-sm shadow-sm">📋</div>
         <div>
           <div class="font-bold text-white leading-tight">Field Inspection & Monitoring Portal</div>
-          <div id="viewModeLabel" class="text-[10px] md:text-xs text-blue-200 font-medium">Public View-Only Mode</div>
+          <div id="viewModeLabel" class="text-[10px] md:text-xs text-slate-300 font-medium">Public View-Only Mode</div>
         </div>
       </div>
       <div>
@@ -75,13 +93,13 @@
 
   <!-- Metric Statistics Cards -->
   <section class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 hover:shadow-md transition">
+    <div class="bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl transition">
       <div class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Total Records</div>
       <div id="statTotal" class="text-2xl md:text-3xl font-black text-slate-800 mt-1">0</div>
       <div class="text-[10px] text-slate-400 mt-0.5">Establishments inspected</div>
     </div>
 
-    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 hover:shadow-md transition">
+    <div class="bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl transition">
       <div class="text-[11px] text-emerald-600 font-bold uppercase tracking-wider">Compliance Rate</div>
       <div id="statCompliantRate" class="text-2xl md:text-3xl font-black text-emerald-600 mt-1">0%</div>
       <div class="w-full bg-slate-100 h-2 rounded-full mt-1.5 overflow-hidden">
@@ -89,13 +107,13 @@
       </div>
     </div>
 
-    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 hover:shadow-md transition">
+    <div class="bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl transition">
       <div class="text-[11px] text-rose-600 font-bold uppercase tracking-wider">No Permit / Expired</div>
       <div id="statNonCompliant" class="text-2xl md:text-3xl font-black text-rose-600 mt-1">0</div>
       <div class="text-[10px] text-rose-500 font-medium mt-0.5">Require Action Notices</div>
     </div>
 
-    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 hover:shadow-md transition">
+    <div class="bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl transition">
       <div class="text-[11px] text-blue-600 font-bold uppercase tracking-wider">Top Officer</div>
       <div id="statTopInspector" class="text-sm md:text-base font-bold text-blue-900 truncate mt-1">None</div>
       <div id="statInspectorDetail" class="text-[10px] text-slate-500 truncate mt-0.5">Submissions: 0</div>
@@ -107,7 +125,7 @@
 
     <!-- Left Directory & Details Column -->
     <div class="lg:col-span-7 space-y-4">
-      <section class="bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-3.5">
+      <section class="bg-white/95 backdrop-blur-md p-4 lg:p-5 rounded-2xl shadow-lg border border-slate-200 space-y-3.5">
         <div class="flex justify-between items-center">
           <h2 class="text-sm md:text-base font-bold text-slate-800 flex items-center gap-1.5">
             <span>🏢</span> Establishments Directory
@@ -191,7 +209,7 @@
 
     <!-- Right Map Column -->
     <div class="lg:col-span-5">
-      <section class="bg-white p-3.5 md:p-4 rounded-2xl shadow-sm border border-slate-200/80 sticky top-4 space-y-2.5">
+      <section class="bg-white/95 backdrop-blur-md p-3.5 md:p-4 rounded-2xl shadow-lg border border-slate-200 sticky top-4 space-y-2.5">
         <div class="flex justify-between items-center">
           <h2 class="text-xs md:text-sm font-bold text-slate-800 flex items-center gap-1">
             <span>📍</span> Isabel Municipal Map
