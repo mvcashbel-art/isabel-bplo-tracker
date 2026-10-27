@@ -54,6 +54,7 @@
         </button>
         <span id="offlineQueueBadge" class="hidden bg-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold animate-pulse shadow-sm">⚠️ 0 Offline Saved</span>
         <span id="activeInspectorBadge" class="bg-blue-900/80 text-white text-xs px-3.5 py-1.5 rounded-full border border-blue-400/40 font-mono font-bold shadow-inner">Inspector: Guest</span>
+        <button id="headerLogoutBtn" onclick="lockAdmin()" type="button" class="admin-only hidden bg-slate-700 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition shadow cursor-pointer">🔒 Log out</button>
       </div>
     </div>
 
@@ -125,11 +126,8 @@
         </div>
 
         <!-- Barangay Quick Filter Chips -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+        <div id="barangayChips" class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
           <button type="button" onclick="filterByBarangay('ALL')" class="bg-blue-600 text-white px-3 py-1 rounded-full font-bold shrink-0 shadow-xs cursor-pointer filter-chip" data-barangay="ALL">All Barangays</button>
-          <button type="button" onclick="filterByBarangay('Marvel')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full font-semibold shrink-0 border border-slate-200 cursor-pointer filter-chip" data-barangay="Marvel">Brgy. Marvel</button>
-          <button type="button" onclick="filterByBarangay('Mahayag')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full font-semibold shrink-0 border border-slate-200 cursor-pointer filter-chip" data-barangay="Mahayag">Brgy. Mahayag</button>
-          <button type="button" onclick="filterByBarangay('Isabel')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full font-semibold shrink-0 border border-slate-200 cursor-pointer filter-chip" data-barangay="Isabel">Isabel Proper</button>
         </div>
         
         <!-- Search Bar -->
@@ -341,8 +339,19 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Barangay / Address *</label>
-          <input type="text" id="newBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+          <label class="block font-bold text-slate-700 mb-1">Barangay *</label>
+          <select id="newBizBarangay" required class="w-full p-2.5 bg-white border border-slate-300 rounded-xl outline-none font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500"></select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Purok</label>
+            <input type="text" id="newBizPurok" placeholder="e.g. 3 or Sampaguita" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Street / Landmark</label>
+            <input type="text" id="newBizStreet" placeholder="e.g. Rizal St., near market" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
         </div>
 
         <div>
@@ -418,8 +427,19 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Barangay / Address *</label>
-          <input type="text" id="editBizAddress" required placeholder="e.g. Brgy. Marvel, Isabel" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+          <label class="block font-bold text-slate-700 mb-1">Barangay *</label>
+          <select id="editBizBarangay" required class="w-full p-2.5 bg-white border border-slate-300 rounded-xl outline-none font-semibold text-slate-800 focus:ring-2 focus:ring-amber-500"></select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Purok</label>
+            <input type="text" id="editBizPurok" placeholder="e.g. 3 or Sampaguita" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Street / Landmark</label>
+            <input type="text" id="editBizStreet" placeholder="e.g. Rizal St., near market" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
         </div>
 
         <div>
@@ -461,6 +481,96 @@
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
     const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
     const PHOTO_MAX_DIM = 2048; // longest side of a saved photo, in pixels
+
+    // Barangays of Isabel, Leyte (alphabetical). "note" is only shown in the dropdown.
+    const BARANGAYS = [
+      { name: "Anislag" }, { name: "Antipolo" }, { name: "Apale" }, { name: "Bantigue" },
+      { name: "Bilwang" }, { name: "Binog", note: "Benog" }, { name: "Can-andan" }, { name: "Cangag" },
+      { name: "Consolacion" }, { name: "Honan" }, { name: "Libertad" }, { name: "Mahayag" },
+      { name: "Marvel", note: "Poblacion" }, { name: "Matlang" }, { name: "Monte Alegre" },
+      { name: "Puting Bato" }, { name: "San Francisco" }, { name: "San Roque" },
+      { name: "Santa Cruz Relocation" }, { name: "Santo Niño", note: "Poblacion" },
+      { name: "Santo Rosario" }, { name: "Tabunok" }, { name: "Tolingon" }, { name: "Tubod" }
+    ];
+    const BARANGAY_ALIASES = { "benog": "Binog", "sto nino": "Santo Niño", "sto rosario": "Santo Rosario", "canandan": "Can-andan", "santa cruz": "Santa Cruz Relocation" };
+
+    // lower-case, no accents or punctuation, "(notes)" removed
+    function normText(t) {
+      return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+    }
+
+    // "Brgy. Marvel", "marvel", "Benog" ... -> the official name, or '' if it is not a barangay
+    function matchBarangay(text) {
+      const t = normText(text).replace(/^(brgy|barangay)\s+/, '');
+      if (!t) return '';
+      const hit = BARANGAYS.find(b => normText(b.name) === t);
+      return hit ? hit.name : (BARANGAY_ALIASES[t] || '');
+    }
+
+    // "Purok 3, Rizal St., Brgy. Marvel" -> { barangay, purok, street } (also reads older free-text addresses)
+    function parseAddress(addr) {
+      const out = { barangay: '', purok: '', street: '' };
+      const parts = String(addr || '').split(',').map(x => x.trim()).filter(Boolean);
+      let bIdx = parts.findIndex(x => /^(brgy|barangay)\b/i.test(x) && matchBarangay(x));
+      if (bIdx === -1) {
+        for (let i = parts.length - 1; i >= 0; i--) { if (matchBarangay(parts[i])) { bIdx = i; break; } }
+      }
+      if (bIdx !== -1) out.barangay = matchBarangay(parts[bIdx]);
+      const rest = [];
+      parts.forEach((part, i) => {
+        if (i === bIdx) return;
+        if (!out.purok && /^purok\b/i.test(part)) { out.purok = part.replace(/^purok\s*/i, '').trim(); return; }
+        const n = normText(part);
+        if (n === 'isabel' || n === 'leyte' || n === 'isabel leyte') return;
+        rest.push(part);
+      });
+      out.street = rest.join(', ');
+      return out;
+    }
+
+    // the barangay of a saved address, '' if it cannot be told
+    function barangayOf(addr) {
+      const parsed = parseAddress(addr).barangay;
+      if (parsed) return parsed;
+      const hay = ' ' + normText(addr) + ' ';
+      const byLength = [...BARANGAYS].sort((a, b) => b.name.length - a.name.length);
+      const hit = byLength.find(b => hay.includes(' ' + normText(b.name) + ' '));
+      return hit ? hit.name : '';
+    }
+
+    // Purok + street + barangay -> the single address text kept in the Google Sheet
+    function buildAddress(barangay, purok, street) {
+      const parts = [];
+      const pk = String(purok || '').trim();
+      if (pk) parts.push(/^purok\b/i.test(pk) ? pk : 'Purok ' + pk);
+      const st = String(street || '').trim();
+      if (st) parts.push(st);
+      if (barangay) parts.push('Brgy. ' + barangay);
+      return parts.join(', ');
+    }
+
+    function fillBarangaySelects() {
+      const html = '<option value="">— Select barangay —</option>' +
+        BARANGAYS.map(b => `<option value="${b.name}">${b.name}${b.note ? ' (' + b.note + ')' : ''}</option>`).join('');
+      ['newBizBarangay', 'editBizBarangay'].forEach(id => { document.getElementById(id).innerHTML = html; });
+    }
+
+    function renderBarangayChips() {
+      const row = document.getElementById('barangayChips');
+      const cls = "bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full font-semibold shrink-0 border border-slate-200 cursor-pointer filter-chip";
+      const add = (value, label) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = cls;
+        btn.setAttribute('data-barangay', value);
+        btn.textContent = label;
+        btn.addEventListener('click', () => filterByBarangay(value));
+        row.appendChild(btn);
+      };
+      BARANGAYS.forEach(b => add(b.name, 'Brgy. ' + b.name));
+      add('Isabel', 'Isabel Proper');
+    }
     const ISABEL_CENTER = [10.928000, 124.438500];
     const MASTER_PASSCODE = "IsabelLeyte";
     const FALLBACK_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2364748b'%3ENo Photo%3C/text%3E%3C/svg%3E";
@@ -593,7 +703,7 @@
 
       const brgyCounts = {};
       officerRecords.forEach(b => {
-        const addr = b.address || "Unknown";
+        const addr = barangayOf(b.address) || "Other / not specified";
         brgyCounts[addr] = (brgyCounts[addr] || 0) + 1;
       });
 
@@ -756,7 +866,10 @@
       const q = (searchInput.value || '').toLowerCase().trim();
       
       let filtered = businesses.filter(b => {
-        const matchesBarangay = activeBarangayFilter === 'ALL' || String(b.address || '').toLowerCase().includes(activeBarangayFilter.toLowerCase());
+        const matchesBarangay = activeBarangayFilter === 'ALL' ||
+          (BARANGAYS.some(x => x.name === activeBarangayFilter)
+            ? barangayOf(b.address) === activeBarangayFilter
+            : String(b.address || '').toLowerCase().includes(activeBarangayFilter.toLowerCase()));
         const matchesSearch = !q || 
           String(b.id || '').toLowerCase().includes(q) ||
           String(b.name || '').toLowerCase().includes(q) || 
@@ -851,7 +964,10 @@
       const cleanPhone = String(target.phone || '').trim();
       document.getElementById('editBizPhone').value = (cleanPhone === 'N/A' || cleanPhone === 'undefined') ? '' : cleanPhone;
 
-      document.getElementById('editBizAddress').value = target.address || '';
+      const parsedAddr = parseAddress(target.address);
+      document.getElementById('editBizBarangay').value = parsedAddr.barangay;
+      document.getElementById('editBizPurok').value = parsedAddr.purok;
+      document.getElementById('editBizStreet').value = parsedAddr.street;
       document.getElementById('editBizStatus').value = normalizeStatus(target.status);
       
       document.getElementById('editBizLat').value = cleanCoords.lat;
@@ -905,7 +1021,7 @@
       const viewModeLabel = document.getElementById('viewModeLabel');
       const inspectorBadge = document.getElementById('activeInspectorBadge');
 
-      inspectorBadge.textContent = "Inspector: " + activeInspector;
+      inspectorBadge.textContent = isAdminUnlocked ? "Inspector: " + activeInspector : "Inspector: Guest (not logged in)";
 
       if (isAdminUnlocked) {
         adminElements.forEach(el => el.classList.remove('hidden'));
@@ -1581,7 +1697,7 @@
           id: inputId,
           name: document.getElementById('newBizName').value.trim(),
           owner: document.getElementById('newBizOwner').value.trim(),
-          address: document.getElementById('newBizAddress').value.trim(),
+          address: buildAddress(document.getElementById('newBizBarangay').value, document.getElementById('newBizPurok').value, document.getElementById('newBizStreet').value),
           timestamp: getFormattedTimestamp()
         };
 
@@ -1656,7 +1772,7 @@
         const buildingFile = document.getElementById('editBizPhoto').files[0];
         const targetRes = PHOTO_MAX_DIM;
         const phoneInputVal = document.getElementById('editBizPhone').value.trim();
-        const addressInputVal = document.getElementById('editBizAddress').value.trim();
+        const addressInputVal = buildAddress(document.getElementById('editBizBarangay').value, document.getElementById('editBizPurok').value, document.getElementById('editBizStreet').value);
 
         const rawCoords = document.getElementById('editGmapsCoordInput').value.trim();
         const coordMatch = rawCoords.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
@@ -1876,6 +1992,8 @@
     // Ask the browser not to clear saved photos and records when the phone runs low on space.
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
+    fillBarangaySelects();
+    renderBarangayChips();
     updateAdminUI();
     (async function startApp() {
       await migrateOldQueue();
