@@ -521,7 +521,7 @@
 
   <script>
     // Replace this URL with your newly deployed Google Apps Script Web App URL
-    const GOOGLE_SCRIPT_URL = "YOUR_NEW_APPS_SCRIPT_URL_HERE";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwz2Ks7CD37kXbVlZ44yPcA1AO7YX6DYKpO8M5m6NDAh0p4EwpE2bd4XWeVr1EsmBkB/exec";
     const OFFLINE_QUEUE_KEY = "isabel_bplo_offline_queue";
     const CACHED_BUSINESSES_KEY = "isabel_bplo_cached_businesses";
     const PHOTO_MAX_DIM = 1200; 
@@ -537,6 +537,23 @@
       { name: "Santo Rosario" }, { name: "Tabunok" }, { name: "Tolingon" }, { name: "Tubod" }
     ];
     const BARANGAY_ALIASES = { "benog": "Binog", "sto nino": "Santo Niño", "sto rosario": "Santo Rosario", "canandan": "Can-andan", "santa cruz": "Santa Cruz Relocation" };
+
+    // Makes text safe to place inside HTML (business names and addresses come from the shared sheet).
+    function escHtml(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // Exact passcode lookup. (A plain INSPECTOR_ACCOUNTS[x] also "finds" words like constructor or toString.)
+    function officerName(pass) {
+      return Object.prototype.hasOwnProperty.call(INSPECTOR_ACCOUNTS, pass) ? INSPECTOR_ACCOUNTS[pass] : '';
+    }
+
+    // Keeps one CSV cell in its own column, and stops Excel from running text that starts like a formula.
+    function csvCell(v) {
+      let t = String(v == null ? '' : v);
+      if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+      return '"' + t.replace(/"/g, '""') + '"';
+    }
 
     function normText(t) {
       return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -757,7 +774,7 @@
         brgyContainer.innerHTML = '<div class="text-slate-400 italic">No submissions recorded yet for this account.</div>';
       } else {
         for (const [brgy, count] of Object.entries(brgyCounts)) {
-          brgyContainer.innerHTML += `<div class="flex justify-between border-b border-slate-200/60 pb-1"><span>🏢 ${brgy}</span><span class="font-bold text-blue-700">${count} establishment(s)</span></div>`;
+          brgyContainer.innerHTML += `<div class="flex justify-between border-b border-slate-200/60 pb-1"><span>🏢 ${escHtml(brgy)}</span><span class="font-bold text-blue-700">${count} establishment(s)</span></div>`;
         }
       }
 
@@ -767,7 +784,7 @@
         recentContainer.innerHTML = '<div class="text-slate-400 italic">No recent logs found.</div>';
       } else {
         officerRecords.slice(0, 10).forEach(b => {
-          recentContainer.innerHTML += `<div class="p-2 bg-white rounded-lg border border-slate-200 flex justify-between items-center"><div><div class="font-bold text-slate-800">[${b.id}] ${b.name}</div><div class="text-[10px] text-slate-500">${b.address} • ${b.timestamp || 'N/A'}</div></div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style="background-color: ${colorMap[normalizeStatus(b.status)]}">${normalizeStatus(b.status)}</span></div>`;
+          recentContainer.innerHTML += `<div class="p-2 bg-white rounded-lg border border-slate-200 flex justify-between items-center"><div><div class="font-bold text-slate-800">[${escHtml(b.id)}] ${escHtml(b.name)}</div><div class="text-[10px] text-slate-500">${escHtml(b.address)} • ${escHtml(b.timestamp || 'N/A')}</div></div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style="background-color: ${colorMap[normalizeStatus(b.status)]}">${normalizeStatus(b.status)}</span></div>`;
         });
       }
 
@@ -799,12 +816,12 @@
             th { background-color: #f1f5f9; color: #334155; }
             .badge-red { color: #dc2626; font-weight: bold; }
             .badge-amber { color: #d97706; font-weight: bold; }
-            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-between: space-between; }
+            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; }
           </style>
         </head>
         <body>
           <h2>Isabel Business Permit & Licensing Office</h2>
-          <div class="subtitle">Official Non-Compliance & Enforcement Report • Generated on ${getFormattedTimestamp()} by ${activeInspector}</div>
+          <div class="subtitle">Official Non-Compliance & Enforcement Report • Generated on ${getFormattedTimestamp()} by ${escHtml(activeInspector)}</div>
           
           <table>
             <thead>
@@ -823,17 +840,17 @@
       `;
 
       nonCompliantList.forEach(b => {
-        const statusClass = b.status === "Expired" ? "badge-amber" : "badge-red";
+        const statusClass = normalizeStatus(b.status) === "Expired" ? "badge-amber" : "badge-red";
         html += `
           <tr>
-            <td><b>${b.id}</b></td>
-            <td>${b.plate || 'N/A'}</td>
-            <td>${b.name}</td>
-            <td>${b.owner}</td>
-            <td>${b.phone || 'N/A'}</td>
-            <td>${b.address}</td>
-            <td><span class="${statusClass}">${b.status.toUpperCase()}</span></td>
-            <td>${b.timestamp || 'N/A'}</td>
+            <td><b>${escHtml(b.id)}</b></td>
+            <td>${escHtml(b.plate || 'N/A')}</td>
+            <td>${escHtml(b.name)}</td>
+            <td>${escHtml(b.owner)}</td>
+            <td>${escHtml(b.phone || 'N/A')}</td>
+            <td>${escHtml(b.address)}</td>
+            <td><span class="${statusClass}">${escHtml(String(b.status).toUpperCase())}</span></td>
+            <td>${escHtml(b.timestamp || 'N/A')}</td>
           </tr>
         `;
       });
@@ -1215,7 +1232,10 @@
       });
     }
 
+    const BACKEND_READY = !/YOUR_NEW_APPS_SCRIPT_URL_HERE/.test(GOOGLE_SCRIPT_URL);
+
     async function fetchRemoteList() {
+      if (!BACKEND_READY) throw new Error("The Google Apps Script address has not been set yet.");
       const res = await fetchWithTimeout(GOOGLE_SCRIPT_URL, {}, 25000);
       if (!res.ok) throw new Error("HTTP " + res.status);
       return await res.json();
@@ -1533,7 +1553,7 @@
         marker.openPopup();
       });
 
-      marker.bindPopup("<b>" + biz.name + "</b><br>ID: " + biz.id + "<br>Plate: " + (biz.plate || 'N/A') + "<br>Owner: " + biz.owner + "<br>Inspector: " + biz.inspector);
+      marker.bindPopup("<b>" + escHtml(biz.name) + "</b><br>ID: " + escHtml(biz.id) + "<br>Plate: " + escHtml(biz.plate || 'N/A') + "<br>Owner: " + escHtml(biz.owner) + "<br>Inspector: " + escHtml(biz.inspector));
       markers[biz.uniqueKey] = marker;
     }
 
@@ -1608,7 +1628,7 @@
     window.triggerWipeSecurity = function() {
       if (!isAdminUnlocked) return alert("Inspector session required.");
       pendingDeleteMode = 'all';
-      document.getElementById('deleteModalTargetLabel').textContent = `🚨 DANGER: Re-enter Master Passcode (${MASTER_PASSCODE}) to WIPE ALL database entries:`;
+      document.getElementById('deleteModalTargetLabel').textContent = `🚨 DANGER: Re-enter the Master Passcode to WIPE ALL database entries:`;
       document.getElementById('deleteSecurityPassInput').value = '';
       toggleModal('adminModal', false);
       toggleModal('deleteConfirmModal', true);
@@ -1618,7 +1638,7 @@
       e.preventDefault();
       const enteredPass = document.getElementById('deleteSecurityPassInput').value;
 
-      if (!INSPECTOR_ACCOUNTS[enteredPass]) {
+      if (!officerName(enteredPass)) {
         alert("❌ Incorrect Passcode! Action aborted.");
         return;
       }
@@ -1680,9 +1700,9 @@
       e.preventDefault();
       const enteredPass = document.getElementById('adminPassInput').value.trim();
 
-      if (INSPECTOR_ACCOUNTS[enteredPass]) {
+      if (officerName(enteredPass)) {
         isAdminUnlocked = true;
-        activeInspector = INSPECTOR_ACCOUNTS[enteredPass];
+        activeInspector = officerName(enteredPass);
 
         localStorage.setItem('isabel_admin_unlocked', 'true');
         localStorage.setItem('isabel_inspector_name', activeInspector);
@@ -2026,7 +2046,7 @@
       businesses.forEach(b => {
         const cleanTimestamp = (b.timestamp || '').replace(/,/g, '');
         const cleanCoords = sanitizeCoordinates(b.lat, b.lon);
-        csv += `"${b.id}","${b.plate || ''}","${b.name}","${b.owner}","${b.phone || 'N/A'}","${b.address}","${normalizeStatus(b.status)}","${cleanTimestamp}","${cleanCoords.lat}","${cleanCoords.lon}","${b.inspector || 'Admin'}"\n`;
+        csv += [b.id, b.plate || '', b.name, b.owner, b.phone || 'N/A', b.address, normalizeStatus(b.status), cleanTimestamp, cleanCoords.lat, cleanCoords.lon, b.inspector || 'Admin'].map(csvCell).join(',') + "\n";
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
@@ -2078,6 +2098,7 @@
     renderBarangayChips();
     updateAdminUI();
     (async function startApp() {
+      if (!BACKEND_READY) showToast("⚠️ Not connected to Google Sheets yet: the Apps Script address is missing in index.html.");
       await migrateOldQueue();
       await loadBusinesses();
       await syncOfflineQueue();
