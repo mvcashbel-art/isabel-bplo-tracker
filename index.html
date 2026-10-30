@@ -802,7 +802,7 @@
             th { background-color: #f1f5f9; color: #334155; }
             .badge-red { color: #dc2626; font-weight: bold; }
             .badge-amber { color: #d97706; font-weight: bold; }
-            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-between; }
+            .footer { margin-top: 30px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; }
           </style>
         </head>
         <body>
@@ -1449,7 +1449,7 @@
 
           if (generationAtStart !== syncGeneration) return;
 
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             let list = data.map((b, index) => {
               const rawPhone = String(b.phone || b["Phone Number"] || b["Phone"] || "").trim();
               const rawAddress = String(b.address || b["Barangay Address"] || b["Address"] || b["Barangay / Address"] || "").trim();
@@ -1973,7 +1973,7 @@
               ctx.fillText("BUSINESS ID:", startX, currentY);
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#FFFFFF";
-              ctx.font = `${baseFontSize}px font-mono`;
+              ctx.font = `${baseFontSize}px monospace`;
               ctx.fillText(metadata.id || 'N/A', startX, currentY);
 
               if (metadata.plate) {
@@ -1983,7 +1983,7 @@
                 ctx.fillText("PLATE NUMBER:", startX, currentY);
                 currentY += Math.round(lineSpacing * 0.8);
                 ctx.fillStyle = "#FFFFFF";
-                ctx.font = `${baseFontSize}px font-mono`;
+                ctx.font = `${baseFontSize}px monospace`;
                 ctx.fillText(metadata.plate, startX, currentY);
               }
 
