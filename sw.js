@@ -4,7 +4,7 @@
 // Changes to index.html do NOT need a bump: the page refreshes itself in the
 // background and the new version shows the next time the app is opened.
 
-const VERSION = 'v8';
+const VERSION = 'v9';
 const APP_CACHE = `isabel-bplo-app-${VERSION}`;
 const TILE_CACHE = 'isabel-bplo-tiles';   // kept across versions
 const MAX_TILES = 400;                    // oldest tiles are dropped beyond this
@@ -17,6 +17,12 @@ const LOCAL_ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png'
+];
+
+// Our own files that are nice to have offline (header seal + watermark), but must
+// never block installation if one is missing.
+const OPTIONAL_LOCAL_ASSETS = [
+  './isabel-seal.png'
 ];
 
 // Third-party files: best effort, so one slow or blocked CDN cannot break installation.
@@ -40,6 +46,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(APP_CACHE);
     await cache.addAll(LOCAL_ASSETS);
+    await Promise.allSettled(OPTIONAL_LOCAL_ASSETS.map((url) => cache.add(url)));
     await Promise.allSettled(
       CDN_ASSETS.map(async (url) => cache.put(url, await fetchForCache(url)))
     );
