@@ -4,7 +4,7 @@
 // Changes to index.html do NOT need a bump: the page refreshes itself in the
 // background and the new version shows the next time the app is opened.
 
-const VERSION = 'v9';
+const VERSION = 'v10';
 const APP_CACHE = `isabel-bplo-app-${VERSION}`;
 const TILE_CACHE = 'isabel-bplo-tiles';   // kept across versions
 const MAX_TILES = 400;                    // oldest tiles are dropped beyond this
