@@ -336,7 +336,7 @@
             <input type="text" id="newBizId" required placeholder="e.g. 1047" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-blue-700 focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Plate Number (4 Digits)</label>
+            <label class="block font-bold text-slate-700 mb-1">Plate Number (4 Digits, unique)</label>
             <input type="text" id="newBizPlate" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" title="Please enter exactly 4 digits (e.g. 1234)" placeholder="e.g. 1234" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
           </div>
         </div>
@@ -436,7 +436,7 @@
             <input type="text" id="editBizId" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-amber-700 focus:ring-2 focus:ring-amber-500">
           </div>
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Plate Number (4 Digits)</label>
+            <label class="block font-bold text-slate-700 mb-1">Plate Number (4 Digits, unique)</label>
             <input type="text" id="editBizPlate" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" title="Please enter exactly 4 digits (e.g. 1234)" placeholder="e.g. 1234" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
           </div>
         </div>
@@ -541,6 +541,13 @@
     // Makes text safe to place inside HTML (business names and addresses come from the shared sheet).
     function escHtml(v) {
       return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // A plate number belongs to one business only. Returns the other record using it, if any.
+    function plateTakenBy(plate, exceptId) {
+      const pl = String(plate || '').trim();
+      if (!pl) return null;
+      return businesses.find(b => String(b.plate || '').trim() === pl && !(exceptId != null && sameId(b.id, exceptId))) || null;
     }
 
     // Exact passcode lookup. (A plain INSPECTOR_ACCOUNTS[x] also "finds" words like constructor or toString.)
@@ -1020,6 +1027,7 @@
 
       const cleanCoords = sanitizeCoordinates(target.lat, target.lon);
 
+      document.getElementById('editBizPhoto').value = '';  // never carry over the photo chosen for a previous record
       document.getElementById('editOriginalId').value = String(target.id).trim();
       document.getElementById('editBizId').value = String(target.id).trim();
       document.getElementById('editBizPlate').value = target.plate || '';
@@ -1730,6 +1738,12 @@
         return;
       }
 
+      const plateOwner = plateTakenBy(inputPlate, null);
+      if (plateOwner) {
+        alert(`❌ Plate Number ${inputPlate} is already used by "${plateOwner.name}" (ID ${plateOwner.id}).\n\nEvery business has its own plate number. Please check it and try again.`);
+        return;
+      }
+
       const isDuplicate = businesses.some(b => String(b.id || '').trim().toLowerCase() === inputId.toLowerCase());
       if (isDuplicate) {
         alert(`❌ ERROR: Business Permit ID "${inputId}" already exists in the system!\n\nPlease use a unique Permit Number.`);
@@ -1836,6 +1850,12 @@
         return;
       }
 
+      const plateOwner = plateTakenBy(newPlate, origId);
+      if (plateOwner) {
+        alert(`❌ Plate Number ${newPlate} is already used by "${plateOwner.name}" (ID ${plateOwner.id}).\n\nEvery business has its own plate number.`);
+        return;
+      }
+
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
       submitBtn.textContent = "Updating Record...";
@@ -1925,6 +1945,25 @@
       }
     });
 
+    // Splits text into lines that fit a width (long words are broken), so a long business name is never cut off.
+    function wrapText(ctx, text, maxWidth) {
+      const lines = [];
+      let line = '';
+      const push = (w) => {
+        const test = line ? line + ' ' + w : w;
+        if (ctx.measureText(test).width <= maxWidth) { line = test; return; }
+        if (line) { lines.push(line); line = ''; }
+        if (ctx.measureText(w).width <= maxWidth) { line = w; return; }
+        for (const ch of w) {
+          if (ctx.measureText(line + ch).width > maxWidth && line) { lines.push(line); line = ''; }
+          line += ch;
+        }
+      };
+      String(text || '').split(/\s+/).filter(Boolean).forEach(push);
+      if (line) lines.push(line);
+      return lines.length ? lines : [''];
+    }
+
     function processHighMbPhoto(file, metadata, maxTargetDim = 1200) {
       return new Promise((resolve) => {
         if (!file) return resolve(null);
@@ -1972,12 +2011,13 @@
 
               const baseFontSize = Math.max(11, Math.round(photoWidth / 35));
               const startX = photoWidth + Math.round(panelWidth * 0.08);
+              const textMaxW = panelWidth - Math.round(panelWidth * 0.14);
               let currentY = Math.round(photoHeight * 0.08);
               const lineSpacing = Math.round(baseFontSize * 1.5);
 
               ctx.fillStyle = "#38BDF8"; 
               ctx.font = `bold ${Math.round(baseFontSize * 1.15)}px sans-serif`;
-              ctx.fillText("ISABEL BPLO LOG", startX, currentY);
+              ctx.fillText("ISABEL BPLO LOG", startX, currentY, textMaxW);
 
               currentY += lineSpacing;
               ctx.fillStyle = "#94A3B8";
@@ -1991,7 +2031,7 @@
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#FFFFFF";
               ctx.font = `${baseFontSize}px monospace`;
-              ctx.fillText(metadata.id || 'N/A', startX, currentY);
+              ctx.fillText(metadata.id || 'N/A', startX, currentY, textMaxW);
 
               if (metadata.plate) {
                 currentY += lineSpacing;
@@ -2001,7 +2041,7 @@
                 currentY += Math.round(lineSpacing * 0.8);
                 ctx.fillStyle = "#FFFFFF";
                 ctx.font = `${baseFontSize}px monospace`;
-                ctx.fillText(metadata.plate, startX, currentY);
+                ctx.fillText(metadata.plate, startX, currentY, textMaxW);
               }
 
               currentY += lineSpacing;
@@ -2011,7 +2051,11 @@
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#FFFFFF";
               ctx.font = `${baseFontSize}px sans-serif`;
-              ctx.fillText(metadata.name || 'N/A', startX, currentY);
+              const nameLines = wrapText(ctx, metadata.name || 'N/A', textMaxW);
+              nameLines.slice(0, 4).forEach((ln, i) => {
+                if (i > 0) currentY += Math.round(baseFontSize * 1.2);
+                ctx.fillText(i === 3 && nameLines.length > 4 ? ln + '…' : ln, startX, currentY, textMaxW);
+              });
 
               currentY += lineSpacing;
               ctx.fillStyle = "#CBD5E1";
@@ -2020,7 +2064,7 @@
               currentY += Math.round(lineSpacing * 0.8);
               ctx.fillStyle = "#38BDF8";
               ctx.font = `${baseFontSize}px sans-serif`;
-              ctx.fillText(activeInspector, startX, currentY);
+              ctx.fillText(activeInspector, startX, currentY, textMaxW);
 
               canvas.toBlob((blob) => {
                 URL.revokeObjectURL(fileUrl);
